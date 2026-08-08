@@ -379,11 +379,6 @@
     "name": "Mazhar Abbas",
     "workshop": "lsw-2026"
   },
-<<<<<<< HEAD
-   {
-    "id": "1",
-    "name": "Areeb",
-=======
   {
     "id": "1",
     "name": "areeb",
@@ -432,7 +427,6 @@
   {
     "id": "7",
     "name": "faiz",
->>>>>>> main
     "workshop": "rec-2026"
   }
 ]
