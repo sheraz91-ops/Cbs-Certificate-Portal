@@ -2,10 +2,20 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { findParticipantByCertificateId, participants } from "@/lib/participants";
-import { formatCertificateId, normalizeParticipantNumber } from "@/lib/formatId";
+import {
+  findParticipantByCertificateId,
+  participants,
+} from "@/lib/participants";
+import {
+  formatCertificateId,
+  normalizeParticipantNumber,
+} from "@/lib/formatId";
 import { getWorkshopByKey, WORKSHOPS } from "@/config/workshops";
-import type { AlertState, CertificateCandidate, GenerationStatus } from "@/types";
+import type {
+  AlertState,
+  CertificateCandidate,
+  GenerationStatus,
+} from "@/types";
 import AlertMessage from "./AlertMessage";
 import LoadingSpinner from "./LoadingSpinner";
 
@@ -42,19 +52,29 @@ export default function CertificateForm() {
     // certificate instead of matching a different workshop with the same ID.
     if (selectedWorkshop) {
       const workshop = getWorkshopByKey(selectedWorkshop);
-      const participant = workshop && /^\d+$/.test(trimmedId)
-        ? participants.find(
-            (item) => item.workshop === selectedWorkshop && normalizeParticipantNumber(item.id) === normalizeParticipantNumber(trimmedId)
-          )
-        : undefined;
+      const participant =
+        workshop && /^\d+$/.test(trimmedId)
+          ? participants.find(
+              (item) =>
+                item.workshop === selectedWorkshop &&
+                normalizeParticipantNumber(item.id) ===
+                  normalizeParticipantNumber(trimmedId),
+            )
+          : undefined;
 
       if (!workshop || !participant) {
         setStatus("error");
-        setAlert({ type: "error", message: "This Certificate ID was not found in the selected workshop." });
+        setAlert({
+          type: "error",
+          message:
+            "This Certificate ID was not found in the selected workshop.",
+        });
         return;
       }
 
-      router.push(`/certificate?id=${encodeURIComponent(formatCertificateId(participant.id, workshop))}`);
+      router.push(
+        `/certificate?id=${encodeURIComponent(formatCertificateId(participant.id, workshop))}`,
+      );
       return;
     }
 
@@ -95,8 +115,11 @@ export default function CertificateForm() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="certificateWorkshop" className="text-xs font-semibold uppercase tracking-wide text-navy-600">
-              Workshop
+            <label
+              htmlFor="certificateWorkshop"
+              className="text-xs font-semibold uppercase tracking-wide text-navy-600"
+            >
+              PROGRAM
             </label>
             <select
               id="certificateWorkshop"
@@ -109,14 +132,13 @@ export default function CertificateForm() {
               disabled={isLoading}
               className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
             >
-              <option value="">Select a workshop (optional)</option>
+              <option value="">Select a program</option>
               {WORKSHOPS.map((workshop) => (
                 <option key={workshop.key} value={workshop.key}>
                   {workshop.workshopName}
                 </option>
               ))}
             </select>
-            <p className="text-xs text-navy-500">Select your workshop for an exact match, or leave this empty to see every workshop with that ID.</p>
           </div>
           <div className="flex flex-col gap-1.5">
             <label
@@ -130,7 +152,9 @@ export default function CertificateForm() {
               name="certificateId"
               type="text"
               autoComplete="off"
-              placeholder={selectedWorkshop ? "e.g. 5" : "e.g. 5 or CBS-LSW-2026-005"}
+              placeholder={
+                selectedWorkshop ? "e.g. 5" : "e.g. 5 or CBS-LSW-2026-005"
+              }
               value={certificateId}
               onChange={(e) => {
                 setCertificateId(e.target.value);
@@ -193,26 +217,26 @@ export default function CertificateForm() {
               Choose the workshop where you received your certificate.
             </p>
             <div className="flex flex-col gap-2">
-            {candidates.map((c) => (
-              <a
-                key={c.formattedId}
-                href={`/certificate?id=${encodeURIComponent(c.formattedId)}`}
-                className="w-full rounded-xl border border-navy-100 bg-navy-50/50 px-4 py-3 text-left text-sm hover:border-gold-400 hover:bg-gold-50 transition-colors"
-              >
-                <span className="block font-semibold text-navy-900">
-                  {c.participant.name}
-                </span>
-                <span className="mt-0.5 block text-xs font-medium text-navy-600">
-                  {c.workshop.workshopName}
-                </span>
-                <span className="block font-mono text-xs text-navy-500 mt-0.5">
-                  {c.formattedId}
-                </span>
-                <span className="mt-2 block text-xs font-semibold text-gold-700">
-                  View certificate →
-                </span>
-              </a>
-            ))}
+              {candidates.map((c) => (
+                <a
+                  key={c.formattedId}
+                  href={`/certificate?id=${encodeURIComponent(c.formattedId)}`}
+                  className="w-full rounded-xl border border-navy-100 bg-navy-50/50 px-4 py-3 text-left text-sm hover:border-gold-400 hover:bg-gold-50 transition-colors"
+                >
+                  <span className="block font-semibold text-navy-900">
+                    {c.participant.name}
+                  </span>
+                  <span className="mt-0.5 block text-xs font-medium text-navy-600">
+                    {c.workshop.workshopName}
+                  </span>
+                  <span className="block font-mono text-xs text-navy-500 mt-0.5">
+                    {c.formattedId}
+                  </span>
+                  <span className="mt-2 block text-xs font-semibold text-gold-700">
+                    View certificate →
+                  </span>
+                </a>
+              ))}
             </div>
           </div>
         )}

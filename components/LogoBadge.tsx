@@ -97,7 +97,7 @@ export default function LogoBadge() {
         </div>
       </div>
 
-      {LOGO_SETTINGS.captionEnabled && (
+      {/* {LOGO_SETTINGS.captionEnabled && (
         <span
           className={[
             "text-center font-semibold leading-relaxed",
@@ -110,7 +110,7 @@ export default function LogoBadge() {
           {ORG_CONFIG.institutionAbbreviation} &mdash;{" "}
           {ORG_CONFIG.institutionName.split(",")[0]}
         </span>
-      )}
+      )} */}
     </Link>
   );
 }

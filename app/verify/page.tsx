@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function VerifyPage() {
   return (
-    <PageShell>
+    <PageShell link="/" title="Download your certificate instantly">
       <Suspense
         fallback={
           <div className="w-full max-w-md rounded-3xl bg-white/95 p-10 shadow-card ring-1 ring-black/5 flex items-center justify-center">

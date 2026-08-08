@@ -2,8 +2,12 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import Footer from "./Footer";
 import LogoBadge from "./LogoBadge";
-
-export default function PageShell({ children }: { children: ReactNode }) {
+interface PageShellProps {
+  children: ReactNode;
+  title?: string;
+  link?: string;
+}
+export default function PageShell({ children, title, link }: PageShellProps) {
   return (
     <main className="hero-bg relative min-h-screen overflow-hidden flex flex-col items-center justify-between px-4 py-8 safe-top safe-bottom sm:py-14">
       {/* Ambient glow accents — sized down on mobile so they don't
@@ -18,21 +22,21 @@ export default function PageShell({ children }: { children: ReactNode }) {
         style={{ animationDelay: "1.5s" }}
       />
 
-      <div className="relative z-10 flex w-full flex-col items-center gap-8 sm:gap-12">
+      <div className="relative z-10 flex w-full flex-col items-center gap-8 sm:gap-8">
         {/* Logo — all size/position/style settings live in LogoBadge.tsx */}
         <LogoBadge />
 
         {/* Trust badge — reinforces that certificates issued here are
             checkable, tying into the /verify page. */}
         <Link
-          href="/verify"
-          className="group -mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3.5 py-1.5 text-[11px] font-medium text-emerald-200/90 transition-colors hover:bg-emerald-400/15 sm:-mt-6"
+          href={link || "/verify"}
+          className="group -mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3.5 py-1.5 text-[11px] font-medium text-emerald-200/90 transition-colors hover:bg-emerald-400/15 sm:-mt-4"
         >
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
           </span>
-          Every certificate is instantly verifiable
+          {title || "Every certificate is instantly verifiable"}
           <span className="text-emerald-300/70 transition-transform group-hover:translate-x-0.5">
             &rarr;
           </span>
