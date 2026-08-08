@@ -119,7 +119,7 @@ export default function CertificateForm() {
               htmlFor="certificateWorkshop"
               className="text-xs font-semibold uppercase tracking-wide text-navy-600"
             >
-              PROGRAM
+              Participation
             </label>
             <select
               id="certificateWorkshop"
@@ -132,7 +132,7 @@ export default function CertificateForm() {
               disabled={isLoading}
               className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
             >
-              <option value="">Select a program</option>
+              <option value="">Select your participation</option>
               {WORKSHOPS.map((workshop) => (
                 <option key={workshop.key} value={workshop.key}>
                   {workshop.workshopName}
