@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
         return await handleAddParticipants(body);
       case "delete-workshop":
         return await handleDeleteWorkshop(body);
+      case "delete-participant":
+        return await handleDeleteParticipant(body);
       case "list":
         return await handleList();
       case "workshop-details":
@@ -380,6 +382,36 @@ async function handleDeleteWorkshop(body: any) {
 
   await putTextFile(WORKSHOPS_PATH, updatedWorkshops, `admin: delete workshop ${workshop}`, workshopFile.sha);
   return NextResponse.json({ ok: true, deletedParticipants });
+}
+
+// ---- delete-participant --------------------------------------------------
+
+async function handleDeleteParticipant(body: any) {
+  const { workshop, id, name } = body;
+  if (typeof workshop !== "string" || typeof id !== "string" || typeof name !== "string") {
+    return NextResponse.json({ error: "workshop, id, and name are required" }, { status: 400 });
+  }
+
+  const participantsFile = await getFile(PARTICIPANTS_PATH);
+  if (!participantsFile) {
+    return NextResponse.json({ error: `${PARTICIPANTS_PATH} not found in repo` }, { status: 500 });
+  }
+
+  const participants: Participant[] = JSON.parse(participantsFile.content);
+  const remaining = participants.filter(
+    (participant) => !(participant.workshop === workshop && participant.id === id && participant.name === name)
+  );
+  if (remaining.length === participants.length) {
+    return NextResponse.json({ error: "Participant was not found" }, { status: 404 });
+  }
+
+  await putTextFile(
+    PARTICIPANTS_PATH,
+    JSON.stringify(remaining, null, 2) + "\n",
+    `admin: remove participant ${id} from ${workshop}`,
+    participantsFile.sha
+  );
+  return NextResponse.json({ ok: true });
 }
 
 // ---- list ---------------------------------------------------------------

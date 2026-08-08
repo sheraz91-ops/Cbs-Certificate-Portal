@@ -32,6 +32,9 @@ export default function WorkshopAdminPage() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [openWorkshops, setOpenWorkshops] = useState<string[]>([]);
+  const [visibleUsers, setVisibleUsers] = useState<Record<string, number>>({});
+  const [deletingUser, setDeletingUser] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("admin_pw");
@@ -53,6 +56,28 @@ export default function WorkshopAdminPage() {
       setPassword("");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function deleteParticipant(workshop: Workshop, participant: Participant) {
+    if (!window.confirm(`Remove ${participant.name} (ID ${participant.id}) from ${workshop.workshopName}?`)) return;
+
+    const deleteKey = `${workshop.key}-${participant.id}-${participant.name}`;
+    setDeletingUser(deleteKey);
+    setError(null);
+    try {
+      const response = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, action: "delete-participant", workshop: workshop.key, id: participant.id, name: participant.name }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to delete participant");
+      setWorkshops((current) => current.map((item) => item.key === workshop.key ? { ...item, participants: item.participants.filter((user) => !(user.id === participant.id && user.name === participant.name)) } : item));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setDeletingUser(null);
     }
   }
 
@@ -107,12 +132,27 @@ export default function WorkshopAdminPage() {
                 </div>
               )}
               <div className="border-t border-slate-800 p-6">
-                <h3 className="font-semibold">Registered users</h3>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="font-semibold">Registered users ({workshop.participants.length})</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenWorkshops((current) => current.includes(workshop.key) ? current.filter((key) => key !== workshop.key) : [...current, workshop.key]);
+                      setVisibleUsers((current) => ({ ...current, [workshop.key]: current[workshop.key] || 25 }));
+                    }}
+                    className="rounded-lg border border-indigo-500/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/10"
+                  >
+                    {openWorkshops.includes(workshop.key) ? "Hide users" : "Show users"}
+                  </button>
+                </div>
+                {openWorkshops.includes(workshop.key) && <>
                 {workshop.participants.length === 0 ? <p className="mt-3 text-sm text-slate-500">No users registered for this workshop.</p> : (
                   <div className="mt-3 overflow-x-auto rounded-xl border border-slate-800">
-                    <table className="w-full text-left text-sm"><thead className="bg-slate-950 text-xs uppercase text-slate-400"><tr><th className="px-4 py-3">Certificate ID</th><th className="px-4 py-3">Name</th></tr></thead><tbody className="divide-y divide-slate-800">{workshop.participants.map((participant) => <tr key={`${participant.id}-${participant.name}`}><td className="px-4 py-3 font-mono text-indigo-200">{participant.id}</td><td className="px-4 py-3 text-slate-200">{participant.name}</td></tr>)}</tbody></table>
+                    <table className="w-full text-left text-sm"><thead className="bg-slate-950 text-xs uppercase text-slate-400"><tr><th className="px-4 py-3">Certificate ID</th><th className="px-4 py-3">Name</th><th className="px-4 py-3 text-right">Action</th></tr></thead><tbody className="divide-y divide-slate-800">{workshop.participants.slice(0, visibleUsers[workshop.key] || 25).map((participant) => { const deleteKey = `${workshop.key}-${participant.id}-${participant.name}`; return <tr key={`${participant.id}-${participant.name}`}><td className="px-4 py-3 font-mono text-indigo-200">{participant.id}</td><td className="px-4 py-3 text-slate-200">{participant.name}</td><td className="px-4 py-3 text-right"><button type="button" disabled={deletingUser !== null} onClick={() => void deleteParticipant(workshop, participant)} className="rounded-md border border-red-500/30 px-2.5 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50">{deletingUser === deleteKey ? "Deleting…" : "Delete"}</button></td></tr>; })}</tbody></table>
                   </div>
                 )}
+                {(visibleUsers[workshop.key] || 25) < workshop.participants.length && <button type="button" onClick={() => setVisibleUsers((current) => ({ ...current, [workshop.key]: (current[workshop.key] || 25) + 25 }))} className="mt-3 rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-950">Show 25 more users</button>}
+                </>}
               </div>
             </section>
           ))}
