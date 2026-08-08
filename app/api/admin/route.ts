@@ -43,11 +43,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { password, action } = body;
-  if (typeof password !== "string" || !checkAdminPassword(password)) {
-    return unauthorized();
-  }
 
   try {
+    if (typeof password !== "string" || !checkAdminPassword(password)) {
+      return unauthorized();
+    }
+
     switch (action) {
       case "add-workshop":
         return await handleAddWorkshop(body);
