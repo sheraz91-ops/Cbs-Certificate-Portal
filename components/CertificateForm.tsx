@@ -2,7 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { findParticipantByCertificateId } from "@/lib/participants";
+import { findParticipantByCertificateId, participants } from "@/lib/participants";
+import { formatCertificateId, normalizeParticipantNumber } from "@/lib/formatId";
+import { getWorkshopByKey, WORKSHOPS } from "@/config/workshops";
 import type { AlertState, CertificateCandidate, GenerationStatus } from "@/types";
 import AlertMessage from "./AlertMessage";
 import LoadingSpinner from "./LoadingSpinner";
@@ -10,6 +12,7 @@ import LoadingSpinner from "./LoadingSpinner";
 export default function CertificateForm() {
   const router = useRouter();
   const [certificateId, setCertificateId] = useState("");
+  const [selectedWorkshop, setSelectedWorkshop] = useState("");
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [candidates, setCandidates] = useState<CertificateCandidate[]>([]);
@@ -33,6 +36,27 @@ export default function CertificateForm() {
     // Small delay so the loading state is perceptible even on very fast
     // devices — avoids an abrupt flash before navigating away.
     await new Promise((resolve) => setTimeout(resolve, 350));
+
+    // When a workshop is selected, its participant list is searched only.
+    // This makes a simple number such as "5" open that workshop's exact
+    // certificate instead of matching a different workshop with the same ID.
+    if (selectedWorkshop) {
+      const workshop = getWorkshopByKey(selectedWorkshop);
+      const participant = workshop && /^\d+$/.test(trimmedId)
+        ? participants.find(
+            (item) => item.workshop === selectedWorkshop && normalizeParticipantNumber(item.id) === normalizeParticipantNumber(trimmedId)
+          )
+        : undefined;
+
+      if (!workshop || !participant) {
+        setStatus("error");
+        setAlert({ type: "error", message: "This Certificate ID was not found in the selected workshop." });
+        return;
+      }
+
+      router.push(`/certificate?id=${encodeURIComponent(formatCertificateId(participant.id, workshop))}`);
+      return;
+    }
 
     const result = findParticipantByCertificateId(trimmedId);
 
@@ -71,6 +95,30 @@ export default function CertificateForm() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
+            <label htmlFor="certificateWorkshop" className="text-xs font-semibold uppercase tracking-wide text-navy-600">
+              Workshop
+            </label>
+            <select
+              id="certificateWorkshop"
+              value={selectedWorkshop}
+              onChange={(e) => {
+                setSelectedWorkshop(e.target.value);
+                if (status !== "idle") setStatus("idle");
+                if (alert) setAlert(null);
+              }}
+              disabled={isLoading}
+              className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
+            >
+              <option value="">Select a workshop (optional)</option>
+              {WORKSHOPS.map((workshop) => (
+                <option key={workshop.key} value={workshop.key}>
+                  {workshop.workshopName}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-navy-500">Select your workshop for an exact match, or leave this empty to see every workshop with that ID.</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="certificateId"
               className="text-xs font-semibold uppercase tracking-wide text-navy-600"
@@ -82,7 +130,7 @@ export default function CertificateForm() {
               name="certificateId"
               type="text"
               autoComplete="off"
-              placeholder="e.g. 5 or CBS-LSW-2026-005"
+              placeholder={selectedWorkshop ? "e.g. 5" : "e.g. 5 or CBS-LSW-2026-005"}
               value={certificateId}
               onChange={(e) => {
                 setCertificateId(e.target.value);
