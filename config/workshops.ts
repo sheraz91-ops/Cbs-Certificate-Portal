@@ -67,6 +67,19 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     layout: DEFAULT_LAYOUT_CONFIG,
   },
 
+    {
+    key: "rec-2026",
+    workshopName: "Online Real Estate Course",
+    workshopFullTitle:
+      "Real esate where he learned course",
+    workshopCode: "REC",
+    eventYear: "2027",
+    eventDate: "19 December 2026",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/rec-2026.png",
+    layout: DEFAULT_LAYOUT_CONFIG,
+  },
+
   // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
   // {
   //   key: "aw-2026",
