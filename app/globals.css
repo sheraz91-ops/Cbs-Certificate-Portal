@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #0b1c47;
+  background-color: #05070f;
+}
+
+/*
+ * Hero background for the main app shell.
+ *
+ * IMPORTANT: this combines the grid-line pattern AND the ambient glow /
+ * base gradient into a SINGLE `background-image` declaration. Splitting
+ * these across two separate classes (e.g. a Tailwind `bg-hero-gradient`
+ * utility + this `.bg-grid-pattern` class) causes them to silently
+ * compete for the same CSS property — whichever rule is later in the
+ * compiled stylesheet wins outright and the other is discarded, which
+ * previously wiped out the dark navy backdrop entirely and left
+ * light-colored text almost unreadable against a plain white background
+ * on some builds. Keeping every layer in one rule guarantees they always
+ * render together, in the right order, everywhere.
+ */
+.hero-bg {
+  /* Solid fallback: guarantees a dark, readable backdrop even in the
+     unlikely event a browser can't parse one of the gradient layers. */
+  background-color: #05070f;
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 40px 40px, 40px 40px, auto, auto, auto;
+  background-image: linear-gradient(
+      to right,
+      rgba(211, 163, 52, 0.06) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(211, 163, 52, 0.06) 1px, transparent 1px),
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(41, 74, 148, 0.22),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 82% 0%,
+      rgba(211, 163, 52, 0.16),
+      transparent 48%
+    ),
+    linear-gradient(180deg, #05070f 0%, #0b1c47 55%, #071433 100%);
+}
+
+/* Respect notches / home-indicator safe areas on modern phones so the
+   logo and footer never sit under a camera cutout or the gesture bar. */
+.safe-top {
+  padding-top: max(1.75rem, env(safe-area-inset-top));
+}
+.safe-bottom {
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
