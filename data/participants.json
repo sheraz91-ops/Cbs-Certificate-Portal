@@ -379,9 +379,60 @@
     "name": "Mazhar Abbas",
     "workshop": "lsw-2026"
   },
+<<<<<<< HEAD
    {
     "id": "1",
     "name": "Areeb",
+=======
+  {
+    "id": "1",
+    "name": "areeb",
+    "workshop": "abc-2000"
+  },
+  {
+    "id": "2",
+    "name": "hamza",
+    "workshop": "abc-2000"
+  },
+  {
+    "id": "3",
+    "name": "sheeraz",
+    "workshop": "abc-2000"
+  },
+  {
+    "id": "4",
+    "name": "faiz",
+    "workshop": "abc-2000"
+  },
+  {
+    "id": "5",
+    "name": "areeb",
+    "workshop": "abc-2000"
+  },
+  {
+    "id": "6",
+    "name": "ali",
+    "workshop": "abc-2000"
+  },
+  {
+    "id": "1",
+    "name": "areeb 2",
+    "workshop": "rec-2026"
+  },
+  {
+    "id": "2",
+    "name": "faiz 3",
+    "workshop": "rec-2026"
+  },
+  {
+    "id": "6",
+    "name": "areeb",
+    "workshop": "rec-2026"
+  },
+  {
+    "id": "7",
+    "name": "faiz",
+>>>>>>> main
     "workshop": "rec-2026"
   }
 ]
