@@ -288,5 +288,20 @@
     "id": "58",
     "name": "Kalsoom Mai",
     "workshop": "lsw-2026"
+  },
+  {
+    "id": "1",
+    "name": "M Sheeraz",
+    "workshop": "rec-2026"
+  },
+  {
+    "id": "2",
+    "name": "Jahagir",
+    "workshop": "rec-2026"
+  },
+  {
+    "id": "3",
+    "name": "Abdul Qadir",
+    "workshop": "rec-2026"
   }
 ]
