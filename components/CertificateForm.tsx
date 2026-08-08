@@ -43,13 +43,8 @@ export default function CertificateForm() {
     }
 
     if (result.status === "ambiguous") {
-      setStatus("error");
+      setStatus("idle");
       setCandidates(result.candidates);
-      setAlert({
-        type: "error",
-        message:
-          "That number matches more than one workshop. Select yours below, or enter your full Certificate ID.",
-      });
       return;
     }
 
@@ -142,26 +137,35 @@ export default function CertificateForm() {
         )}
 
         {candidates.length > 0 && (
-          <div className="mt-3 flex flex-col gap-2">
+          <div className="mt-5">
+            <p className="mb-2 text-sm font-semibold text-navy-800">
+              Certificates matching ID {certificateId.trim()}
+            </p>
+            <p className="mb-3 text-xs text-navy-500">
+              Choose the workshop where you received your certificate.
+            </p>
+            <div className="flex flex-col gap-2">
             {candidates.map((c) => (
-              <button
+              <a
                 key={c.formattedId}
-                type="button"
-                onClick={() =>
-                  router.push(
-                    `/certificate?id=${encodeURIComponent(c.formattedId)}`
-                  )
-                }
-                className="w-full rounded-xl border border-navy-100 bg-navy-50/50 px-4 py-2.5 text-left text-sm hover:border-gold-400 hover:bg-gold-50 transition-colors"
+                href={`/certificate?id=${encodeURIComponent(c.formattedId)}`}
+                className="w-full rounded-xl border border-navy-100 bg-navy-50/50 px-4 py-3 text-left text-sm hover:border-gold-400 hover:bg-gold-50 transition-colors"
               >
                 <span className="block font-semibold text-navy-900">
                   {c.participant.name}
                 </span>
+                <span className="mt-0.5 block text-xs font-medium text-navy-600">
+                  {c.workshop.workshopName}
+                </span>
                 <span className="block font-mono text-xs text-navy-500 mt-0.5">
                   {c.formattedId}
                 </span>
-              </button>
+                <span className="mt-2 block text-xs font-semibold text-gold-700">
+                  View certificate →
+                </span>
+              </a>
             ))}
+            </div>
           </div>
         )}
 

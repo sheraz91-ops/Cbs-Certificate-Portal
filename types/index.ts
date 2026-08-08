@@ -19,6 +19,7 @@ export interface Participant {
  *  than one workshop (see the "ambiguous" LookupResult below). */
 export interface CertificateCandidate {
   participant: Participant;
+  workshop: WorkshopDefinition;
   formattedId: string;
 }
 

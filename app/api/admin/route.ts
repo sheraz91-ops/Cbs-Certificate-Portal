@@ -29,6 +29,14 @@ const EXAMPLE_MARKER = "// --- EXAMPLE: duplicate & fill in for your next worksh
 
 type Participant = { id: string; name: string; workshop: string };
 type WorkshopSummary = { key: string; workshopName: string };
+type WorkshopDetails = WorkshopSummary & {
+  workshopFullTitle: string;
+  workshopCode: string;
+  eventYear: string;
+  eventDate: string;
+  templatePath: string;
+  participants: Participant[];
+};
 
 function unauthorized() {
   return NextResponse.json({ error: "Invalid admin password" }, { status: 401 });
@@ -54,8 +62,12 @@ export async function POST(req: NextRequest) {
         return await handleAddWorkshop(body);
       case "add-participants":
         return await handleAddParticipants(body);
+      case "delete-workshop":
+        return await handleDeleteWorkshop(body);
       case "list":
         return await handleList();
+      case "workshop-details":
+        return await handleWorkshopDetails();
       default:
         return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
@@ -280,10 +292,112 @@ async function handleAddParticipants(body: any) {
   });
 }
 
+function extractWorkshopDetails(src: string, participants: Participant[]): WorkshopDetails[] {
+  return extractWorkshopSummaries(src).map((summary) => {
+    const keyIndex = src.indexOf(`key: "${summary.key}"`);
+    const entryEnd = keyIndex === -1 ? -1 : src.indexOf("\n  },", keyIndex);
+    const entry = keyIndex === -1 ? "" : src.slice(keyIndex, entryEnd === -1 ? src.length : entryEnd);
+    const value = (field: string) => entry.match(new RegExp(`${field}:\\s*"([^"]+)"`))?.[1] || "Not set";
+    return {
+      ...summary,
+      workshopFullTitle: value("workshopFullTitle"),
+      workshopCode: value("workshopCode"),
+      eventYear: value("eventYear"),
+      eventDate: value("eventDate"),
+      templatePath: value("templatePath"),
+      participants: participants.filter((participant) => participant.workshop === summary.key),
+    };
+  });
+}
+
+// ---- delete-workshop -----------------------------------------------------
+// The certificate template image is deliberately retained for recovery or
+// reuse. The workshop registry entry and its participant records are removed.
+
+function findWorkshopEntryBounds(source: string, key: string): [number, number] | null {
+  const keyIndex = source.indexOf(`key: "${key}"`);
+  if (keyIndex === -1) return null;
+
+  const start = source.lastIndexOf("  {", keyIndex);
+  if (start === -1) return null;
+
+  let depth = 0;
+  let quote: string | null = null;
+  let escaped = false;
+  for (let i = start; i < source.length; i += 1) {
+    const char = source[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === "`") quote = char;
+    else if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        let end = i + 1;
+        if (source[end] === ",") end += 1;
+        while (source[end] === "\r" || source[end] === "\n") end += 1;
+        return [start, end];
+      }
+    }
+  }
+  return null;
+}
+
+async function handleDeleteWorkshop(body: any) {
+  const { workshop } = body;
+  if (typeof workshop !== "string" || !workshop) {
+    return NextResponse.json({ error: "A workshop key is required" }, { status: 400 });
+  }
+
+  const workshopFile = await getFile(WORKSHOPS_PATH);
+  if (!workshopFile) {
+    return NextResponse.json({ error: `${WORKSHOPS_PATH} not found in repo` }, { status: 500 });
+  }
+
+  const bounds = findWorkshopEntryBounds(workshopFile.content, workshop);
+  if (!bounds) {
+    return NextResponse.json({ error: `Workshop "${workshop}" was not found` }, { status: 404 });
+  }
+
+  const participantsFile = await getFile(PARTICIPANTS_PATH);
+  const participants: Participant[] = participantsFile ? JSON.parse(participantsFile.content) : [];
+  const remaining = participants.filter((participant) => participant.workshop !== workshop);
+  const deletedParticipants = participants.length - remaining.length;
+  const updatedWorkshops = workshopFile.content.slice(0, bounds[0]) + workshopFile.content.slice(bounds[1]);
+
+  if (participantsFile && deletedParticipants > 0) {
+    await putTextFile(
+      PARTICIPANTS_PATH,
+      JSON.stringify(remaining, null, 2) + "\n",
+      `admin: remove participants for ${workshop}`,
+      participantsFile.sha
+    );
+  }
+
+  await putTextFile(WORKSHOPS_PATH, updatedWorkshops, `admin: delete workshop ${workshop}`, workshopFile.sha);
+  return NextResponse.json({ ok: true, deletedParticipants });
+}
+
 // ---- list ---------------------------------------------------------------
 
 async function handleList() {
   const file = await getFile(WORKSHOPS_PATH);
   const workshops = file ? extractWorkshopSummaries(file.content) : [];
   return NextResponse.json({ ok: true, workshops });
+}
+
+async function handleWorkshopDetails() {
+  const [workshopFile, participantsFile] = await Promise.all([
+    getFile(WORKSHOPS_PATH),
+    getFile(PARTICIPANTS_PATH),
+  ]);
+  if (!workshopFile) {
+    return NextResponse.json({ error: `${WORKSHOPS_PATH} not found in repo` }, { status: 500 });
+  }
+  const participants: Participant[] = participantsFile ? JSON.parse(participantsFile.content) : [];
+  return NextResponse.json({ ok: true, workshops: extractWorkshopDetails(workshopFile.content, participants) });
 }

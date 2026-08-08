@@ -153,27 +153,104 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-950">
-      <div className="rounded-2xl bg-slate-950 p-6 shadow-sm transition hover:shadow-md">
-        <AddWorkshopForm
-          password={password}
-          onDone={(w) => {
-            setWorkshops((prev) => [...prev, w]);
-            setStatus(
-              `Workshop "${w.workshopName}" (${w.key}) added and pushed to GitHub.`,
-            );
-          }}
-        />
-      </div>
+    <div className="space-y-6 bg-slate-950">
+      {status && (
+        <div className="whitespace-pre-line rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+          {status}
+        </div>
+      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="rounded-2xl bg-slate-950 p-6 shadow-sm transition hover:shadow-md">
+          <AddWorkshopForm
+            password={password}
+            onDone={(w) => {
+              setWorkshops((prev) => [...prev, w]);
+              setStatus(
+                `Workshop "${w.workshopName}" (${w.key}) added and pushed to GitHub.`,
+              );
+            }}
+          />
+        </div>
 
-      <div className="rounded-2xl bg-slate-950 p-6 shadow-sm transition hover:shadow-md">
-        <AddParticipantsForm
-          password={password}
-          workshops={workshops}
-          onDone={(msg) => setStatus(msg)}
-        />
+        <div className="rounded-2xl bg-slate-950 p-6 shadow-sm transition hover:shadow-md">
+          <AddParticipantsForm
+            password={password}
+            workshops={workshops}
+            onDone={(msg) => setStatus(msg)}
+          />
+        </div>
       </div>
+      <ManageWorkshops
+        password={password}
+        workshops={workshops}
+        onDeleted={(deleted, deletedParticipants) => {
+          setWorkshops((current) => current.filter((w) => w.key !== deleted.key));
+          setStatus(`Workshop "${deleted.workshopName}" deleted. ${deletedParticipants} participant record(s) were removed.`);
+        }}
+      />
+      <a
+        href="/admin/workshops"
+        className="inline-flex rounded-xl border border-indigo-500/40 px-4 py-2.5 text-sm font-semibold text-indigo-300 transition hover:bg-indigo-500/10"
+      >
+        View all workshop details →
+      </a>
     </div>
+  );
+}
+
+function ManageWorkshops({
+  password,
+  workshops,
+  onDeleted,
+}: {
+  password: string;
+  workshops: WorkshopSummary[];
+  onDeleted: (workshop: WorkshopSummary, deletedParticipants: number) => void;
+}) {
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function deleteWorkshop(workshop: WorkshopSummary) {
+    if (!window.confirm(`Delete "${workshop.workshopName}"? Its participant records will also be removed. This can be recovered from GitHub history.`)) return;
+
+    setBusyKey(workshop.key);
+    setError(null);
+    try {
+      const data = await callAdmin(password, { action: "delete-workshop", workshop: workshop.key });
+      onDeleted(workshop, data.deletedParticipants);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-red-500/20 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+      <h2 className="text-lg font-semibold text-white">Manage Workshops</h2>
+      <p className="mt-1 text-sm text-slate-400">Delete a workshop and all of its participant records.</p>
+      {error && <p className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>}
+      <div className="mt-4 divide-y divide-slate-800 rounded-xl border border-slate-800">
+        {workshops.map((workshop) => (
+          <div key={workshop.key} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div>
+              <p className="font-medium text-slate-100">{workshop.workshopName}</p>
+              <p className="text-xs text-slate-500">{workshop.key}</p>
+            </div>
+            <button
+              type="button"
+              disabled={busyKey !== null}
+              onClick={() => deleteWorkshop(workshop)}
+              className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busyKey === workshop.key ? "Deleting…" : "Delete workshop"}
+            </button>
+          </div>
+        ))}
+        {workshops.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">No workshops found.</p>}
+      </div>
+      <p className="mt-3 text-xs text-slate-500">The certificate template image is retained so it can be recovered or reused.</p>
+    </section>
   );
 }
 

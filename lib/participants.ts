@@ -74,6 +74,7 @@ export function findParticipantByCertificateId(rawId: string): LookupResult {
       if (!w) return null;
       return {
         participant,
+        workshop: w,
         formattedId: formatCertificateId(participant.id, w),
       };
     })
@@ -81,10 +82,6 @@ export function findParticipantByCertificateId(rawId: string): LookupResult {
 
   if (candidates.length === 0) {
     return { status: "not-found" };
-  }
-
-  if (candidates.length === 1) {
-    return { status: "found", ...candidates[0] };
   }
 
   return { status: "ambiguous", candidates };

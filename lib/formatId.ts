@@ -56,6 +56,10 @@ export function parseCertificateIdInput(
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
+  // Only a number entered on its own can search across all workshops.
+  // This prevents text such as "abc-226-09" being treated as bare ID 9.
+  const isBareNumber = /^\d+$/.test(trimmed);
+
   const segments = trimmed.toUpperCase().split(/[\s\-_/]+/).filter(Boolean);
   let workshop: WorkshopDefinition | undefined;
   for (const segment of segments) {
@@ -65,6 +69,8 @@ export function parseCertificateIdInput(
       break;
     }
   }
+
+  if (!isBareNumber && !workshop) return null;
 
   const numericMatches = trimmed.match(/\d+/g);
   if (!numericMatches || numericMatches.length === 0) {
