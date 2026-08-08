@@ -80,7 +80,20 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     layout: DEFAULT_LAYOUT_CONFIG,
   },
 
-    // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
+      {
+    key: "abc-2000",
+    workshopName: "Nation Wode ",
+    workshopFullTitle:
+      "Nation Wode Nation Wode ",
+    workshopCode: "ABC",
+    eventYear: "2026",
+    eventDate: "12 Dec 2027",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/abc-2000.jpeg",
+    layout: DEFAULT_LAYOUT_CONFIG,
+  },
+
+  // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
   // {
   //   key: "aw-2026",
   //   workshopName: "Another Workshop",
