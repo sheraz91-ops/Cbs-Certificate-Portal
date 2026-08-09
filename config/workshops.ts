@@ -80,7 +80,66 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     layout: DEFAULT_LAYOUT_CONFIG,
   },
 
-          // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
+            {
+    key: "tst-2026",
+    workshopName: "Testing worshopo",
+    workshopFullTitle:
+      "testing is easy",
+    workshopCode: "TST",
+    eventYear: "2026",
+    eventDate: "12 December 2026",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/tst-2026.png",
+    layout:     {
+        "nameField": {
+            "centerXRatio": 0.512610318404568,
+            "centerYRatio": 0.5289006015814517,
+            "maskBox": {
+                "leftRatio": 0.18361031840456804,
+                "rightRatio": 0.8411103184045681,
+                "topRatio": 0.5105130485404332,
+                "bottomRatio": 0.5465809410439693
+            },
+            "font": "serif",
+            "color": "#201e19",
+            "maxFontSize": 42,
+            "minFontSize": 16,
+            "maxWidthRatio": 0.714
+        },
+        "idField": {
+            "startXRatio": 0.6450623742454729,
+            "centerYRatio": 0.6263480159371577,
+            "maskBox": {
+                "leftRatio": 0.6450623742454729,
+                "rightRatio": 0.7775623742454729,
+                "topRatio": 0.5262772945793076,
+                "bottomRatio": 0.725711523716507
+            },
+            "font": "sans-bold",
+            "color": "#5e5852",
+            "label": "",
+            "maxFontSize": 18,
+            "minFontSize": 8,
+            "maxWidthRatio": 0.159
+        },
+        "qrField": {
+            "box": {
+                "leftRatio": 0.8219,
+                "rightRatio": 0.9116,
+                "topRatio": 0.2533,
+                "bottomRatio": 0.373
+            },
+            "caption": "SCAN TO VERIFY",
+            "captionCenterXRatio": 0.8667,
+            "captionCenterYRatio": 0.3859,
+            "captionFontSize": 8.5,
+            "captionColor": "#0b1c47"
+        },
+        "maskColor": "#f9f9f9"
+    },
+  },
+
+  // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
   // {
   //   key: "aw-2026",
   //   workshopName: "Another Workshop",
