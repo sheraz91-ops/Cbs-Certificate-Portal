@@ -267,6 +267,65 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     },
   },
 
+    {
+    key: "yyy-2026",
+    workshopName: "Youtube worshop",
+    workshopFullTitle:
+      "Youtube is here",
+    workshopCode: "YYY",
+    eventYear: "2026",
+    eventDate: "12 Dec",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/yyy-2026.png",
+    layout:     {
+        "nameField": {
+            "centerXRatio": 0.5222017102615694,
+            "centerYRatio": 0.4666089478086647,
+            "maskBox": {
+                "leftRatio": 0.15995171026156943,
+                "rightRatio": 0.8839517102615694,
+                "topRatio": 0.44751418118914565,
+                "bottomRatio": 0.48499650084968315
+            },
+            "font": "serif",
+            "color": "#204e74",
+            "maxFontSize": 42,
+            "minFontSize": 16,
+            "maxWidthRatio": 0.7805
+        },
+        "idField": {
+            "startXRatio": 0.5873829235176685,
+            "centerYRatio": 0.9384303715517677,
+            "maskBox": {
+                "leftRatio": 0.5873829235176685,
+                "rightRatio": 0.7093829235176685,
+                "topRatio": 0.8090102866861383,
+                "bottomRatio": 1
+            },
+            "font": "sans-bold",
+            "color": "#305f3c",
+            "label": "",
+            "maxFontSize": 18,
+            "minFontSize": 8,
+            "maxWidthRatio": 0.14850000000000002
+        },
+        "qrField": {
+            "box": {
+                "leftRatio": 0.8219,
+                "rightRatio": 0.9116,
+                "topRatio": 0.2533,
+                "bottomRatio": 0.373
+            },
+            "caption": "SCAN TO VERIFY",
+            "captionCenterXRatio": 0.8667,
+            "captionCenterYRatio": 0.3859,
+            "captionFontSize": 8.5,
+            "captionColor": "#0b1c47"
+        },
+        "maskColor": "#f9f9f9"
+    },
+  },
+
   // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
   // {
   //   key: "aw-2026",
