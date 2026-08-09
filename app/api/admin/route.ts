@@ -12,12 +12,10 @@
  *                              max-existing-id-for-that-workshop + 1)
  *   public/templates/<key>.png
  *
- * New workshops are always added with `layout: DEFAULT_LAYOUT_CONFIG`.
- * If a new template's placeholders sit in different spots, this panel
- * intentionally does NOT try to guess a custom layout — that still needs
- * the pixel-measurement step. Add the workshop here first, then swap
- * `DEFAULT_LAYOUT_CONFIG` for a custom layout object by hand (or ask me
- * to measure a new template and I'll give you the object to paste in).
+ * New workshops default to `layout: DEFAULT_LAYOUT_CONFIG`, but the admin
+ * panel can also upload a template image and auto-detect a custom layout
+ * for the `<<Full Name>>` / `<<ID>>` placeholders when the artwork uses a
+ * different design.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -106,7 +104,7 @@ function extractWorkshopSummaries(src: string): WorkshopSummary[] {
 
 // ---- add-workshop ---------------------------------------------------
 // body: { password, action:"add-workshop", key, workshopName, workshopFullTitle,
-//         workshopCode, eventYear, eventDate, imageBase64, imageExt }
+//         workshopCode, eventYear, eventDate, imageBase64, imageExt, layout }
 
 async function handleAddWorkshop(body: any) {
   const {
@@ -118,6 +116,7 @@ async function handleAddWorkshop(body: any) {
     eventDate,
     imageBase64,
     imageExt,
+    layout,
   } = body;
 
   const required = { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate };
@@ -162,6 +161,9 @@ async function handleAddWorkshop(body: any) {
   // Escape any double quotes/backticks a user might paste into text fields,
   // so the generated TS source stays syntactically valid.
   const esc = (s: string) => String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const layoutSnippet = layout
+    ? `layout: ${JSON.stringify(layout, null, 4).replace(/^/gm, "    ")},\n`
+    : `layout: DEFAULT_LAYOUT_CONFIG,\n`;
 
   const templatePath = `/templates/${key}.${imageExt || "png"}`;
 
@@ -175,7 +177,7 @@ async function handleAddWorkshop(body: any) {
     `    eventDate: "${esc(eventDate)}",\n` +
     "    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,\n" +
     `    templatePath: "${templatePath}",\n` +
-    `    layout: DEFAULT_LAYOUT_CONFIG,\n` +
+    `    ${layoutSnippet}` +
     `  },\n\n  `;
 
   const updatedContent =
@@ -203,7 +205,9 @@ async function handleAddWorkshop(body: any) {
     ok: true,
     workshop: { key, workshopName },
     note: imageBase64
-      ? "Workshop added using DEFAULT_LAYOUT_CONFIG. If this template's <<Full Name>> / <<ID>> sit in different spots than the default, the name/ID/QR will render in the wrong place until a custom layout is measured and swapped in."
+      ? layout
+        ? "Workshop added with an auto-detected custom layout."
+        : "Workshop added using DEFAULT_LAYOUT_CONFIG."
       : "Workshop added with no template image — upload one before generating certificates for it.",
   });
 }

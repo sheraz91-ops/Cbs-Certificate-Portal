@@ -35,6 +35,7 @@ export default function WorkshopAdminPage() {
   const [openWorkshops, setOpenWorkshops] = useState<string[]>([]);
   const [visibleUsers, setVisibleUsers] = useState<Record<string, number>>({});
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
+  const [brokenTemplates, setBrokenTemplates] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const saved = sessionStorage.getItem("admin_pw");
@@ -126,9 +127,25 @@ export default function WorkshopAdminPage() {
               {workshop.templatePath !== "Not set" && (
                 <div className="border-t border-slate-800 p-6">
                   <p className="mb-3 text-sm font-semibold">Certificate template preview</p>
-                  <a href={workshop.templatePath} target="_blank" rel="noreferrer" className="block w-fit overflow-hidden rounded-xl border border-slate-700 hover:border-indigo-400">
-                    <Image src={workshop.templatePath} alt={`${workshop.workshopName} certificate template`} width={1000} height={700} className="max-h-72 w-auto bg-slate-950 object-contain" />
-                  </a>
+                  {brokenTemplates[workshop.key] ? (
+                    <div className="w-fit max-w-full rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+                      <p className="font-semibold">Template image not found</p>
+                      <p className="mt-1 text-xs text-amber-200/80">
+                        The app tried to load <span className="font-mono">{workshop.templatePath}</span> but the file is missing or the path is wrong.
+                      </p>
+                    </div>
+                  ) : (
+                    <a href={workshop.templatePath} target="_blank" rel="noreferrer" className="block w-fit overflow-hidden rounded-xl border border-slate-700 hover:border-indigo-400">
+                      <Image
+                        src={workshop.templatePath}
+                        alt={`${workshop.workshopName} certificate template`}
+                        width={1000}
+                        height={700}
+                        className="max-h-72 w-auto bg-slate-950 object-contain"
+                        onError={() => setBrokenTemplates((current) => ({ ...current, [workshop.key]: true }))}
+                      />
+                    </a>
+                  )}
                 </div>
               )}
               <div className="border-t border-slate-800 p-6">

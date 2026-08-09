@@ -27,8 +27,90 @@
 
 import { DEFAULT_LAYOUT_CONFIG, ORG_CONFIG } from "./certificate.config";
 
-/** Shape of a template's placeholder geometry — matches DEFAULT_LAYOUT_CONFIG. */
-export type LayoutConfig = typeof DEFAULT_LAYOUT_CONFIG;
+/** Shape of a template's placeholder geometry. */
+export interface LayoutConfig {
+  readonly nameField: {
+    readonly centerXRatio: number;
+    readonly centerYRatio: number;
+    readonly maskBox: {
+      readonly leftRatio: number;
+      readonly rightRatio: number;
+      readonly topRatio: number;
+      readonly bottomRatio: number;
+    };
+    readonly font: string;
+    readonly color: string;
+    readonly maxFontSize: number;
+    readonly minFontSize: number;
+    readonly maxWidthRatio: number;
+  };
+  readonly idField: {
+    readonly startXRatio: number;
+    readonly centerYRatio: number;
+    readonly maskBox: {
+      readonly leftRatio: number;
+      readonly rightRatio: number;
+      readonly topRatio: number;
+      readonly bottomRatio: number;
+    };
+    readonly font: string;
+    readonly color: string;
+    readonly label: string;
+    readonly maxFontSize: number;
+    readonly minFontSize: number;
+    readonly maxWidthRatio: number;
+  };
+  readonly qrField: {
+    readonly box: {
+      readonly leftRatio: number;
+      readonly rightRatio: number;
+      readonly topRatio: number;
+      readonly bottomRatio: number;
+    };
+    readonly caption: string;
+    readonly captionCenterXRatio: number;
+    readonly captionCenterYRatio: number;
+    readonly captionFontSize: number;
+    readonly captionColor: string;
+  };
+  readonly maskColor: string;
+}
+
+const REC_2026_LAYOUT_CONFIG: LayoutConfig = {
+  nameField: {
+    centerXRatio: 0.512,
+    centerYRatio: 0.417,
+    maskBox: {
+      leftRatio: 0.35,
+      rightRatio: 0.674,
+      topRatio: 0.368,
+      bottomRatio: 0.466,
+    },
+    font: "serif",
+    color: "#222222",
+    maxFontSize: 42,
+    minFontSize: 16,
+    maxWidthRatio: 0.64,
+  },
+  idField: {
+    startXRatio: 0.757,
+    centerYRatio: 0.718,
+    maskBox: {
+      leftRatio: 0.75,
+      rightRatio: 0.85,
+      topRatio: 0.68,
+      bottomRatio: 0.76,
+    },
+    font: "sans-bold",
+    color: "#222222",
+    label: "",
+    maxFontSize: 16,
+    minFontSize: 8,
+    maxWidthRatio: 0.18,
+  },
+  qrField: DEFAULT_LAYOUT_CONFIG.qrField,
+  maskColor: DEFAULT_LAYOUT_CONFIG.maskColor,
+};
 
 export interface WorkshopDefinition {
   /** Internal identifier — used in data/participants.json's "workshop"
@@ -67,6 +149,18 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     layout: DEFAULT_LAYOUT_CONFIG,
   },
 
+  {
+    key: "tst-2026",
+    workshopName: "Testing worshopo",
+    workshopFullTitle: "testing is easy",
+    workshopCode: "TST",
+    eventYear: "2026",
+    eventDate: "12 December 2026",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/tst-2026.png",
+    layout: DEFAULT_LAYOUT_CONFIG,
+  },
+
     {
     key: "rec-2026",
     workshopName: "Online Real Estate Course",
@@ -77,7 +171,7 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     eventDate: "19 December 2026",
     organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
     templatePath: "/templates/rec-2026.png",
-    layout: DEFAULT_LAYOUT_CONFIG,
+    layout: REC_2026_LAYOUT_CONFIG,
   },
 
       // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
