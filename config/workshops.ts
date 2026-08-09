@@ -208,6 +208,65 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     },
   },
 
+    {
+    key: "yyy",
+    workshopName: "Youtube",
+    workshopFullTitle:
+      "yyy yyy ",
+    workshopCode: "YYY",
+    eventYear: "2026",
+    eventDate: "12 dec",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/yyy.png",
+    layout:     {
+        "nameField": {
+            "centerXRatio": 0.5195189572493555,
+            "centerYRatio": 0.476095517729289,
+            "maskBox": {
+                "leftRatio": 0.15726895724935552,
+                "rightRatio": 0.8812689572493555,
+                "topRatio": 0.45700075110976995,
+                "bottomRatio": 0.49448307077030745
+            },
+            "font": "serif",
+            "color": "#204e74",
+            "maxFontSize": 42,
+            "minFontSize": 16,
+            "maxWidthRatio": 0.7805
+        },
+        "idField": {
+            "startXRatio": 0.5753105503136003,
+            "centerYRatio": 0.9251493299962714,
+            "maskBox": {
+                "leftRatio": 0.5753105503136003,
+                "rightRatio": 0.6973105503136003,
+                "topRatio": 0.795729245130642,
+                "bottomRatio": 1
+            },
+            "font": "sans-bold",
+            "color": "#305f3c",
+            "label": "",
+            "maxFontSize": 18,
+            "minFontSize": 8,
+            "maxWidthRatio": 0.14850000000000002
+        },
+        "qrField": {
+            "box": {
+                "leftRatio": 0.8219,
+                "rightRatio": 0.9116,
+                "topRatio": 0.2533,
+                "bottomRatio": 0.373
+            },
+            "caption": "SCAN TO VERIFY",
+            "captionCenterXRatio": 0.8667,
+            "captionCenterYRatio": 0.3859,
+            "captionFontSize": 8.5,
+            "captionColor": "#0b1c47"
+        },
+        "maskColor": "#f9f9f9"
+    },
+  },
+
   // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
   // {
   //   key: "aw-2026",
