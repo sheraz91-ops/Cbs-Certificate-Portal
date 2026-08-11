@@ -326,6 +326,65 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     },
   },
 
+    {
+    key: "sst-2026",
+    workshopName: "Sort By Time",
+    workshopFullTitle:
+      "Seminar",
+    workshopCode: "SST",
+    eventYear: "2026",
+    eventDate: "13 Dec",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/sst-2026.png",
+    layout:     {
+        "nameField": {
+            "centerXRatio": 0.5071598907409299,
+            "centerYRatio": 0.49068176928567464,
+            "maskBox": {
+                "leftRatio": 0.14490989074092997,
+                "rightRatio": 0.86890989074093,
+                "topRatio": 0.4715870026661556,
+                "bottomRatio": 0.5090693223266931
+            },
+            "font": "serif",
+            "color": "#204e74",
+            "maxFontSize": 42,
+            "minFontSize": 16,
+            "maxWidthRatio": 0.7805
+        },
+        "idField": {
+            "startXRatio": 0.5735546536052252,
+            "centerYRatio": 0.8336445378571306,
+            "maskBox": {
+                "leftRatio": 0.5735546536052252,
+                "rightRatio": 0.6955546536052251,
+                "topRatio": 0.7042244529915012,
+                "bottomRatio": 0.9623574091442593
+            },
+            "font": "sans-bold",
+            "color": "#305f3c",
+            "label": "",
+            "maxFontSize": 18,
+            "minFontSize": 8,
+            "maxWidthRatio": 0.14850000000000002
+        },
+        "qrField": {
+            "box": {
+                "leftRatio": 0.8219,
+                "rightRatio": 0.9116,
+                "topRatio": 0.2533,
+                "bottomRatio": 0.373
+            },
+            "caption": "SCAN TO VERIFY",
+            "captionCenterXRatio": 0.8667,
+            "captionCenterYRatio": 0.3859,
+            "captionFontSize": 8.5,
+            "captionColor": "#0b1c47"
+        },
+        "maskColor": "#f9f9f9"
+    },
+  },
+
   // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
   // {
   //   key: "aw-2026",
