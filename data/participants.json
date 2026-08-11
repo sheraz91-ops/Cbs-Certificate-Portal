@@ -418,5 +418,20 @@
     "id": "102",
     "name": "Sheeraz",
     "workshop": "lsw-2026"
+  },
+  {
+    "id": "1",
+    "name": "Abdul Qadir",
+    "workshop": "sst-2026"
+  },
+  {
+    "id": "2",
+    "name": "Sheeraz",
+    "workshop": "sst-2026"
+  },
+  {
+    "id": "3",
+    "name": "Hamza",
+    "workshop": "sst-2026"
   }
 ]
