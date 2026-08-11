@@ -408,5 +408,15 @@
     "id": "95",
     "name": "ali",
     "workshop": "lsw-2026"
+  },
+  {
+    "id": "101",
+    "name": "Abdul Qadir",
+    "workshop": "lsw-2026"
+  },
+  {
+    "id": "102",
+    "name": "Sheeraz",
+    "workshop": "lsw-2026"
   }
 ]
