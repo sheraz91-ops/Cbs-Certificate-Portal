@@ -1,82 +1,7 @@
 [
   {
-    "id": "1",
-    "name": "Usman Rana",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "2",
-    "name": "Muhammad Irfan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "3",
-    "name": "Ameer",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "4",
-    "name": "Muhammad Huzaifa Javed",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "5",
-    "name": "Sheraz Idrees",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "6",
     "name": "Muhammad Abdul Rehman",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "7",
-    "name": "Muhammad Arsalan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "8",
-    "name": "Subhan Awais Qureshi",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "9",
-    "name": "M Awais Ali",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "10",
-    "name": "Okasha Saeed",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "11",
-    "name": "Ali Hassan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "12",
-    "name": "Ahmad Ubaid Raza",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "13",
-    "name": "Muhammad Zubair",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "14",
-    "name": "Muhammad Waqas Ali",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "15",
-    "name": "Muhammad Khan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "16",
-    "name": "Jahanzaib Ali",
     "workshop": "lsw-2026"
   },
   {
@@ -85,23 +10,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "18",
-    "name": "Umair Ali",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "19",
     "name": "Haider Zaman",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "20",
-    "name": "Ahtsham Faiz",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "21",
-    "name": "Muhammad Umer Farooq",
     "workshop": "lsw-2026"
   },
   {
@@ -110,38 +20,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "23",
-    "name": "M Atif",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "24",
-    "name": "Shahzaib Zahid",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "25",
-    "name": "Sadaqat Ali",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "26",
-    "name": "Rana Mohsin",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "27",
     "name": "M Abdulhaq",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "28",
-    "name": "Faizan Sajid",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "29",
-    "name": "Abdul Rauf Bhatti",
     "workshop": "lsw-2026"
   },
   {
@@ -152,11 +32,6 @@
   {
     "id": "31",
     "name": "Muhammad Taha",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "32",
-    "name": "Laiba Bukhari",
     "workshop": "lsw-2026"
   },
   {
@@ -175,11 +50,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "36",
-    "name": "Syeda Fatima Idrees",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "37",
     "name": "Zainab Khalil",
     "workshop": "lsw-2026"
@@ -195,43 +65,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "40",
-    "name": "Inshirah",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "41",
-    "name": "Tayba Sehar",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "42",
-    "name": "Laiba",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "43",
     "name": "Misbah USMAN",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "44",
-    "name": "Umaima Altaf",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "45",
-    "name": "Sabiha Aziz",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "46",
-    "name": "Misbah Intizar",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "47",
-    "name": "Amna Riaz",
     "workshop": "lsw-2026"
   },
   {
@@ -240,48 +75,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "49",
-    "name": "meeralnaveed",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "50",
-    "name": "Amna Batool",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "51",
-    "name": "Aiman Khan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "52",
-    "name": "Qiraat",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "53",
-    "name": "Noor ul Ain",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "54",
-    "name": "Ayesha Farooq",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "55",
     "name": "Faseeha Sohail",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "56",
-    "name": "Ayesha Haider",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "57",
-    "name": "Maheen khan",
     "workshop": "lsw-2026"
   },
   {
@@ -290,33 +85,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "59",
-    "name": "Areesha Sharif",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "60",
     "name": "Alishba Abid",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "61",
-    "name": "Uzma Yasmeen",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "62",
-    "name": "Amna Shahzad",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "63",
-    "name": "Tayyabah Saleem",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "64",
-    "name": "Imtisaal",
     "workshop": "lsw-2026"
   },
   {
@@ -330,26 +100,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "67",
-    "name": "Muhammad Awais Gul",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "68",
-    "name": "Muhammad Haseeb Alam",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "69",
-    "name": "Hussain mehdi",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "70",
-    "name": "Ali Asad",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "71",
     "name": "Abu Sallat Hasnain",
     "workshop": "lsw-2026"
@@ -360,23 +110,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "73",
-    "name": "Abdullah Khan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "74",
-    "name": "Muhammad Ihtisham",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "75",
     "name": "Azan Ullah Khan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "76",
-    "name": "Mazhar Abbas",
     "workshop": "lsw-2026"
   },
   {
@@ -395,33 +130,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "80",
-    "name": "Faiza Rani",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "81",
-    "name": "Ishrat Fatima",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "82",
-    "name": "Muskan Ali",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "83",
-    "name": "IQRA kanwal",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "84",
     "name": "Muhammad Farhan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "85",
-    "name": "Gulraiz Yaqoob",
     "workshop": "lsw-2026"
   },
   {
@@ -430,23 +140,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "87",
-    "name": "Muhammad Atif",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "88",
-    "name": "Muhammad Abdul Rehman",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "89",
     "name": "Muhammad Muzammil",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "90",
-    "name": "SOHAIL ABBAS",
     "workshop": "lsw-2026"
   },
   {
@@ -455,28 +150,13 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "92",
-    "name": "Iqra Ikram",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "93",
     "name": "Anfal Hoor",
     "workshop": "lsw-2026"
   },
   {
-    "id": "94",
-    "name": "Rabi ul Awal",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "95",
     "name": "Dua Noor",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "96",
-    "name": "Kashaf gillani",
     "workshop": "lsw-2026"
   },
   {
@@ -505,28 +185,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "102",
-    "name": "Anum Shakoor",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "103",
-    "name": "Rania Tabassum",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "104",
     "name": "Ayesha khizer",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "105",
-    "name": "Jaweria Hafeez",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "106",
-    "name": "Iqra Riaz",
     "workshop": "lsw-2026"
   },
   {
@@ -570,11 +230,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "115",
-    "name": "Sana Naeem",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "116",
     "name": "Momina Saifal",
     "workshop": "lsw-2026"
@@ -610,16 +265,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "123",
-    "name": "Ayesha Arshad",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "124",
-    "name": "Asma Zulfiqar",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "125",
     "name": "Syeda Tasbih Fatima",
     "workshop": "lsw-2026"
@@ -627,11 +272,6 @@
   {
     "id": "126",
     "name": "Areesha Aslam",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "127",
-    "name": "Mahnoor Malik",
     "workshop": "lsw-2026"
   },
   {
@@ -655,11 +295,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "132",
-    "name": "Muhammad Rayan Rao",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "133",
     "name": "Muhammad Dawood Abid",
     "workshop": "lsw-2026"
@@ -670,43 +305,13 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "135",
-    "name": "Abdullah Rasheed",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "136",
     "name": "Muhammad Abubakr",
     "workshop": "lsw-2026"
   },
   {
-    "id": "137",
-    "name": "Mazhar Abbas",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "138",
-    "name": "Hafeez Ullah",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "139",
     "name": "Muhammad Bilal",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "140",
-    "name": "Hammad Saleem",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "141",
-    "name": "Muhammad Dilshad",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "142",
-    "name": "Huzaifa Ghaffar",
     "workshop": "lsw-2026"
   },
   {
@@ -720,16 +325,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "145",
-    "name": "Abdul Nafay",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "146",
-    "name": "Muhammad Usama",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "147",
     "name": "Muhammad Saad",
     "workshop": "lsw-2026"
@@ -737,11 +332,6 @@
   {
     "id": "148",
     "name": "Umar Nawab",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "149",
-    "name": "SAMEER AHMED",
     "workshop": "lsw-2026"
   },
   {
@@ -755,31 +345,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "152",
-    "name": "Muhammad Faizan Ajmal",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "153",
-    "name": "Hammad Babur",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "154",
-    "name": "Aqib Javed",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "155",
-    "name": "Muhammad Adnan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "156",
-    "name": "Hafiz Muhammad Kamran",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "157",
     "name": "Hussain Raza",
     "workshop": "lsw-2026"
@@ -787,21 +352,6 @@
   {
     "id": "158",
     "name": "Muhammad Talha",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "159",
-    "name": "Ahmad Ali Zulfiqar",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "160",
-    "name": "Muhammad Nouman",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "161",
-    "name": "Muhammad Ali Tahir",
     "workshop": "lsw-2026"
   },
   {
@@ -815,21 +365,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "164",
-    "name": "Muhammad Usman",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "165",
-    "name": "Hafiz Muhammad Fahad",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "166",
-    "name": "Muhammad Usman",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "167",
     "name": "Muhammad Danish",
     "workshop": "lsw-2026"
@@ -840,28 +375,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "169",
-    "name": "Muhammad Sibtain Abid",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "170",
-    "name": "Fiza Hasan",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "171",
     "name": "Mahmood Bin Yasin",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "172",
-    "name": "Muhammad Hamza Haider",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "173",
-    "name": "Noor Fatima",
     "workshop": "lsw-2026"
   },
   {
@@ -870,88 +385,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "175",
-    "name": "Ahtsham Faiz",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "176",
-    "name": "Muhammad Jaoun Mehdi",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "177",
-    "name": "Wahab Amjad",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "178",
-    "name": "Muhammad Haris",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "179",
-    "name": "Muhammad Noman",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "180",
-    "name": "Rawal Panwar",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "181",
-    "name": "Muhammad Ali",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "182",
-    "name": "Maryam Zahra",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "183",
     "name": "Arfa Batool",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "184",
-    "name": "Umaima Saeed",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "185",
-    "name": "Eeshah-Tur-Razia",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "186",
-    "name": "Masooma Imran",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "187",
-    "name": "Memoona",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "188",
-    "name": "Khadijia Batool",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "189",
-    "name": "Mehak Bibi",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "190",
-    "name": "M.Arslan",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "191",
-    "name": "Muhammad Zuhaib",
     "workshop": "lsw-2026"
   },
   {
@@ -970,16 +405,6 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "195",
-    "name": "Ghulam Muhammad",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "196",
-    "name": "Shakir Latif",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "197",
     "name": "Dua Fatima",
     "workshop": "lsw-2026"
@@ -987,11 +412,6 @@
   {
     "id": "198",
     "name": "Laraib",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "199",
-    "name": "Iqra Iqbal Quershi",
     "workshop": "lsw-2026"
   },
   {
@@ -1007,11 +427,6 @@
   {
     "id": "202",
     "name": "Kashaf Batool",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "203",
-    "name": "Atiqa Qayyum",
     "workshop": "lsw-2026"
   },
   {
@@ -1055,33 +470,13 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "212",
-    "name": "Sehar Khair Muhammad",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "213",
-    "name": "Fatima Sanaullah",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "214",
     "name": "Hafsa Naeem",
     "workshop": "lsw-2026"
   },
   {
-    "id": "215",
-    "name": "Laiba Naeem",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "216",
     "name": "Sidra",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "217",
-    "name": "Rabiah maqsood",
     "workshop": "lsw-2026"
   },
   {
@@ -1100,23 +495,8 @@
     "workshop": "lsw-2026"
   },
   {
-    "id": "221",
-    "name": "Muhammad Adeel",
-    "workshop": "lsw-2026"
-  },
-  {
     "id": "222",
     "name": "Rana Muhammad Asim",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "223",
-    "name": "Inzamam UL Haq",
-    "workshop": "lsw-2026"
-  },
-  {
-    "id": "224",
-    "name": "Rai Muhammad Hassnain",
     "workshop": "lsw-2026"
   },
   {
