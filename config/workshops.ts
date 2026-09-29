@@ -143,7 +143,7 @@ export const WORKSHOPS: WorkshopDefinition[] = [
       "Laptop Survival Workshop: From Fresh Windows Installation to Complete PC Setup",
     workshopCode: "LSW",
     eventYear: "2026",
-    eventDate: "10 August 2026",
+    eventDate: "29 SEP 2026",
     organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
     templatePath: "/templates/lsw-2026.png",
     layout: DEFAULT_LAYOUT_CONFIG,
