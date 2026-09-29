@@ -117,7 +117,7 @@ export interface WorkshopDefinition {
    *  field and in URLs internally. Lowercase, hyphenated, never shown
    *  to users directly. Must be unique. */
   key: string;
-  /** Short display name, e.g. "Laptop Survival Workshop" */
+  /** Short display name, e.g. "Artificial Intelligence Workshop" */
   workshopName: string;
   /** Full descriptive title, e.g. for certificate subtitles */
   workshopFullTitle: string;
@@ -138,9 +138,9 @@ export interface WorkshopDefinition {
 export const WORKSHOPS: WorkshopDefinition[] = [
   {
     key: "lsw-2026",
-    workshopName: "Laptop Survival Workshop",
+    workshopName: "Artificial Intelligence Workshop",
     workshopFullTitle:
-      "Laptop Survival Workshop: From Fresh Windows Installation to Complete PC Setup",
+      "Artificial Intelligence Workshop: From Fresh Windows Installation to Complete PC Setup",
     workshopCode: "LSW",
     eventYear: "2026",
     eventDate: "29 SEP 2026",
