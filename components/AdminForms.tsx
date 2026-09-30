@@ -5,6 +5,7 @@ import NextImage from "next/image";
 import { DEFAULT_LAYOUT_CONFIG } from "@/config/certificate.config";
 import type { LayoutConfig } from "@/config/workshops";
 import { detectTemplateLayout } from "@/lib/detectTemplateLayout";
+import { useAdminToast } from "@/app/admin/AdminShell";
 
 type WorkshopSummary = { key: string; workshopName: string };
 
@@ -470,6 +471,7 @@ export function ManageWorkshops({
   workshops: WorkshopSummary[];
   onDeleted: (workshop: WorkshopSummary, deletedParticipants: number) => void;
 }) {
+  const toast = useAdminToast();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -489,8 +491,10 @@ export function ManageWorkshops({
         workshop: workshop.key,
       });
       onDeleted(workshop, data.deletedParticipants);
+      toast({ title: "Workshop deleted", description: `${workshop.workshopName} and ${data.deletedParticipants} participant record(s) removed.`, tone: "success" });
     } catch (e: any) {
       setError(e.message);
+      toast({ title: "Could not delete workshop", description: e.message, tone: "error" });
     } finally {
       setBusyKey(null);
     }
@@ -550,6 +554,7 @@ export function AddWorkshopForm({
   password: string;
   onDone: (w: WorkshopSummary) => void;
 }) {
+  const toast = useAdminToast();
   const [key, setKey] = useState("");
   const [workshopName, setWorkshopName] = useState("");
   const [workshopFullTitle, setWorkshopFullTitle] = useState("");
@@ -663,6 +668,8 @@ export function AddWorkshopForm({
       });
       onDone(data.workshop);
       setNote(data.note);
+      toast({ title: "Workshop added", description: `${data.workshop.workshopName} is ready.`, tone: "success" });
+      if (data.note) toast({ title: "Workshop saved with a note", description: data.note, tone: "info" });
       setKey("");
       setWorkshopName("");
       setWorkshopFullTitle("");
@@ -671,6 +678,7 @@ export function AddWorkshopForm({
       setFile(null);
     } catch (e: any) {
       setError(e.message);
+      toast({ title: "Could not add workshop", description: e.message, tone: "error" });
     } finally {
       setBusy(false);
     }
@@ -962,6 +970,7 @@ export function AddParticipantsForm({
   workshops: WorkshopSummary[];
   onDone: (statusMsg: string) => void;
 }) {
+  const toast = useAdminToast();
   const [workshop, setWorkshop] = useState("");
   const [entries, setEntries] = useState([{ id: "", name: "" }]);
   const [busy, setBusy] = useState(false);
@@ -982,9 +991,12 @@ export function AddParticipantsForm({
         `${data.added} participant(s) added:\n${data.assignedIds.join("\n")}`,
       );
       setSkipped(data.skipped || []);
+      toast({ title: "Participants added", description: `${data.added} participant record(s) saved.`, tone: "success" });
+      if (data.skipped?.length) toast({ title: "Some entries were skipped", description: `${data.skipped.length} duplicate or invalid ID(s) need review.`, tone: "info" });
       setEntries([{ id: "", name: "" }]);
     } catch (e: any) {
       setError(e.message);
+      toast({ title: "Could not add participants", description: e.message, tone: "error" });
     } finally {
       setBusy(false);
     }

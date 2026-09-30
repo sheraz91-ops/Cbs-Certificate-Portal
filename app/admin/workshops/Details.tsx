@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useAdminPassword } from "../AdminShell";
+import { useAdminPassword, useAdminToast } from "../AdminShell";
 
 type Participant = { id: string; name: string; workshop: string };
 type Workshop = {
@@ -29,6 +29,7 @@ async function loadWorkshops(password: string) {
 
 export default function WorkshopAdminPage() {
   const password = useAdminPassword();
+  const toast = useAdminToast();
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,14 +44,17 @@ export default function WorkshopAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [password]);
 
-  async function fetchDetails(adminPassword: string) {
+  async function fetchDetails(adminPassword: string, showSuccess = false) {
     setLoading(true);
     setError(null);
     try {
       setWorkshops(await loadWorkshops(adminPassword));
       sessionStorage.setItem("admin_pw", adminPassword);
+      if (showSuccess) toast({ title: "Workshop data refreshed", description: "The list is up to date.", tone: "success" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load workshops");
+      const message = err instanceof Error ? err.message : "Unable to load workshops";
+      setError(message);
+      toast({ title: "Could not load workshop data", description: message, tone: "error" });
     } finally {
       setLoading(false);
     }
@@ -80,8 +84,11 @@ export default function WorkshopAdminPage() {
       setWorkshops((current) => current.map((item) => item.key === workshop.key
         ? { ...item, participants: item.participants.filter((user) => !(user.id === participant.id && user.name === participant.name)) }
         : item));
+      toast({ title: "Participant deleted", description: `${participant.name} was removed from ${workshop.workshopName}.`, tone: "success" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to delete participant");
+      const message = err instanceof Error ? err.message : "Unable to delete participant";
+      setError(message);
+      toast({ title: "Could not delete participant", description: message, tone: "error" });
     } finally {
       setDeletingUser(null);
     }
@@ -95,7 +102,7 @@ export default function WorkshopAdminPage() {
             <h1 className="text-3xl font-bold">All workshops</h1>
             <p className="mt-1 text-slate-400">Workshop information, certificate templates, and registered participants.</p>
           </div>
-          <button type="button" onClick={() => void fetchDetails(password)} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-900">
+          <button type="button" onClick={() => void fetchDetails(password, true)} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-900">
             {loading ? "Refreshing…" : "Refresh"}
           </button>
         </div>

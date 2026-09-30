@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAdminPassword } from "../AdminShell";
+import { useAdminPassword, useAdminToast } from "../AdminShell";
 import { AddParticipantsForm } from "@/components/AdminForms";
 
 type WorkshopSummary = { key: string; workshopName: string };
 
 export default function ParticipantsPage() {
   const password = useAdminPassword();
+  const toast = useAdminToast();
   const [workshops, setWorkshops] = useState<WorkshopSummary[]>([]);
-  const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -21,8 +21,12 @@ export default function ParticipantsPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to load workshops");
       setWorkshops(data.workshops);
-    }).catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load workshops"));
-  }, [password]);
+    }).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : "Unable to load workshops";
+      setError(message);
+      toast({ title: "Could not load workshops", description: message, tone: "error" });
+    });
+  }, [password, toast]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -31,9 +35,8 @@ export default function ParticipantsPage() {
         <h1 className="mt-2 text-3xl font-bold">Add Participants</h1>
         <p className="mt-2 text-sm text-slate-400">Choose a workshop, then enter each participant with an optional certificate ID.</p>
       </header>
-      {status && <p role="status" className="whitespace-pre-line rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{status}</p>}
       {error && <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>}
-      <AddParticipantsForm password={password} workshops={workshops} onDone={setStatus} />
+      <AddParticipantsForm password={password} workshops={workshops} onDone={() => undefined} />
     </div>
   );
 }
