@@ -463,5 +463,15 @@
     "id": "402",
     "name": "Saba",
     "workshop": "nbw-2026"
+  },
+  {
+    "id": "401",
+    "name": "Anfal hoor",
+    "workshop": "lsw-2026"
+  },
+  {
+    "id": "402",
+    "name": "Saba",
+    "workshop": "lsw-2026"
   }
 ]
