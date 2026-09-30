@@ -6,6 +6,7 @@ type Box = {
   top: number;
   bottom: number;
   area: number;
+  fillRatio: number;
   color: string;
 };
 
@@ -147,6 +148,7 @@ function findTextComponent(
         top: minY,
         bottom: maxY,
         area,
+        fillRatio: area / Math.max((maxX - minX + 1) * (maxY - minY + 1), 1),
         color: averageColor(pixels, width, sampleIndices),
       };
 
@@ -187,6 +189,20 @@ function colorToTextFieldColor(color: string): string {
   return color;
 }
 
+function boxCenterY(box: Box): number {
+  return (box.top + box.bottom + 1) / 2;
+}
+
+function boxOverlapRatio(a: Box, b: Box): number {
+  const overlapLeft = Math.max(a.left, b.left);
+  const overlapRight = Math.min(a.right, b.right);
+  const overlapTop = Math.max(a.top, b.top);
+  const overlapBottom = Math.min(a.bottom, b.bottom);
+  if (overlapLeft > overlapRight || overlapTop > overlapBottom) return 0;
+  const overlapArea = (overlapRight - overlapLeft + 1) * (overlapBottom - overlapTop + 1);
+  return overlapArea / Math.min(a.area, b.area);
+}
+
 export async function detectTemplateLayout(file: File): Promise<LayoutConfig> {
   const image = await loadImageFromFile(file);
   const canvas = document.createElement("canvas");
@@ -204,6 +220,17 @@ export async function detectTemplateLayout(file: File): Promise<LayoutConfig> {
 
   const nameBox = findTextComponent(pixels, canvas.width, canvas.height, NAME_REGION, "wide");
   const idBox = findTextComponent(pixels, canvas.width, canvas.height, ID_REGION, "compact");
+  const relativeVerticalGap = (boxCenterY(idBox) - boxCenterY(nameBox)) / canvas.height;
+  const overlapRatio = boxOverlapRatio(nameBox, idBox);
+
+  if (
+    nameBox.fillRatio > 0.55 ||
+    idBox.fillRatio > 0.55 ||
+    relativeVerticalGap < 0.08 ||
+    overlapRatio > 0.2
+  ) {
+    throw new Error("Auto-detection found invalid placeholder geometry; please adjust layout manually");
+  }
 
   const width = canvas.width;
   const height = canvas.height;
