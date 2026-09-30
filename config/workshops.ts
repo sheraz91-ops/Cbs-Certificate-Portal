@@ -149,7 +149,66 @@ export const WORKSHOPS: WorkshopDefinition[] = [
     layout: DEFAULT_LAYOUT_CONFIG,
   },
 
-                      // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
+                        {
+    key: "nbw-2026",
+    workshopName: "Laptop Optimization Workshop",
+    workshopFullTitle:
+      "Workshop Designed to deliver practical skills related to Laptops ",
+    workshopCode: "NBW",
+    eventYear: "2026",
+    eventDate: "30 December 2026",
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: "/templates/nbw-2026.png",
+    layout:     {
+        "nameField": {
+            "centerXRatio": 0.8093922651933702,
+            "centerYRatio": 0.5883977900552486,
+            "maskBox": {
+                "leftRatio": 0.7548342541436464,
+                "rightRatio": 0.8632596685082873,
+                "topRatio": 0.5248618784530387,
+                "bottomRatio": 0.651012891344383
+            },
+            "font": "serif",
+            "color": "#1b63a2",
+            "maxFontSize": 42,
+            "minFontSize": 16,
+            "maxWidthRatio": 0.4
+        },
+        "idField": {
+            "startXRatio": 0.7548342541436464,
+            "centerYRatio": 0.606353591160221,
+            "maskBox": {
+                "leftRatio": 0.7548342541436464,
+                "rightRatio": 0.8598066298342542,
+                "topRatio": 0.5607734806629834,
+                "bottomRatio": 0.651012891344383
+            },
+            "font": "sans-bold",
+            "color": "#225b8e",
+            "label": "",
+            "maxFontSize": 18,
+            "minFontSize": 8,
+            "maxWidthRatio": 0.13218232044198897
+        },
+        "qrField": {
+            "box": {
+                "leftRatio": 0.8219,
+                "rightRatio": 0.9116,
+                "topRatio": 0.2533,
+                "bottomRatio": 0.373
+            },
+            "caption": "SCAN TO VERIFY",
+            "captionCenterXRatio": 0.8667,
+            "captionCenterYRatio": 0.3859,
+            "captionFontSize": 8.5,
+            "captionColor": "#0b1c47"
+        },
+        "maskColor": "#f9f9f9"
+    },
+  },
+
+  // --- EXAMPLE: duplicate & fill in for your next workshop -----------------
   // {
   //   key: "aw-2026",
   //   workshopName: "Another Workshop",
