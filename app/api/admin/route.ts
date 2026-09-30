@@ -213,19 +213,30 @@ async function handleAddWorkshop(body: any) {
 }
 
 // ---- add-participants ---------------------------------------------------
-// body: { password, action:"add-participants", workshop, names }
-// `names` is newline-separated. Each line is either just a name (gets the
-// next auto-incremented sequence number for that workshop) or "Name, ID"
-// to pin a specific number.
+// body: { password, action:"add-participants", workshop, entries }
+// Each entry has a name and an optional ID. Legacy newline-separated names
+// remain accepted for compatibility.
 
 async function handleAddParticipants(body: any) {
   const { workshop, names } = body;
 
-  if (!workshop || typeof names !== "string" || !names.trim()) {
-    return NextResponse.json(
-      { error: "workshop and names (one per line) are required" },
-      { status: 400 }
-    );
+  const entries: { name: string; id?: string }[] = Array.isArray(body.entries)
+    ? body.entries.map((entry: any) => ({
+        name: typeof entry?.name === "string" ? entry.name.trim() : "",
+        id: typeof entry?.id === "string" ? entry.id.trim() : "",
+      }))
+    : typeof names === "string"
+      ? names.split("\n").map((rawLine: string) => {
+          const line = rawLine.trim();
+          const comma = line.lastIndexOf(",");
+          return comma < 0
+            ? { name: line, id: "" }
+            : { name: line.slice(0, comma).trim(), id: line.slice(comma + 1).trim() };
+        })
+      : [];
+
+  if (!workshop || !entries.some((entry) => entry.name)) {
+    return NextResponse.json({ error: "workshop and at least one participant name are required" }, { status: 400 });
   }
 
   const existingFile = await getFile(PARTICIPANTS_PATH);
@@ -240,32 +251,27 @@ async function handleAddParticipants(body: any) {
 
   const newEntries: Participant[] = [];
   const skipped: string[] = [];
+  const requestedIds = new Set(entries.map((entry) => entry.id).filter(Boolean));
 
-  for (const rawLine of names.split("\n")) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    let name: string;
-    let id: string;
-
-    if (line.includes(",")) {
-      const [namePart, idPart] = line.split(",").map((p) => p.trim());
-      if (!namePart || !idPart) {
-        skipped.push(line);
-        continue;
+  for (const entry of entries) {
+    const name = entry.name;
+    if (!name) continue;
+    if (!entry.id) {
+      while (
+        requestedIds.has(String(nextId)) ||
+        participants.some((participant) => participant.workshop === workshop && participant.id === String(nextId)) ||
+        newEntries.some((participant) => participant.id === String(nextId))
+      ) {
+        nextId += 1;
       }
-      name = namePart;
-      id = idPart;
-    } else {
-      name = line;
-      id = String(nextId);
     }
+    const id = entry.id || String(nextId);
 
     const alreadyUsed =
       participants.some((p) => p.workshop === workshop && p.id === id) ||
       newEntries.some((p) => p.workshop === workshop && p.id === id);
     if (alreadyUsed) {
-      skipped.push(`${line}  (id ${id} already used in this workshop, skipped)`);
+      skipped.push(`${name} (ID ${id} is already used in this workshop)`);
       continue;
     }
 
