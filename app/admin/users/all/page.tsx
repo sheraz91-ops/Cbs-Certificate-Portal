@@ -4,15 +4,17 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getUsers } from "@/features/users/api";
-import { useAdminPassword } from "../../AdminShell";
+import { useAdminSession } from "../../AdminShell";
+import InputField from "@/components/InputField";
+import { searchTextSchema } from "@/lib/validation/schemas";
 
 export default function AllUsersPage() {
-  const password = useAdminPassword();
+  const authenticated = useAdminSession();
   const [search, setSearch] = useState("");
   const usersQuery = useQuery({
     queryKey: ["admin", "users"],
-    queryFn: () => getUsers(password),
-    enabled: Boolean(password),
+    queryFn: () => getUsers(),
+    enabled: authenticated,
   });
   const users = usersQuery.data ?? [];
   const filteredUsers = useMemo(() => {
@@ -34,7 +36,7 @@ export default function AllUsersPage() {
           <p className="text-sm text-slate-400">{users.length} registered user{users.length === 1 ? "" : "s"}</p>
           <label className="text-xs font-medium text-slate-300">
             Search users
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ID, name, email, registration, department" className="mt-1.5 h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500 sm:w-80" />
+            <InputField value={search} onChange={(event) => setSearch(event.target.value)} validationSchema={searchTextSchema} placeholder="ID, name, email, registration, department" className="mt-1.5 h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500 sm:w-80" />
           </label>
         </div>
         {usersQuery.isError ? (

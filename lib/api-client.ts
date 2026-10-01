@@ -1,4 +1,5 @@
 import type { ApiEnvelope, ApiErrorContent } from "@/types/api";
+import { apiEnvelopeSchema } from "@/lib/validation/schemas";
 
 export class ApiRequestError extends Error {
   readonly Code: number;
@@ -23,7 +24,10 @@ async function requestData<T>(
   init?: RequestInit,
   responseType: "json" | "arrayBuffer" = "json",
 ): Promise<ApiEnvelope<T> | ArrayBuffer> {
-  const response = await fetch(url, init);
+  const response = await fetch(url, {
+    ...init,
+    credentials: init?.credentials ?? "same-origin",
+  });
   if (responseType === "arrayBuffer") {
     if (!response.ok) throw new Error(`Unable to load asset (${response.status})`);
     return response.arrayBuffer();
@@ -31,12 +35,22 @@ async function requestData<T>(
 
   let result: ApiEnvelope<T>;
   try {
-    result = await response.json() as ApiEnvelope<T>;
+    const parsed = apiEnvelopeSchema.safeParse(await response.json());
+    if (!parsed.success) throw new Error("Invalid API envelope");
+    result = parsed.data as ApiEnvelope<T>;
   } catch {
     throw new Error(`The server returned an invalid response (${response.status})`);
   }
 
   if (!response.ok || result.Status !== "Success") {
+    if (
+      response.status === 401 &&
+      url.startsWith("/api/admin/") &&
+      !url.startsWith("/api/admin/session/") &&
+      typeof window !== "undefined"
+    ) {
+      window.dispatchEvent(new Event("admin-session-expired"));
+    }
     throw new ApiRequestError(result as ApiEnvelope<unknown>);
   }
   return result;

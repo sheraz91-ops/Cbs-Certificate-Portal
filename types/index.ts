@@ -12,6 +12,8 @@ export interface Participant {
   name: string;
   /** Workshop key this participant belongs to. */
   workshop: string;
+  /** Assigned user ID, if this is a registered user enrollment. */
+  userId?: string;
 }
 
 /** A resolved candidate certificate, used when a lookup matches more

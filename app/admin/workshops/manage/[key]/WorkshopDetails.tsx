@@ -7,22 +7,22 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteParticipant } from "@/features/participants/api";
 import { deleteWorkshop, getWorkshopDetails, type WorkshopDetails as WorkshopRecord } from "@/features/workshops/api";
-import { useAdminPassword, useAdminToast } from "../../../AdminShell";
+import { useAdminSession, useAdminToast } from "../../../AdminShell";
 
 export default function WorkshopDetails({ workshopKey }: { workshopKey: string }) {
-  const password = useAdminPassword();
+  const authenticated = useAdminSession();
   const toast = useAdminToast();
   const router = useRouter();
   const queryClient = useQueryClient();
   const queryKey = ["admin", "workshop-details"];
   const workshopsQuery = useQuery({
     queryKey,
-    queryFn: () => getWorkshopDetails(password),
-    enabled: Boolean(password),
+    queryFn: () => getWorkshopDetails(),
+    enabled: authenticated,
   });
   const workshop = workshopsQuery.data?.find((item) => item.key === workshopKey);
   const participantMutation = useMutation({
-    mutationFn: (input: { id: string; name: string }) => deleteParticipant(password, { ...input, workshop: workshopKey }),
+    mutationFn: (input: { id: string; name: string }) => deleteParticipant({ ...input, workshop: workshopKey }),
     onSuccess: async (_, deleted) => {
       queryClient.setQueryData<WorkshopRecord[]>(queryKey, (current = []) => current.map((item) => item.key === workshopKey
         ? { ...item, participants: item.participants.filter((participant) => !(participant.id === deleted.id && participant.name === deleted.name)) }
@@ -31,7 +31,7 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
     },
   });
   const removeWorkshopMutation = useMutation({
-    mutationFn: () => deleteWorkshop(password, workshopKey),
+    mutationFn: () => deleteWorkshop(workshopKey),
     onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "workshops"] }),

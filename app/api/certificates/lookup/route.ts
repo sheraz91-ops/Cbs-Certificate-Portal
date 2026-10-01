@@ -7,16 +7,24 @@ import ParticipantModel from "@/models/Participant";
 import WorkshopModel from "@/models/Workshop";
 import type { CertificateCandidate, DatabaseLookupResult, Participant } from "@/types";
 import type { WorkshopDefinition } from "@/types/workshop";
+import { certificateLookupSchema, validationMessage } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  let body: unknown;
   try {
-    const body = await request.json() as { id?: unknown; workshop?: unknown };
-    if (typeof body.id !== "string" || !body.id.trim()) return errorResponse("A certificate ID is required", 400);
+    body = await request.json();
+  } catch {
+    return errorResponse("Invalid JSON body", 400);
+  }
+  const parsed = certificateLookupSchema.safeParse(body);
+  if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
+
+  try {
     await connectToDatabase();
-    const selectedKey = typeof body.workshop === "string" ? body.workshop : undefined;
-    const parts = body.id.trim().toUpperCase().split(/[\s\-_/]+/).filter(Boolean);
+    const { id, workshop: selectedKey } = parsed.data;
+    const parts = id.trim().toUpperCase().split(/[\s\-_/]+/).filter(Boolean);
     const workshopCode = parts.find((part) => /^[A-Z0-9]+$/.test(part) && part !== "CBS" && !/^\d+$/.test(part));
     const year = parts.find((part) => /^\d{4}$/.test(part));
     const workshopFilter = selectedKey
@@ -27,7 +35,7 @@ export async function POST(request: NextRequest) {
     const workshops = await WorkshopModel.find(workshopFilter)
       .select("-templateData")
       .lean() as unknown as WorkshopDefinition[];
-    const result = await lookup(body.id, selectedKey, workshops);
+    const result = await lookup(id, selectedKey, workshops);
     const message = result.status === "found"
       ? "Certificate found"
       : result.status === "ambiguous"

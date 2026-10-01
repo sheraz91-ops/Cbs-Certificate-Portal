@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getUserById } from "@/features/users/api";
-import { useAdminPassword } from "../../AdminShell";
+import { useAdminSession } from "../../AdminShell";
 
 const detailFields = [
   ["emailAddress", "Email Address"],
@@ -18,11 +18,11 @@ const detailFields = [
 ] as const;
 
 export default function UserDetails({ userId }: { userId: string }) {
-  const password = useAdminPassword();
+  const authenticated = useAdminSession();
   const userQuery = useQuery({
     queryKey: ["admin", "users", userId],
-    queryFn: () => getUserById(password, userId),
-    enabled: Boolean(password && userId),
+    queryFn: () => getUserById(userId),
+    enabled: Boolean(authenticated && userId),
   });
   const user = userQuery.data;
 

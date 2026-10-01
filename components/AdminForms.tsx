@@ -9,24 +9,10 @@ import { detectTemplateLayout } from "@/lib/detectTemplateLayout";
 import { useAdminToast } from "@/app/admin/AdminShell";
 import { addWorkshop as createWorkshop } from "@/features/workshops/api";
 import { addParticipants } from "@/features/participants/api";
+import InputField from "@/components/InputField";
+import { addParticipantsSchema, createWorkshopSchema, layoutPercentSchema, templateFileMetadataSchema, validationMessage, workshopKeySchema, userIdSchema } from "@/lib/validation/schemas";
 
 type WorkshopSummary = { key: string; workshopName: string };
-
-// Session-only password storage” cleared on tab close. The real gate is
-// server-side: the API route checks ADMIN_PASSWORD on every request no
-// matter what the client sends.
-function usePassword() {
-  const [password, setPassword] = useState("");
-  useEffect(() => {
-    const saved = sessionStorage.getItem("admin_pw");
-    if (saved) setPassword(saved);
-  }, []);
-  const save = (pw: string) => {
-    setPassword(pw);
-    sessionStorage.setItem("admin_pw", pw);
-  };
-  return { password, save };
-}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -349,10 +335,11 @@ function LayoutEditor({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <label className="space-y-1 text-[11px] text-slate-400">
               Left %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.nameField.maskBox.leftRatio)}
                 onChange={(e) =>
                   update("nameField", "leftRatio", e.target.value)
@@ -361,10 +348,11 @@ function LayoutEditor({
             </label>
             <label className="space-y-1 text-[11px] text-slate-400">
               Right %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.nameField.maskBox.rightRatio)}
                 onChange={(e) =>
                   update("nameField", "rightRatio", e.target.value)
@@ -373,10 +361,11 @@ function LayoutEditor({
             </label>
             <label className="space-y-1 text-[11px] text-slate-400">
               Top %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.nameField.maskBox.topRatio)}
                 onChange={(e) =>
                   update("nameField", "topRatio", e.target.value)
@@ -385,10 +374,11 @@ function LayoutEditor({
             </label>
             <label className="space-y-1 text-[11px] text-slate-400">
               Bottom %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.nameField.maskBox.bottomRatio)}
                 onChange={(e) =>
                   update("nameField", "bottomRatio", e.target.value)
@@ -405,20 +395,22 @@ function LayoutEditor({
           <div className="mt-3 grid grid-cols-2 gap-2">
             <label className="space-y-1 text-[11px] text-slate-400">
               Left %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.idField.maskBox.leftRatio)}
                 onChange={(e) => update("idField", "leftRatio", e.target.value)}
               />
             </label>
             <label className="space-y-1 text-[11px] text-slate-400">
               Right %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.idField.maskBox.rightRatio)}
                 onChange={(e) =>
                   update("idField", "rightRatio", e.target.value)
@@ -427,20 +419,22 @@ function LayoutEditor({
             </label>
             <label className="space-y-1 text-[11px] text-slate-400">
               Top %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.idField.maskBox.topRatio)}
                 onChange={(e) => update("idField", "topRatio", e.target.value)}
               />
             </label>
             <label className="space-y-1 text-[11px] text-slate-400">
               Bottom %
-              <input
+              <InputField
                 className={controlClass}
                 type="number"
                 step="0.1"
+                validationSchema={layoutPercentSchema}
                 value={pct(layout.idField.maskBox.bottomRatio)}
                 onChange={(e) =>
                   update("idField", "bottomRatio", e.target.value)
@@ -455,16 +449,14 @@ function LayoutEditor({
 }
 
 export function AddWorkshopForm({
-  password,
   onDone,
 }: {
-  password: string;
   onDone: (w: WorkshopSummary) => void;
 }) {
   const toast = useAdminToast();
   const queryClient = useQueryClient();
   const addMutation = useMutation({
-    mutationFn: (input: Parameters<typeof createWorkshop>[1]) => createWorkshop(password, input),
+    mutationFn: (input: Parameters<typeof createWorkshop>[0]) => createWorkshop(input),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
@@ -572,17 +564,12 @@ export function AddWorkshopForm({
       const imageExt = file?.name.split(".").pop();
       const layout =
         draftLayout ?? (file ? await detectTemplateLayout(file) : undefined);
-      const data = await addMutation.mutateAsync({
-        key,
-        workshopName,
-        workshopFullTitle,
-        workshopCode,
-        eventYear,
-        eventDate,
-        imageBase64,
-        imageExt,
-        layout,
+      const parsed = createWorkshopSchema.safeParse({
+        key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate,
+        imageBase64, imageExt, layout,
       });
+      if (!parsed.success) throw new Error(validationMessage(parsed.error));
+      const data = await addMutation.mutateAsync(parsed.data);
       onDone(data.workshop);
       setNote(data.note);
       toast({
@@ -630,9 +617,10 @@ export function AddWorkshopForm({
             Workshop Key
           </label>
 
-          <input
+          <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
             placeholder="nbw-2026"
+            validationSchema={workshopKeySchema}
             value={key}
             onChange={(e) => setKey(e.target.value)}
           />
@@ -647,9 +635,10 @@ export function AddWorkshopForm({
             Short Display Name
           </label>
 
-          <input
+          <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
             placeholder="National Bootcamp Workshop"
+            validationSchema={createWorkshopSchema.shape.workshopName}
             value={workshopName}
             onChange={(e) => setWorkshopName(e.target.value)}
           />
@@ -660,9 +649,10 @@ export function AddWorkshopForm({
             Full Descriptive Title
           </label>
 
-          <input
+          <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
             placeholder="Full workshop title"
+            validationSchema={createWorkshopSchema.shape.workshopFullTitle}
             value={workshopFullTitle}
             onChange={(e) => setWorkshopFullTitle(e.target.value)}
           />
@@ -674,9 +664,10 @@ export function AddWorkshopForm({
               Workshop Code
             </label>
 
-            <input
+            <InputField
               className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm uppercase text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
               placeholder="NBW"
+              validationSchema={createWorkshopSchema.shape.workshopCode}
               value={workshopCode}
               onChange={(e) => setWorkshopCode(e.target.value.toUpperCase())}
             />
@@ -687,9 +678,10 @@ export function AddWorkshopForm({
               Year
             </label>
 
-            <input
+            <InputField
               className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
               placeholder="2026"
+              validationSchema={createWorkshopSchema.shape.eventYear}
               value={eventYear}
               onChange={(e) => setEventYear(e.target.value)}
             />
@@ -701,9 +693,10 @@ export function AddWorkshopForm({
             Event Date
           </label>
 
-          <input
+          <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
             placeholder="12 December 2026"
+            validationSchema={createWorkshopSchema.shape.eventDate}
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
           />
@@ -739,11 +732,23 @@ export function AddWorkshopForm({
               PNG or JPEG image
             </span>
 
-            <input
+            <InputField
               type="file"
               accept="image/png,image/jpeg"
               className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              validationSchema={templateFileMetadataSchema}
+              onChange={(e) => {
+                const selected = e.target.files?.[0] || null;
+                const parsedFile = selected ? templateFileMetadataSchema.safeParse({ type: selected.type, size: selected.size }) : null;
+                if (parsedFile && !parsedFile.success) {
+                  setFile(null);
+                  setError(validationMessage(parsedFile.error));
+                  e.target.value = "";
+                  return;
+                }
+                setError(null);
+                setFile(selected);
+              }}
             />
           </label>
 
@@ -892,11 +897,9 @@ export function AddWorkshopForm({
 }
 
 export function AddParticipantsForm({
-  password,
   workshops,
   onDone,
 }: {
-  password: string;
   workshops: WorkshopSummary[];
   onDone: (statusMsg: string) => void;
 }) {
@@ -904,7 +907,7 @@ export function AddParticipantsForm({
   const queryClient = useQueryClient();
   const addMutation = useMutation({
     mutationFn: (input: { workshop: string; userIds: string[] }) =>
-      addParticipants(password, input.workshop, input.userIds),
+      addParticipants(input.workshop, input.userIds),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
@@ -923,19 +926,16 @@ export function AddParticipantsForm({
       setError("Select a workshop first.");
       return;
     }
-    const incomplete = entries.findIndex((entry) => !entry.trim());
-    if (incomplete >= 0) {
-      setError(`Enter an assigned user ID for row ${incomplete + 1}.`);
+    const parsed = addParticipantsSchema.safeParse({ workshop, userIds: entries });
+    if (!parsed.success) {
+      setError(validationMessage(parsed.error));
       return;
     }
     setBusy(true);
     setError(null);
     setSkipped([]);
     try {
-      const data = await addMutation.mutateAsync({
-        workshop,
-        userIds: entries.map((entry) => entry.trim()),
-      });
+      const data = await addMutation.mutateAsync(parsed.data);
       onDone(
         `${data.added} participant(s) added:\n${data.assignedIds.join("\n")}`,
       );
@@ -1004,9 +1004,10 @@ export function AddParticipantsForm({
             <div key={index} className="flex gap-2">
               <label className="min-w-0 flex-1 text-xs font-medium text-slate-300">
                 Assigned User ID {index + 1}
-                <input
+                <InputField
                   aria-label={`Assigned user ID ${index + 1}`}
                   value={entry}
+                  validationSchema={userIdSchema}
                   onChange={(event) => setEntries((current) => current.map((item, row) => row === index ? event.target.value : item))}
                   placeholder="CBSU-000001"
                   autoComplete="off"

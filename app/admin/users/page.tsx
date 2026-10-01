@@ -4,7 +4,9 @@ import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createUser } from "@/features/users/api";
 import type { UserProfileInput } from "@/types/user";
-import { useAdminPassword, useAdminToast } from "../AdminShell";
+import { useAdminToast } from "../AdminShell";
+import { userProfileSchema, validationMessage } from "@/lib/validation/schemas";
+import InputField from "@/components/InputField";
 
 const fields = [
   ["emailAddress", "Email Address", "email"],
@@ -26,12 +28,11 @@ function emptyUser(): UserProfileInput {
 }
 
 export default function AddUserPage() {
-  const password = useAdminPassword();
   const toast = useAdminToast();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<UserProfileInput>(emptyUser());
   const createMutation = useMutation({
-    mutationFn: (input: UserProfileInput) => createUser(password, input),
+    mutationFn: (input: UserProfileInput) => createUser(input),
     onSuccess: async (user) => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast({ title: "User created", description: `Assigned ID: ${user.userId}`, tone: "success" });
@@ -42,8 +43,12 @@ export default function AddUserPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const cleaned = Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim()])) as UserProfileInput;
-    await createMutation.mutateAsync(cleaned);
+    const parsed = userProfileSchema.safeParse(form);
+    if (!parsed.success) {
+      toast({ title: "Check the user details", description: validationMessage(parsed.error), tone: "error" });
+      return;
+    }
+    await createMutation.mutateAsync(parsed.data);
   }
 
   return (
@@ -64,11 +69,12 @@ export default function AddUserPage() {
             {fields.map(([key, label, type]) => (
               <label key={key} className="block text-xs font-medium text-slate-300">
                 {label} <span className="text-red-300">*</span>
-                <input
+                <InputField
                   required
                   type={type}
                   autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"}
                   value={form[key]}
+                  validationSchema={userProfileSchema.shape[key]}
                   onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500"
                 />

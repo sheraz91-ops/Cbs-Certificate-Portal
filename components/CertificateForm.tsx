@@ -14,6 +14,8 @@ import type {
 } from "@/types";
 import AlertMessage from "./AlertMessage";
 import LoadingSpinner from "./LoadingSpinner";
+import { certificateLookupSchema, validationMessage } from "@/lib/validation/schemas";
+import InputField from "@/components/InputField";
 
 type WorkshopOption = Pick<WorkshopDefinition, "key" | "workshopName">;
 
@@ -37,10 +39,10 @@ export default function CertificateForm() {
     setAlert(null);
     setCandidates([]);
 
-    const trimmedId = certificateId.trim();
-    if (!trimmedId) {
+    const parsedInput = certificateLookupSchema.safeParse({ id: certificateId, workshop: selectedWorkshop || undefined });
+    if (!parsedInput.success) {
       setStatus("error");
-      setAlert({ type: "error", message: "Please enter your Certificate ID." });
+      setAlert({ type: "error", message: validationMessage(parsedInput.error) });
       return;
     }
 
@@ -52,7 +54,7 @@ export default function CertificateForm() {
 
     let result: DatabaseLookupResult;
     try {
-      result = await lookupMutation.mutateAsync({ id: trimmedId, workshop: selectedWorkshop || undefined });
+      result = await lookupMutation.mutateAsync(parsedInput.data);
     } catch {
       setStatus("error");
       setAlert({ type: "error", message: "Unable to look up this certificate. Please try again." });
@@ -126,7 +128,7 @@ export default function CertificateForm() {
             >
               Certificate ID
             </label>
-            <input
+            <InputField
               id="certificateId"
               name="certificateId"
               type="text"
@@ -135,6 +137,7 @@ export default function CertificateForm() {
                 selectedWorkshop ? "e.g. 5" : "e.g. 5 or CBS-LSW-2026-005"
               }
               value={certificateId}
+              validationSchema={certificateLookupSchema.shape.id}
               onChange={(e) => {
                 setCertificateId(e.target.value);
                 if (status !== "idle") setStatus("idle");

@@ -2,17 +2,17 @@
 
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAdminPassword, useAdminToast } from "../AdminShell";
+import { useAdminSession, useAdminToast } from "../AdminShell";
 import { AddParticipantsForm } from "@/components/AdminForms";
 import { getAdminWorkshops } from "@/features/workshops/api";
 
 export default function ParticipantsPage() {
-  const password = useAdminPassword();
+  const authenticated = useAdminSession();
   const toast = useAdminToast();
   const workshopsQuery = useQuery({
     queryKey: ["admin", "workshops"],
-    queryFn: () => getAdminWorkshops(password),
-    enabled: Boolean(password),
+    queryFn: () => getAdminWorkshops(),
+    enabled: authenticated,
   });
   const workshops = workshopsQuery.data ?? [];
   const error = workshopsQuery.error instanceof Error ? workshopsQuery.error.message : "";
@@ -41,7 +41,6 @@ export default function ParticipantsPage() {
         </p>
       )}
       <AddParticipantsForm
-        password={password}
         workshops={workshops}
         onDone={() => undefined}
       />

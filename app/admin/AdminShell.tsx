@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
-import { getAdminWorkshops } from "@/features/workshops/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAdminSession, loginAdmin, logoutAdmin } from "@/features/admin/api";
+import InputField from "@/components/InputField";
+import { adminLoginSchema, validationMessage } from "@/lib/validation/schemas";
 import {
   createContext,
   useContext,
@@ -13,7 +15,7 @@ import {
   type ReactNode,
 } from "react";
 
-const AdminPasswordContext = createContext("");
+const AdminSessionContext = createContext(false);
 type ToastTone = "success" | "error" | "info";
 type ToastInput = { title: string; description?: string; tone?: ToastTone };
 type ToastItem = ToastInput & { id: number };
@@ -21,43 +23,57 @@ const AdminToastContext = createContext<(toast: ToastInput) => void>(
   () => undefined,
 );
 
-export function useAdminPassword() {
-  return useContext(AdminPasswordContext);
+export function useAdminSession() {
+  return useContext(AdminSessionContext);
 }
 
 export function useAdminToast() {
   return useContext(AdminToastContext);
 }
 
-async function validatePassword(password: string) {
-  await getAdminWorkshops(password);
-}
+type NavigationLink = { href: string; label: string; icon?: string };
+type NavigationGroup = {
+  key: "workshops" | "users";
+  label: string;
+  icon: string;
+  children: NavigationLink[];
+};
+type NavigationItem = NavigationLink | NavigationGroup;
 
-const navigation = [
+const navigation: NavigationItem[] = [
   { href: "/admin", label: "Overview", icon: "⌂" },
-  { key: "workshops", label: "Workshop", icon: "▦", children: [
-    { href: "/admin/workshops", label: "Create Workshop" },
-    { href: "/admin/workshops/manage", label: "Manage Workshop" },
-  ] },
-  { key: "users", label: "User", icon: "♙", children: [
-    { href: "/admin/users", label: "Add User" },
-    { href: "/admin/users/all", label: "All Users" },
-  ] },
+  {
+    key: "workshops",
+    label: "Workshop",
+    icon: "▦",
+    children: [
+      { href: "/admin/workshops", label: "Create Workshop" },
+      { href: "/admin/workshops/manage", label: "Manage Workshop" },
+    ],
+  },
+  {
+    key: "users",
+    label: "User",
+    icon: "♙",
+    children: [
+      { href: "/admin/users", label: "Add User" },
+      { href: "/admin/users/all", label: "All Users" },
+    ],
+  },
   { href: "/admin/participants", label: "Add Users to Workshop", icon: "＋" },
 ];
 
 export default function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const validateMutation = useMutation({ mutationFn: validatePassword });
-  const validateAdmin = validateMutation.mutateAsync;
-  const [password, setPassword] = useState("");
+  const queryClient = useQueryClient();
+  const [authenticated, setAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [openMenus, setOpenMenus] = useState({
+  const [openMenus, setOpenMenus] = useState<Record<NavigationGroup["key"], boolean>>({
     users: pathname.toLowerCase().startsWith("/admin/users"),
     workshops: pathname.toLowerCase().startsWith("/admin/workshops"),
   });
@@ -66,20 +82,23 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     const savedTheme = localStorage.getItem("admin_theme");
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
 
-    const saved = sessionStorage.getItem("admin_pw") || "";
-    if (!saved) {
+    sessionStorage.removeItem("admin_pw");
+    const hasSessionMarker = sessionStorage.getItem("admin_session") === "active";
+    if (!hasSessionMarker) {
       setReady(true);
       return;
     }
-    validateAdmin(saved)
-      .then(() => setPassword(saved))
-      .catch(() => sessionStorage.removeItem("admin_pw"))
+    getAdminSession()
+      .then(() => setAuthenticated(true))
+      .catch(() => sessionStorage.removeItem("admin_session"))
       .finally(() => setReady(true));
-  }, [validateAdmin]);
+  }, []);
 
   useEffect(() => {
-    if (pathname.toLowerCase().startsWith("/admin/users")) setOpenMenus((current) => ({ ...current, users: true }));
-    if (pathname.toLowerCase().startsWith("/admin/workshops")) setOpenMenus((current) => ({ ...current, workshops: true }));
+    if (pathname.toLowerCase().startsWith("/admin/users"))
+      setOpenMenus((current) => ({ ...current, users: true }));
+    if (pathname.toLowerCase().startsWith("/admin/workshops"))
+      setOpenMenus((current) => ({ ...current, workshops: true }));
   }, [pathname]);
 
   const pushToast = useMemo(
@@ -94,25 +113,54 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     [],
   );
 
+  useEffect(() => {
+    const expireSession = () => {
+      sessionStorage.removeItem("admin_session");
+      setAuthenticated(false);
+      queryClient.removeQueries({ queryKey: ["admin"] });
+    };
+    window.addEventListener("admin-session-expired", expireSession);
+    return () => window.removeEventListener("admin-session-expired", expireSession);
+  }, [queryClient]);
+
   async function unlock(event: React.FormEvent) {
     event.preventDefault();
+    const parsed = adminLoginSchema.safeParse({ password: passwordInput });
+    if (!parsed.success) {
+      setError(validationMessage(parsed.error));
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      await validateAdmin(passwordInput);
-      sessionStorage.setItem("admin_pw", passwordInput);
+      await loginAdmin(passwordInput);
+      sessionStorage.setItem("admin_session", "active");
+      setAuthenticated(true);
       pushToast({
         title: "Admin session unlocked",
-        description: "You can now manage workshops and participants.",
+        description: "You can now manage users, workshops, and participants.",
         tone: "success",
       });
-      setPassword(passwordInput);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Unable to unlock admin area",
       );
     } finally {
+      setPasswordInput("");
       setBusy(false);
+    }
+  }
+
+  async function lockSession() {
+    try {
+      await logoutAdmin();
+    } catch {
+      // Always lock this tab locally, even when the server cannot be reached.
+    } finally {
+      sessionStorage.removeItem("admin_session");
+      setAuthenticated(false);
+      setPasswordInput("");
+      queryClient.removeQueries({ queryKey: ["admin"] });
     }
   }
 
@@ -131,7 +179,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!password) {
+  if (!authenticated) {
     return (
       <main
         data-admin-theme={theme}
@@ -171,11 +219,12 @@ export default function AdminShell({ children }: { children: ReactNode }) {
             >
               Admin password
             </label>
-            <input
+            <InputField
               id="admin-password"
               autoFocus
               type="password"
               value={passwordInput}
+              validationSchema={adminLoginSchema.shape.password}
               onChange={(event) => setPasswordInput(event.target.value)}
               placeholder="Enter your password"
               className="h-12 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
@@ -200,12 +249,21 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const flatNavigation = navigation.flatMap((item) => "children" in item ? item.children : [item]);
-  const currentPage = flatNavigation.find((item) => item.href.toLowerCase() === pathname.toLowerCase())?.label
-    ?? (pathname.toLowerCase().startsWith("/admin/users/") ? "User Details" : pathname.toLowerCase().startsWith("/admin/workshops/") ? "Workshop Details" : "Admin");
+  const flatNavigation = navigation.flatMap((item): NavigationLink[] =>
+    "children" in item ? item.children : [{ href: item.href, label: item.label, icon: item.icon }],
+  );
+  const currentPage =
+    flatNavigation.find(
+      (item) => item.href.toLowerCase() === pathname.toLowerCase(),
+    )?.label ??
+    (pathname.toLowerCase().startsWith("/admin/users/")
+      ? "User Details"
+      : pathname.toLowerCase().startsWith("/admin/workshops/")
+        ? "Workshop Details"
+        : "Admin");
 
   return (
-    <AdminPasswordContext.Provider value={password}>
+    <AdminSessionContext.Provider value={authenticated}>
       <AdminToastContext.Provider value={pushToast}>
         <div
           data-admin-theme={theme}
@@ -234,7 +292,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
             >
               {navigation.map((item) => {
                 if ("children" in item) {
-                  const active = pathname.toLowerCase().startsWith(`/admin/${item.key}`);
+                  const active = pathname
+                    .toLowerCase()
+                    .startsWith(`/admin/${item.key}`);
                   const isOpen = openMenus[item.key];
                   return (
                     <div key={item.label} className="flex shrink-0 flex-col">
@@ -242,19 +302,45 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                         type="button"
                         aria-expanded={isOpen}
                         aria-controls={`admin-${item.key}-submenu`}
-                        onClick={() => setOpenMenus((current) => ({ ...current, [item.key]: !current[item.key] }))}
+                        onClick={() =>
+                          setOpenMenus((current) => ({
+                            ...current,
+                            [item.key]: !current[item.key],
+                          }))
+                        }
                         className={`admin-nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${active ? "is-active" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
                       >
-                        <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center text-base">{item.icon}</span>
+                        <span
+                          aria-hidden="true"
+                          className="flex h-6 w-6 items-center justify-center text-base"
+                        >
+                          {item.icon}
+                        </span>
                         <span className="flex-1">{item.label}</span>
-                        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}>
-                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        >
+                          <path
+                            d="m5 7.5 5 5 5-5"
+                            stroke="currentColor"
+                            strokeWidth="1.7"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
                         </svg>
                       </button>
                       {isOpen && (
-                        <div id={`admin-${item.key}-submenu`} className="mt-1 flex flex-col gap-1 pl-9">
+                        <div
+                          id={`admin-${item.key}-submenu`}
+                          className="mt-1 flex flex-col gap-1 pl-9"
+                        >
                           {item.children.map((child) => {
-                            const childActive = pathname.toLowerCase() === child.href.toLowerCase();
+                            const childActive =
+                              pathname.toLowerCase() ===
+                              child.href.toLowerCase();
                             return (
                               <Link
                                 key={child.href}
@@ -272,7 +358,10 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                   );
                 }
 
-                const active = item.href === "/admin" ? pathname === item.href : pathname.toLowerCase() === item.href.toLowerCase();
+                const active =
+                  item.href === "/admin"
+                    ? pathname === item.href
+                    : pathname.toLowerCase() === item.href.toLowerCase();
                 return (
                   <Link
                     key={item.href}
@@ -280,23 +369,17 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                     aria-current={active ? "page" : undefined}
                     className={`admin-nav-link flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "is-active" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
                   >
-                    <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center text-base">{item.icon}</span>
+                    <span
+                      aria-hidden="true"
+                      className="flex h-6 w-6 items-center justify-center text-base"
+                    >
+                      {item.icon}
+                    </span>
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
             </nav>
-            <div className="mt-auto hidden px-5 pb-5 md:block md:px-6">
-              <div className="admin-session-card rounded-2xl border p-4">
-                <span className="flex items-center gap-2 text-xs font-semibold">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Secure session active
-                </span>
-                <p className="mt-2 text-[11px] leading-5 text-slate-500">
-                  Administrator tools are available for this tab.
-                </p>
-              </div>
-            </div>
           </aside>
 
           <div className="min-w-0 flex-1">
@@ -313,10 +396,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 <ThemeButton theme={theme} onToggle={toggleTheme} />
                 <button
                   type="button"
-                  onClick={() => {
-                    sessionStorage.removeItem("admin_pw");
-                    setPassword("");
-                  }}
+                  onClick={() => void lockSession()}
                   className="admin-utility-button rounded-xl border px-3 py-2 text-xs font-semibold sm:px-3.5 sm:text-sm"
                 >
                   Lock<span className="hidden sm:inline"> session</span>
@@ -371,7 +451,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </AdminToastContext.Provider>
-    </AdminPasswordContext.Provider>
+      </AdminSessionContext.Provider>
   );
 }
 

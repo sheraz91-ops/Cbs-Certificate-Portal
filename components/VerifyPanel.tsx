@@ -7,6 +7,8 @@ import type { WorkshopDefinition } from "@/types/workshop";
 import type { CertificateCandidate, DatabaseLookupResult, Participant, VerifyStatus } from "@/types";
 import { lookupCertificate } from "@/features/certificates/api";
 import LoadingSpinner from "./LoadingSpinner";
+import { certificateLookupSchema } from "@/lib/validation/schemas";
+import InputField from "@/components/InputField";
 
 export default function VerifyPanel() {
   const searchParams = useSearchParams();
@@ -24,7 +26,12 @@ export default function VerifyPanel() {
 
   async function verify(id: string) {
     const trimmed = id.trim();
-    if (!trimmed) return;
+    if (!certificateLookupSchema.safeParse({ id: trimmed }).success) {
+      setResult(null);
+      setCandidates([]);
+      setStatus("not-found");
+      return;
+    }
 
     setStatus("checking");
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -104,13 +111,14 @@ export default function VerifyPanel() {
             >
               Certificate ID
             </label>
-            <input
+            <InputField
               id="verifyId"
               name="verifyId"
               type="text"
               autoComplete="off"
               placeholder="e.g. CBS-LSW-2026-005"
               value={inputValue}
+              validationSchema={certificateLookupSchema.shape.id}
               onChange={(e) => setInputValue(e.target.value)}
               disabled={isChecking}
               className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 placeholder:text-navy-300 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"

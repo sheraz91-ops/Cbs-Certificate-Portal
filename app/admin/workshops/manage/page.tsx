@@ -4,15 +4,17 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getWorkshopDetails } from "@/features/workshops/api";
-import { useAdminPassword } from "../../AdminShell";
+import { useAdminSession } from "../../AdminShell";
+import InputField from "@/components/InputField";
+import { searchTextSchema } from "@/lib/validation/schemas";
 
 export default function ManageWorkshopsPage() {
-  const password = useAdminPassword();
+  const authenticated = useAdminSession();
   const [search, setSearch] = useState("");
   const workshopsQuery = useQuery({
     queryKey: ["admin", "workshop-details"],
-    queryFn: () => getWorkshopDetails(password),
-    enabled: Boolean(password),
+    queryFn: () => getWorkshopDetails(),
+    enabled: authenticated,
   });
   const workshops = workshopsQuery.data ?? [];
   const filteredWorkshops = useMemo(() => {
@@ -34,7 +36,7 @@ export default function ManageWorkshopsPage() {
           <p className="text-sm text-slate-400">{workshops.length} workshop{workshops.length === 1 ? "" : "s"}</p>
           <label className="text-xs font-medium text-slate-300">
             Search workshops
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ID, name, code, or year" className="mt-1.5 h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500 sm:w-72" />
+            <InputField value={search} onChange={(event) => setSearch(event.target.value)} validationSchema={searchTextSchema} placeholder="ID, name, code, or year" className="mt-1.5 h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500 sm:w-72" />
           </label>
         </div>
         {workshopsQuery.isError ? (

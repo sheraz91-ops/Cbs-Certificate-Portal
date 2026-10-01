@@ -15,29 +15,36 @@ Requirements: Node.js 20.19+ and npm.
 
 1. Install dependencies: `npm install`
 2. Copy `.env.example` to `.env.local`.
-3. Set `MONGODB_URI` to a MongoDB connection string. The database name defaults to `CBS`; change it with `MONGODB_DB_NAME` if needed. Set a private `ADMIN_PASSWORD` too.
+3. Set `MONGODB_URI` to a MongoDB connection string. The database name defaults to `CBS`; change it with `MONGODB_DB_NAME` if needed. Set a unique `ADMIN_PASSWORD` of at least 16 bytes. The `CHANGE_ME` value in `.env.example` is a placeholder and is rejected.
 4. Start the app with `npm run dev`.
 
 Open http://localhost:3000. The database is not populated automatically. Create workshops and add participants through the admin pages. Existing MongoDB records remain available; the app no longer imports records from files.
 
-Keep these environment variables server-only. Do not prefix them with `NEXT_PUBLIC_`. For deployment, configure them in the hosting provider's environment settings. MongoDB Atlas users must allow connections from the hosting environment.
+Keep these environment variables server-only. Do not prefix them with `NEXT_PUBLIC_`. The admin password is used only at login; successful login creates an eight-hour, HttpOnly session cookie backed by a revocable MongoDB session. MongoDB stores only a hash of the random session token. The browser keeps only a per-tab session marker in `sessionStorage`. Use HTTPS in production so the session cookie is secure. For deployment, configure the environment variables in the hosting provider's settings. MongoDB Atlas users must allow connections from the hosting environment.
 
 ## Data and project structure
 
 ```text
+app/api/admin/
+  users/{create,list,details}/     Separate admin user endpoints
+  workshops/{create,list,details,delete}/ Separate workshop endpoints
+  participants/{add,delete}/       Separate workshop enrollment endpoints
+  session/{login,status,logout}/   Admin login and session endpoints
 app/api/
-  admin/route.ts                  Admin workshop and participant operations
   certificates/lookup/route.ts    Public certificate lookup
   templates/[key]/route.ts        Serves database-stored templates
   workshops/route.ts              Public workshop list
 models/
   Participant.ts                  Participant schema and unique workshop ID index
+  AdminSession.ts                  Hashed, expiring admin sessions
   User.ts                          Registered user profile schema
   UserSequence.ts                  Atomic assigned user ID counter
   Workshop.ts                     Workshop, layout, and template schema
 lib/
   mongodb.ts                      Cached Mongoose connection
   adminAuth.ts                    Server-side admin password check
+  adminApi.ts                     Shared authentication and DB setup for admin routes
+  adminSession.ts                 Signed HttpOnly admin session handling
   api-client.ts                   Shared getData/postData and envelope handling
   api-response.ts                 Shared server response envelope
 features/
@@ -76,4 +83,4 @@ Templates already in `public/templates/` remain available as static assets. Temp
 
 ## Deployment
 
-Deploy as a Node.js Next.js application (Vercel is supported). Set `MONGODB_URI` and `ADMIN_PASSWORD` in the deployment environment before opening the portal. The app connects to MongoDB from server-side API routes; database credentials are never sent to the browser.
+Deploy as a Node.js Next.js application (Vercel is supported). Set `MONGODB_URI` and a private `ADMIN_PASSWORD` in the deployment environment before opening the portal. Database credentials and the admin password are never stored in browser storage or included in requests after login.
