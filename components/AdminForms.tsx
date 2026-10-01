@@ -9,7 +9,7 @@ import { useAdminToast } from "@/app/admin/AdminShell";
 
 type WorkshopSummary = { key: string; workshopName: string };
 
-// Session-only password storage â€” cleared on tab close. The real gate is
+// Session-only password storage” cleared on tab close. The real gate is
 // server-side: the API route checks ADMIN_PASSWORD on every request no
 // matter what the client sends.
 function usePassword() {
@@ -491,10 +491,18 @@ export function ManageWorkshops({
         workshop: workshop.key,
       });
       onDeleted(workshop, data.deletedParticipants);
-      toast({ title: "Workshop deleted", description: `${workshop.workshopName} and ${data.deletedParticipants} participant record(s) removed.`, tone: "success" });
+      toast({
+        title: "Workshop deleted",
+        description: `${workshop.workshopName} and ${data.deletedParticipants} participant record(s) removed.`,
+        tone: "success",
+      });
     } catch (e: any) {
       setError(e.message);
-      toast({ title: "Could not delete workshop", description: e.message, tone: "error" });
+      toast({
+        title: "Could not delete workshop",
+        description: e.message,
+        tone: "error",
+      });
     } finally {
       setBusyKey(null);
     }
@@ -529,7 +537,7 @@ export function ManageWorkshops({
               onClick={() => deleteWorkshop(workshop)}
               className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {busyKey === workshop.key ? "Deletingâ€¦" : "Delete workshop"}
+              {busyKey === workshop.key ? "Deleting" : "Delete workshop"}
             </button>
           </div>
         ))}
@@ -668,8 +676,17 @@ export function AddWorkshopForm({
       });
       onDone(data.workshop);
       setNote(data.note);
-      toast({ title: "Workshop added", description: `${data.workshop.workshopName} is ready.`, tone: "success" });
-      if (data.note) toast({ title: "Workshop saved with a note", description: data.note, tone: "info" });
+      toast({
+        title: "Workshop added",
+        description: `${data.workshop.workshopName} is ready.`,
+        tone: "success",
+      });
+      if (data.note)
+        toast({
+          title: "Workshop saved with a note",
+          description: data.note,
+          tone: "info",
+        });
       setKey("");
       setWorkshopName("");
       setWorkshopFullTitle("");
@@ -678,7 +695,11 @@ export function AddWorkshopForm({
       setFile(null);
     } catch (e: any) {
       setError(e.message);
-      toast({ title: "Could not add workshop", description: e.message, tone: "error" });
+      toast({
+        title: "Could not add workshop",
+        description: e.message,
+        tone: "error",
+      });
     } finally {
       setBusy(false);
     }
@@ -929,7 +950,7 @@ export function AddWorkshopForm({
           onClick={submit}
           className="w-full h-12 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-lg shadow-indigo-950/20 transition-all hover:bg-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
         >
-          {busy ? "Savingâ€¦" : "Save Workshop"}
+          {busy ? "Saving" : "Save Workshop"}
         </button>
 
         <div className="flex items-start gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 py-3">
@@ -991,12 +1012,25 @@ export function AddParticipantsForm({
         `${data.added} participant(s) added:\n${data.assignedIds.join("\n")}`,
       );
       setSkipped(data.skipped || []);
-      toast({ title: "Participants added", description: `${data.added} participant record(s) saved.`, tone: "success" });
-      if (data.skipped?.length) toast({ title: "Some entries were skipped", description: `${data.skipped.length} duplicate or invalid ID(s) need review.`, tone: "info" });
+      toast({
+        title: "Participants added",
+        description: `${data.added} participant record(s) saved.`,
+        tone: "success",
+      });
+      if (data.skipped?.length)
+        toast({
+          title: "Some entries were skipped",
+          description: `${data.skipped.length} duplicate or invalid ID(s) need review.`,
+          tone: "info",
+        });
       setEntries([{ id: "", name: "" }]);
     } catch (e: any) {
       setError(e.message);
-      toast({ title: "Could not add participants", description: e.message, tone: "error" });
+      toast({
+        title: "Could not add participants",
+        description: e.message,
+        tone: "error",
+      });
     } finally {
       setBusy(false);
     }
@@ -1177,7 +1211,7 @@ export function AddParticipantsForm({
           onClick={submit}
           className="h-12 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-950/20 transition-all hover:bg-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
         >
-          {busy ? "Savingâ€¦" : "Save Participants"}
+          {busy ? "Saving" : "Save Participants"}
         </button>
       </div>
     </section>
