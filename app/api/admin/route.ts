@@ -1,445 +1,175 @@
-/**
- * app/api/admin/route.ts
- *
- * Wired to the ACTUAL cbs-certificate-portal repo structure:
- *
- *   config/workshops.ts    -> WORKSHOPS: WorkshopDefinition[] (TypeScript,
- *                              not JSON — new entries are appended as
- *                              source text, right before the commented
- *                              "--- EXAMPLE" block)
- *   data/participants.json -> [{ id, name, workshop }]  (id is a bare
- *                              sequence number, auto-assigned here as
- *                              max-existing-id-for-that-workshop + 1)
- *   public/templates/<key>.png
- *
- * New workshops default to `layout: DEFAULT_LAYOUT_CONFIG`, but the admin
- * panel can also upload a template image and auto-detect a custom layout
- * for the `<<Full Name>>` / `<<ID>>` placeholders when the artwork uses a
- * different design.
- */
+import { NextRequest } from "next/server";
+import { DEFAULT_LAYOUT_CONFIG, ORG_CONFIG } from "@/config/certificate.config";
+import { checkAdminPassword } from "@/lib/adminAuth";
+import { ensureDatabaseSeeded } from "@/lib/seedDatabase";
+import { normalizeParticipantId } from "@/lib/participantId";
+import { errorResponse, successResponse } from "@/lib/api-response";
+import ParticipantModel from "@/models/Participant";
+import WorkshopModel from "@/models/Workshop";
+import type { LayoutConfig, WorkshopDefinition } from "@/config/workshops";
+import type { Participant } from "@/types";
 
-import { NextRequest, NextResponse } from "next/server";
-import { getFile, putTextFile, putBinaryFile, checkAdminPassword } from "@/lib/github";
+export const runtime = "nodejs";
 
-const WORKSHOPS_PATH = "config/workshops.ts";
-const PARTICIPANTS_PATH = "data/participants.json";
-const EXAMPLE_MARKER = "// --- EXAMPLE: duplicate & fill in for your next workshop";
-
-type Participant = { id: string; name: string; workshop: string };
-type WorkshopSummary = { key: string; workshopName: string };
-type WorkshopDetails = WorkshopSummary & {
-  workshopFullTitle: string;
-  workshopCode: string;
-  eventYear: string;
-  eventDate: string;
-  templatePath: string;
-  participants: Participant[];
+type AdminBody = {
+  password?: unknown;
+  action?: unknown;
+  [key: string]: unknown;
 };
 
-function unauthorized() {
-  return NextResponse.json({ error: "Invalid admin password" }, { status: 401 });
+function jsonError(message: string, status: number) {
+  return errorResponse(message, status);
 }
 
-export async function POST(req: NextRequest) {
-  let body: any;
+export async function POST(request: NextRequest) {
+  let body: AdminBody;
   try {
-    body = await req.json();
+    body = await request.json() as AdminBody;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return jsonError("Invalid JSON body", 400);
   }
-
-  const { password, action } = body;
 
   try {
-    if (typeof password !== "string" || !checkAdminPassword(password)) {
-      return unauthorized();
+    if (typeof body.password !== "string" || !checkAdminPassword(body.password)) {
+      return jsonError("Invalid admin password", 401);
     }
 
+    await ensureDatabaseSeeded();
+    const action = body.action;
     switch (action) {
+      case "list": {
+        const workshops = await WorkshopModel.find().sort({ eventYear: -1, workshopName: 1 }).select("key workshopName").lean();
+        return successResponse(workshops, "Successfully retrieved workshops", workshops.length);
+      }
+      case "workshop-details": {
+        const [workshops, participants] = await Promise.all([
+          WorkshopModel.find().sort({ eventYear: -1, workshopName: 1 }).select("-templateData").lean(),
+          ParticipantModel.find().sort({ workshop: 1, id: 1 }).lean(),
+        ]);
+        const participantsByWorkshop = new Map<string, Participant[]>();
+        for (const participant of participants) {
+          const group = participantsByWorkshop.get(participant.workshop) ?? [];
+          group.push({ id: participant.id, name: participant.name, workshop: participant.workshop });
+          participantsByWorkshop.set(participant.workshop, group);
+        }
+        const content = workshops.map((workshop) => ({
+            ...workshop,
+            participants: participantsByWorkshop.get(workshop.key) ?? [],
+          }));
+        return successResponse(content, "Successfully retrieved workshop details", content.length);
+      }
       case "add-workshop":
-        return await handleAddWorkshop(body);
+        return await addWorkshop(body);
       case "add-participants":
-        return await handleAddParticipants(body);
+        return await addParticipants(body);
       case "delete-workshop":
-        return await handleDeleteWorkshop(body);
+        return await deleteWorkshop(body);
       case "delete-participant":
-        return await handleDeleteParticipant(body);
-      case "list":
-        return await handleList();
-      case "workshop-details":
-        return await handleWorkshopDetails();
+        return await deleteParticipant(body);
       default:
-        return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
+        return jsonError(`Unknown action: ${String(action)}`, 400);
     }
-  } catch (err: any) {
-    console.error("Admin API error:", err);
-    return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+  } catch (error) {
+    console.error("Admin API error:", error);
+    return jsonError(error instanceof Error ? error.message : "Server error", 500);
   }
 }
 
-// ---- helpers: reading the WORKSHOPS registry out of TS source text ------
+async function addWorkshop(body: AdminBody) {
+  const fields = ["key", "workshopName", "workshopFullTitle", "workshopCode", "eventYear", "eventDate"] as const;
+  const values = Object.fromEntries(fields.map((field) => [field, body[field]])) as Record<typeof fields[number], unknown>;
+  const missing = fields.filter((field) => typeof values[field] !== "string" || !values[field].trim());
+  if (missing.length) return jsonError(`Missing required field(s): ${missing.join(", ")}`, 400);
 
-/** Strips full-line comments so the commented-out EXAMPLE block never
- *  gets mistaken for a real entry when scanning for keys/names. */
-function stripCommentLines(src: string): string {
-  return src
-    .split("\n")
-    .filter((line) => !line.trim().startsWith("//"))
-    .join("\n");
-}
+  const key = (values.key as string).trim().toLowerCase();
+  if (!/^[a-z0-9-]+$/.test(key)) return jsonError("key must be lowercase letters, numbers, and hyphens only", 400);
+  if (await WorkshopModel.exists({ key })) return jsonError(`Workshop key "${key}" already exists`, 409);
 
-function extractWorkshopSummaries(src: string): WorkshopSummary[] {
-  const clean = stripCommentLines(src);
-  const keyRe = /key:\s*"([^"]+)"/g;
-  const nameRe = /workshopName:\s*"([^"]+)"/g;
-
-  const keys: string[] = [];
-  const names: string[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = keyRe.exec(clean))) keys.push(m[1]);
-  while ((m = nameRe.exec(clean))) names.push(m[1]);
-
-  return keys.map((key, i) => ({ key, workshopName: names[i] ?? key }));
-}
-
-// ---- add-workshop ---------------------------------------------------
-// body: { password, action:"add-workshop", key, workshopName, workshopFullTitle,
-//         workshopCode, eventYear, eventDate, imageBase64, imageExt, layout }
-
-async function handleAddWorkshop(body: any) {
-  const {
+  const extension = typeof body.imageExt === "string" ? body.imageExt.toLowerCase() : "png";
+  const mimeType = extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "image/png";
+  const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64.replace(/^data:.*;base64,/, "") : "";
+  const layout = body.layout && typeof body.layout === "object" ? body.layout as LayoutConfig : DEFAULT_LAYOUT_CONFIG;
+  const workshop: WorkshopDefinition = {
     key,
-    workshopName,
-    workshopFullTitle,
-    workshopCode,
-    eventYear,
-    eventDate,
-    imageBase64,
-    imageExt,
+    workshopName: (values.workshopName as string).trim(),
+    workshopFullTitle: (values.workshopFullTitle as string).trim(),
+    workshopCode: (values.workshopCode as string).trim().toUpperCase(),
+    eventYear: (values.eventYear as string).trim(),
+    eventDate: (values.eventDate as string).trim(),
+    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
+    templatePath: imageBase64 ? `/api/templates/${key}` : "Not set",
     layout,
-  } = body;
+  };
 
-  const required = { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate };
-  const missing = Object.entries(required)
-    .filter(([, v]) => !v)
-    .map(([k]) => k);
-  if (missing.length > 0) {
-    return NextResponse.json(
-      { error: `Missing required field(s): ${missing.join(", ")}` },
-      { status: 400 }
-    );
-  }
-  if (!/^[a-z0-9-]+$/.test(key)) {
-    return NextResponse.json(
-      { error: "key must be lowercase letters, numbers, and hyphens only (e.g. nbw-2026)" },
-      { status: 400 }
-    );
-  }
-
-  const file = await getFile(WORKSHOPS_PATH);
-  if (!file) {
-    return NextResponse.json({ error: `${WORKSHOPS_PATH} not found in repo` }, { status: 500 });
-  }
-
-  const existingKeys = extractWorkshopSummaries(file.content).map((w) => w.key);
-  if (existingKeys.includes(key)) {
-    return NextResponse.json({ error: `Workshop key "${key}" already exists` }, { status: 409 });
-  }
-
-  const markerIndex = file.content.indexOf(EXAMPLE_MARKER);
-  if (markerIndex === -1) {
-    return NextResponse.json(
-      {
-        error:
-          `Couldn't find the "${EXAMPLE_MARKER}" marker comment in ${WORKSHOPS_PATH} — ` +
-          `has the file been restructured? Add the workshop manually this once.`,
-      },
-      { status: 500 }
-    );
-  }
-
-  // Escape any double quotes/backticks a user might paste into text fields,
-  // so the generated TS source stays syntactically valid.
-  const esc = (s: string) => String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  const layoutSnippet = layout
-    ? `layout: ${JSON.stringify(layout, null, 4).replace(/^/gm, "    ")},\n`
-    : `layout: DEFAULT_LAYOUT_CONFIG,\n`;
-
-  const templatePath = `/templates/${key}.${imageExt || "png"}`;
-
-  const newEntry =
-    `  {\n` +
-    `    key: "${esc(key)}",\n` +
-    `    workshopName: "${esc(workshopName)}",\n` +
-    `    workshopFullTitle:\n      "${esc(workshopFullTitle)}",\n` +
-    `    workshopCode: "${esc(workshopCode)}",\n` +
-    `    eventYear: "${esc(eventYear)}",\n` +
-    `    eventDate: "${esc(eventDate)}",\n` +
-    "    organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,\n" +
-    `    templatePath: "${templatePath}",\n` +
-    `    ${layoutSnippet}` +
-    `  },\n\n  `;
-
-  const updatedContent =
-    file.content.slice(0, markerIndex) + newEntry + file.content.slice(markerIndex);
-
-  // 1. Upload the template image first — never leave a registry entry
-  //    pointing at a file that doesn't exist yet.
-  if (imageBase64) {
-    await putBinaryFile(
-      `public${templatePath}`,
-      imageBase64,
-      `admin: add ${key} certificate template`
-    );
-  }
-
-  // 2. Commit the updated registry.
-  await putTextFile(
-    WORKSHOPS_PATH,
-    updatedContent,
-    `admin: add workshop ${key}`,
-    file.sha
-  );
-
-  return NextResponse.json({
-    ok: true,
-    workshop: { key, workshopName },
+  await WorkshopModel.create({ ...workshop, templateData: imageBase64 ? `data:${mimeType};base64,${imageBase64}` : null });
+  return successResponse({
+    workshop: { key, workshopName: workshop.workshopName },
     note: imageBase64
-      ? layout
-        ? "Workshop added with an auto-detected custom layout."
-        : "Workshop added using DEFAULT_LAYOUT_CONFIG."
-      : "Workshop added with no template image — upload one before generating certificates for it.",
-  });
+      ? body.layout ? "Workshop and template saved to MongoDB with a custom layout." : "Workshop and template saved to MongoDB."
+      : "Workshop saved without a template image. Add a template before generating certificates.",
+  }, "Successfully created workshop", 1, 201);
 }
 
-// ---- add-participants ---------------------------------------------------
-// body: { password, action:"add-participants", workshop, entries }
-// Each entry has a name and an optional ID. Legacy newline-separated names
-// remain accepted for compatibility.
+async function addParticipants(body: AdminBody) {
+  const workshop = typeof body.workshop === "string" ? body.workshop.trim().toLowerCase() : "";
+  if (!workshop) return jsonError("A workshop key is required", 400);
+  if (!await WorkshopModel.exists({ key: workshop })) return jsonError("Workshop was not found", 404);
 
-async function handleAddParticipants(body: any) {
-  const { workshop, names } = body;
-
-  const entries: { name: string; id?: string }[] = Array.isArray(body.entries)
-    ? body.entries.map((entry: any) => ({
-        name: typeof entry?.name === "string" ? entry.name.trim() : "",
-        id: typeof entry?.id === "string" ? entry.id.trim() : "",
+  const entries: { name: string; id: string }[] = Array.isArray(body.entries)
+    ? body.entries.map((entry) => ({
+        name: typeof (entry as { name?: unknown })?.name === "string" ? (entry as { name: string }).name.trim() : "",
+        id: typeof (entry as { id?: unknown })?.id === "string" ? (entry as { id: string }).id.trim() : "",
       }))
-    : typeof names === "string"
-      ? names.split("\n").map((rawLine: string) => {
-          const line = rawLine.trim();
+    : typeof body.names === "string"
+      ? body.names.split("\n").map((line) => {
           const comma = line.lastIndexOf(",");
-          return comma < 0
-            ? { name: line, id: "" }
-            : { name: line.slice(0, comma).trim(), id: line.slice(comma + 1).trim() };
+          return comma < 0 ? { name: line.trim(), id: "" } : { name: line.slice(0, comma).trim(), id: line.slice(comma + 1).trim() };
         })
       : [];
+  const validEntries = entries.filter((entry) => entry.name);
+  if (!validEntries.length) return jsonError("At least one participant name is required", 400);
 
-  if (!workshop || !entries.some((entry) => entry.name)) {
-    return NextResponse.json({ error: "workshop and at least one participant name are required" }, { status: 400 });
-  }
-
-  const existingFile = await getFile(PARTICIPANTS_PATH);
-  const participants: Participant[] = existingFile ? JSON.parse(existingFile.content) : [];
-
-  const numericIdsInWorkshop = participants
-    .filter((p) => p.workshop === workshop)
-    .map((p) => parseInt(p.id.replace(/\D/g, ""), 10))
-    .filter((n) => !isNaN(n));
-
-  let nextId = numericIdsInWorkshop.length > 0 ? Math.max(...numericIdsInWorkshop) + 1 : 1;
-
+  const existing = await ParticipantModel.find({ workshop }).select("id").lean();
+  const used = new Set(existing.map((participant) => participant.id));
+  const requestedIds = new Set(validEntries.filter((entry) => entry.id).map((entry) => entry.id));
+  let nextId = existing.reduce((max, participant) => Math.max(max, Number.parseInt(participant.id.replace(/\D/g, ""), 10) || 0), 0) + 1;
   const newEntries: Participant[] = [];
   const skipped: string[] = [];
-  const requestedIds = new Set(entries.map((entry) => entry.id).filter(Boolean));
 
-  for (const entry of entries) {
-    const name = entry.name;
-    if (!name) continue;
-    if (!entry.id) {
-      while (
-        requestedIds.has(String(nextId)) ||
-        participants.some((participant) => participant.workshop === workshop && participant.id === String(nextId)) ||
-        newEntries.some((participant) => participant.id === String(nextId))
-      ) {
-        nextId += 1;
-      }
-    }
-    const id = entry.id || String(nextId);
-
-    const alreadyUsed =
-      participants.some((p) => p.workshop === workshop && p.id === id) ||
-      newEntries.some((p) => p.workshop === workshop && p.id === id);
-    if (alreadyUsed) {
-      skipped.push(`${name} (ID ${id} is already used in this workshop)`);
+  for (const entry of validEntries) {
+    while (!entry.id && (used.has(String(nextId)) || requestedIds.has(String(nextId)))) nextId += 1;
+    const id = entry.id || String(nextId++);
+    if (used.has(id)) {
+      skipped.push(`${entry.name} (ID ${id} is already used in this workshop)`);
       continue;
     }
-
-    newEntries.push({ id, name, workshop });
-    const idNum = parseInt(id, 10);
-    if (!isNaN(idNum) && idNum >= nextId) nextId = idNum + 1;
+    used.add(id);
+    newEntries.push({ id, name: entry.name, workshop });
   }
+  if (!newEntries.length) return jsonError("No valid participants could be added", 400);
 
-  if (newEntries.length === 0) {
-    return NextResponse.json(
-      { error: "No valid names parsed.", skipped },
-      { status: 400 }
-    );
-  }
-
-  const updated = [...participants, ...newEntries];
-
-  await putTextFile(
-    PARTICIPANTS_PATH,
-    JSON.stringify(updated, null, 2) + "\n",
-    `admin: add ${newEntries.length} participant(s) to ${workshop}`,
-    existingFile?.sha
+  await ParticipantModel.insertMany(
+    newEntries.map((entry) => ({ ...entry, normalizedId: normalizeParticipantId(entry.id) })),
+    { ordered: false },
   );
-
-  return NextResponse.json({
-    ok: true,
-    added: newEntries.length,
-    assignedIds: newEntries.map((e) => `${e.name} -> ${e.id}`),
-    skipped,
-  });
+  return successResponse({ added: newEntries.length, assignedIds: newEntries.map((entry) => `${entry.name} -> ${entry.id}`), skipped }, "Successfully added participants", newEntries.length, 201);
 }
 
-function extractWorkshopDetails(src: string, participants: Participant[]): WorkshopDetails[] {
-  return extractWorkshopSummaries(src).map((summary) => {
-    const keyIndex = src.indexOf(`key: "${summary.key}"`);
-    const entryEnd = keyIndex === -1 ? -1 : src.indexOf("\n  },", keyIndex);
-    const entry = keyIndex === -1 ? "" : src.slice(keyIndex, entryEnd === -1 ? src.length : entryEnd);
-    const value = (field: string) => entry.match(new RegExp(`${field}:\\s*"([^"]+)"`))?.[1] || "Not set";
-    return {
-      ...summary,
-      workshopFullTitle: value("workshopFullTitle"),
-      workshopCode: value("workshopCode"),
-      eventYear: value("eventYear"),
-      eventDate: value("eventDate"),
-      templatePath: value("templatePath"),
-      participants: participants.filter((participant) => participant.workshop === summary.key),
-    };
-  });
+async function deleteWorkshop(body: AdminBody) {
+  const workshop = typeof body.workshop === "string" ? body.workshop.trim().toLowerCase() : "";
+  if (!workshop) return jsonError("A workshop key is required", 400);
+  const deleted = await WorkshopModel.findOneAndDelete({ key: workshop });
+  if (!deleted) return jsonError(`Workshop "${workshop}" was not found`, 404);
+  const result = await ParticipantModel.deleteMany({ workshop });
+  return successResponse({ deletedParticipants: result.deletedCount }, "Successfully deleted workshop and its participants", result.deletedCount + 1);
 }
 
-// ---- delete-workshop -----------------------------------------------------
-// The certificate template image is deliberately retained for recovery or
-// reuse. The workshop registry entry and its participant records are removed.
-
-function findWorkshopEntryBounds(source: string, key: string): [number, number] | null {
-  const keyIndex = source.indexOf(`key: "${key}"`);
-  if (keyIndex === -1) return null;
-
-  const start = source.lastIndexOf("  {", keyIndex);
-  if (start === -1) return null;
-
-  let depth = 0;
-  let quote: string | null = null;
-  let escaped = false;
-  for (let i = start; i < source.length; i += 1) {
-    const char = source[i];
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (char === "\\") escaped = true;
-      else if (char === quote) quote = null;
-      continue;
-    }
-    if (char === '"' || char === "'" || char === "`") quote = char;
-    else if (char === "{") depth += 1;
-    else if (char === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        let end = i + 1;
-        if (source[end] === ",") end += 1;
-        while (source[end] === "\r" || source[end] === "\n") end += 1;
-        return [start, end];
-      }
-    }
-  }
-  return null;
-}
-
-async function handleDeleteWorkshop(body: any) {
-  const { workshop } = body;
-  if (typeof workshop !== "string" || !workshop) {
-    return NextResponse.json({ error: "A workshop key is required" }, { status: 400 });
-  }
-
-  const workshopFile = await getFile(WORKSHOPS_PATH);
-  if (!workshopFile) {
-    return NextResponse.json({ error: `${WORKSHOPS_PATH} not found in repo` }, { status: 500 });
-  }
-
-  const bounds = findWorkshopEntryBounds(workshopFile.content, workshop);
-  if (!bounds) {
-    return NextResponse.json({ error: `Workshop "${workshop}" was not found` }, { status: 404 });
-  }
-
-  const participantsFile = await getFile(PARTICIPANTS_PATH);
-  const participants: Participant[] = participantsFile ? JSON.parse(participantsFile.content) : [];
-  const remaining = participants.filter((participant) => participant.workshop !== workshop);
-  const deletedParticipants = participants.length - remaining.length;
-  const updatedWorkshops = workshopFile.content.slice(0, bounds[0]) + workshopFile.content.slice(bounds[1]);
-
-  if (participantsFile && deletedParticipants > 0) {
-    await putTextFile(
-      PARTICIPANTS_PATH,
-      JSON.stringify(remaining, null, 2) + "\n",
-      `admin: remove participants for ${workshop}`,
-      participantsFile.sha
-    );
-  }
-
-  await putTextFile(WORKSHOPS_PATH, updatedWorkshops, `admin: delete workshop ${workshop}`, workshopFile.sha);
-  return NextResponse.json({ ok: true, deletedParticipants });
-}
-
-// ---- delete-participant --------------------------------------------------
-
-async function handleDeleteParticipant(body: any) {
+async function deleteParticipant(body: AdminBody) {
   const { workshop, id, name } = body;
   if (typeof workshop !== "string" || typeof id !== "string" || typeof name !== "string") {
-    return NextResponse.json({ error: "workshop, id, and name are required" }, { status: 400 });
+    return jsonError("workshop, id, and name are required", 400);
   }
-
-  const participantsFile = await getFile(PARTICIPANTS_PATH);
-  if (!participantsFile) {
-    return NextResponse.json({ error: `${PARTICIPANTS_PATH} not found in repo` }, { status: 500 });
-  }
-
-  const participants: Participant[] = JSON.parse(participantsFile.content);
-  const remaining = participants.filter(
-    (participant) => !(participant.workshop === workshop && participant.id === id && participant.name === name)
-  );
-  if (remaining.length === participants.length) {
-    return NextResponse.json({ error: "Participant was not found" }, { status: 404 });
-  }
-
-  await putTextFile(
-    PARTICIPANTS_PATH,
-    JSON.stringify(remaining, null, 2) + "\n",
-    `admin: remove participant ${id} from ${workshop}`,
-    participantsFile.sha
-  );
-  return NextResponse.json({ ok: true });
-}
-
-// ---- list ---------------------------------------------------------------
-
-async function handleList() {
-  const file = await getFile(WORKSHOPS_PATH);
-  const workshops = file ? extractWorkshopSummaries(file.content) : [];
-  return NextResponse.json({ ok: true, workshops });
-}
-
-async function handleWorkshopDetails() {
-  const [workshopFile, participantsFile] = await Promise.all([
-    getFile(WORKSHOPS_PATH),
-    getFile(PARTICIPANTS_PATH),
-  ]);
-  if (!workshopFile) {
-    return NextResponse.json({ error: `${WORKSHOPS_PATH} not found in repo` }, { status: 500 });
-  }
-  const participants: Participant[] = participantsFile ? JSON.parse(participantsFile.content) : [];
-  return NextResponse.json({ ok: true, workshops: extractWorkshopDetails(workshopFile.content, participants) });
+  const deleted = await ParticipantModel.findOneAndDelete({ workshop, id, name });
+  if (!deleted) return jsonError("Participant was not found", 404);
+  return successResponse(null, "Successfully deleted participant", 1);
 }

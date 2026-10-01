@@ -2,9 +2,10 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { findParticipantByCertificateId } from "@/lib/participants";
-import { getWorkshopByKey, type WorkshopDefinition } from "@/config/workshops";
-import type { CertificateCandidate, Participant, VerifyStatus } from "@/types";
+import { useMutation } from "@tanstack/react-query";
+import type { WorkshopDefinition } from "@/config/workshops";
+import type { CertificateCandidate, DatabaseLookupResult, Participant, VerifyStatus } from "@/types";
+import { lookupCertificate } from "@/features/certificates/api";
 import LoadingSpinner from "./LoadingSpinner";
 
 export default function VerifyPanel() {
@@ -19,6 +20,7 @@ export default function VerifyPanel() {
     workshop: WorkshopDefinition;
   } | null>(null);
   const [candidates, setCandidates] = useState<CertificateCandidate[]>([]);
+  const lookupMutation = useMutation({ mutationFn: (id: string) => lookupCertificate(id) });
 
   async function verify(id: string) {
     const trimmed = id.trim();
@@ -27,7 +29,14 @@ export default function VerifyPanel() {
     setStatus("checking");
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const lookup = findParticipantByCertificateId(trimmed);
+    let lookup: DatabaseLookupResult;
+    try {
+      lookup = await lookupMutation.mutateAsync(trimmed);
+    } catch {
+      setResult(null);
+      setStatus("not-found");
+      return;
+    }
 
     if (lookup.status === "not-found") {
       setResult(null);
@@ -42,19 +51,10 @@ export default function VerifyPanel() {
       return;
     }
 
-    const workshop = getWorkshopByKey(lookup.participant.workshop);
-    if (!workshop) {
-      // Data-integrity guard — participant references a workshop key
-      // that no longer exists in the registry.
-      setResult(null);
-      setStatus("not-found");
-      return;
-    }
-
     setResult({
       participant: lookup.participant,
       formattedId: lookup.formattedId,
-      workshop,
+      workshop: lookup.workshop,
     });
     setStatus("verified");
   }

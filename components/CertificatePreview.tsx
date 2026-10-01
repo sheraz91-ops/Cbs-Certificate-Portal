@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { findParticipantByCertificateId } from "@/lib/participants";
-import { buildCertificatePlan } from "@/lib/certificatePlan";
+import { useQuery } from "@tanstack/react-query";
+import { buildVerifyUrl } from "@/lib/qrcode";
+import { lookupCertificate } from "@/features/certificates/api";
 import { generateCertificatePdf, downloadPdf, downloadBytes } from "@/lib/generateCertificate";
 import {
   canvasToDataUrl,
@@ -17,6 +18,11 @@ import LoadingSpinner from "./LoadingSpinner";
 export default function CertificatePreview() {
   const searchParams = useSearchParams();
   const idParam = searchParams.get("id") ?? "";
+  const lookupQuery = useQuery({
+    queryKey: ["certificate-lookup", idParam],
+    queryFn: () => lookupCertificate(idParam),
+    enabled: Boolean(idParam),
+  });
 
   const [status, setStatus] = useState<PreviewStatus>("loading");
   const [plan, setPlan] = useState<CertificatePlan | null>(null);
@@ -37,8 +43,15 @@ export default function CertificatePreview() {
         setStatus("not-found");
         return;
       }
-
-      const result = findParticipantByCertificateId(idParam);
+      if (lookupQuery.isPending) {
+        setStatus("loading");
+        return;
+      }
+      if (lookupQuery.isError || !lookupQuery.data) {
+        setStatus("error");
+        return;
+      }
+      const result = lookupQuery.data;
 
       if (result.status === "not-found") {
         setStatus("not-found");
@@ -57,10 +70,12 @@ export default function CertificatePreview() {
       }
 
       try {
-        const resolvedPlan = buildCertificatePlan(
-          result.participant,
-          result.formattedId
-        );
+        const resolvedPlan = {
+          fullName: result.participant.name,
+          formattedId: result.formattedId,
+          verifyUrl: buildVerifyUrl(result.formattedId),
+          workshop: result.workshop,
+        };
         const canvas = await renderCertificateCanvas(resolvedPlan);
         if (cancelled) return;
 
@@ -78,7 +93,7 @@ export default function CertificatePreview() {
     return () => {
       cancelled = true;
     };
-  }, [idParam]);
+  }, [idParam, lookupQuery.data, lookupQuery.isError, lookupQuery.isPending]);
 
   async function handleDownloadPdf() {
     if (!plan) return;

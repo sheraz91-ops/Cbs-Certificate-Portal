@@ -1,11 +1,14 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import NextImage from "next/image";
 import { DEFAULT_LAYOUT_CONFIG } from "@/config/certificate.config";
 import type { LayoutConfig } from "@/config/workshops";
 import { detectTemplateLayout } from "@/lib/detectTemplateLayout";
 import { useAdminToast } from "@/app/admin/AdminShell";
+import { addWorkshop as createWorkshop, deleteWorkshop as removeWorkshop } from "@/features/workshops/api";
+import { addParticipants } from "@/features/participants/api";
 
 type WorkshopSummary = { key: string; workshopName: string };
 
@@ -23,17 +26,6 @@ function usePassword() {
     sessionStorage.setItem("admin_pw", pw);
   };
   return { password, save };
-}
-
-async function callAdmin(password: string, payload: Record<string, any>) {
-  const res = await fetch("/api/admin", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password, ...payload }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Request failed");
-  return data;
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -472,13 +464,25 @@ export function ManageWorkshops({
   onDeleted: (workshop: WorkshopSummary, deletedParticipants: number) => void;
 }) {
   const toast = useAdminToast();
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: (workshop: WorkshopSummary) => removeWorkshop(password, workshop.key),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshops"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
+        queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
+        queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
+      ]);
+    },
+  });
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function deleteWorkshop(workshop: WorkshopSummary) {
     if (
       !window.confirm(
-        `Delete "${workshop.workshopName}"? Its participant records will also be removed. This can be recovered from GitHub history.`,
+        `Delete "${workshop.workshopName}"? Its participant records will also be removed.`,
       )
     )
       return;
@@ -486,14 +490,11 @@ export function ManageWorkshops({
     setBusyKey(workshop.key);
     setError(null);
     try {
-      const data = await callAdmin(password, {
-        action: "delete-workshop",
-        workshop: workshop.key,
-      });
-      onDeleted(workshop, data.deletedParticipants);
+      const result = await deleteMutation.mutateAsync(workshop);
+      onDeleted(workshop, result.deletedParticipants);
       toast({
         title: "Workshop deleted",
-        description: `${workshop.workshopName} and ${data.deletedParticipants} participant record(s) removed.`,
+        description: `${workshop.workshopName} and ${result.deletedParticipants} participant record(s) removed.`,
         tone: "success",
       });
     } catch (e: any) {
@@ -563,6 +564,17 @@ export function AddWorkshopForm({
   onDone: (w: WorkshopSummary) => void;
 }) {
   const toast = useAdminToast();
+  const queryClient = useQueryClient();
+  const addMutation = useMutation({
+    mutationFn: (input: Parameters<typeof createWorkshop>[1]) => createWorkshop(password, input),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
+        queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
+        queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
+      ]);
+    },
+  });
   const [key, setKey] = useState("");
   const [workshopName, setWorkshopName] = useState("");
   const [workshopFullTitle, setWorkshopFullTitle] = useState("");
@@ -662,8 +674,7 @@ export function AddWorkshopForm({
       const imageExt = file?.name.split(".").pop();
       const layout =
         draftLayout ?? (file ? await detectTemplateLayout(file) : undefined);
-      const data = await callAdmin(password, {
-        action: "add-workshop",
+      const data = await addMutation.mutateAsync({
         key,
         workshopName,
         workshopFullTitle,
@@ -992,6 +1003,17 @@ export function AddParticipantsForm({
   onDone: (statusMsg: string) => void;
 }) {
   const toast = useAdminToast();
+  const queryClient = useQueryClient();
+  const addMutation = useMutation({
+    mutationFn: (input: { workshop: string; entries: { id: string; name: string }[] }) =>
+      addParticipants(password, input.workshop, input.entries),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
+        queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
+      ]);
+    },
+  });
   const [workshop, setWorkshop] = useState("");
   const [entries, setEntries] = useState([{ id: "", name: "" }]);
   const [busy, setBusy] = useState(false);
@@ -1003,8 +1025,7 @@ export function AddParticipantsForm({
     setError(null);
     setSkipped([]);
     try {
-      const data = await callAdmin(password, {
-        action: "add-participants",
+      const data = await addMutation.mutateAsync({
         workshop,
         entries: entries.filter((entry) => entry.name.trim()),
       });

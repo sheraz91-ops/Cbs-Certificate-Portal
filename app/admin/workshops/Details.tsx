@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { useAdminPassword, useAdminToast } from "../AdminShell";
+import { getWorkshopDetails, type WorkshopDetails } from "@/features/workshops/api";
+import { deleteParticipant as deleteParticipantApi } from "@/features/participants/api";
 
 type Participant = { id: string; name: string; workshop: string };
-type Workshop = {
+type Workshop = WorkshopDetails & {
   key: string;
   workshopName: string;
   workshopFullTitle: string;
@@ -16,48 +19,42 @@ type Workshop = {
   participants: Participant[];
 };
 
-async function loadWorkshops(password: string) {
-  const response = await fetch("/api/admin", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password, action: "workshop-details" }),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Unable to load workshops");
-  return data.workshops as Workshop[];
-}
-
 export default function WorkshopAdminPage() {
   const password = useAdminPassword();
   const toast = useAdminToast();
-  const [workshops, setWorkshops] = useState<Workshop[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const queryKey = ["admin", "workshop-details"];
+  const workshopsQuery = useQuery({
+    queryKey,
+    queryFn: () => getWorkshopDetails(password),
+    enabled: Boolean(password),
+  });
+  const workshops = workshopsQuery.data ?? [];
+  const error = workshopsQuery.error instanceof Error ? workshopsQuery.error.message : null;
+  const loading = workshopsQuery.isFetching;
+  const deleteMutation = useMutation({
+    mutationFn: (input: { workshop: string; id: string; name: string }) => deleteParticipantApi(password, input),
+    onSuccess: (_, deleted) => {
+      queryClient.setQueryData<WorkshopDetails[]>(queryKey, (current = []) => current.map((item) =>
+        item.key === deleted.workshop
+          ? { ...item, participants: item.participants.filter((participant) => !(participant.id === deleted.id && participant.name === deleted.name)) }
+          : item,
+      ));
+      void queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] });
+    },
+  });
   const [openWorkshops, setOpenWorkshops] = useState<string[]>([]);
   const [visibleUsers, setVisibleUsers] = useState<Record<string, number>>({});
   const [deletingUser, setDeletingUser] = useState<string | null>(null);
   const [brokenTemplates, setBrokenTemplates] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (password) void fetchDetails(password);
-    // fetchDetails is intentionally run when the shared admin session changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [password]);
+    if (workshopsQuery.isError) toast({ title: "Could not load workshop data", description: error ?? "Unable to load workshops", tone: "error" });
+  }, [error, toast, workshopsQuery.isError]);
 
-  async function fetchDetails(adminPassword: string, showSuccess = false) {
-    setLoading(true);
-    setError(null);
-    try {
-      setWorkshops(await loadWorkshops(adminPassword));
-      sessionStorage.setItem("admin_pw", adminPassword);
-      if (showSuccess) toast({ title: "Workshop data refreshed", description: "The list is up to date.", tone: "success" });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to load workshops";
-      setError(message);
-      toast({ title: "Could not load workshop data", description: message, tone: "error" });
-    } finally {
-      setLoading(false);
-    }
+  async function fetchDetails(showSuccess = false) {
+    const result = await workshopsQuery.refetch();
+    if (!result.isError && showSuccess) toast({ title: "Workshop data refreshed", description: "The list is up to date.", tone: "success" });
   }
 
   function toggleWorkshop(key: string) {
@@ -72,22 +69,11 @@ export default function WorkshopAdminPage() {
 
     const deleteKey = `${workshop.key}-${participant.id}-${participant.name}`;
     setDeletingUser(deleteKey);
-    setError(null);
     try {
-      const response = await fetch("/api/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, action: "delete-participant", workshop: workshop.key, id: participant.id, name: participant.name }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to delete participant");
-      setWorkshops((current) => current.map((item) => item.key === workshop.key
-        ? { ...item, participants: item.participants.filter((user) => !(user.id === participant.id && user.name === participant.name)) }
-        : item));
+      await deleteMutation.mutateAsync({ workshop: workshop.key, id: participant.id, name: participant.name });
       toast({ title: "Participant deleted", description: `${participant.name} was removed from ${workshop.workshopName}.`, tone: "success" });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to delete participant";
-      setError(message);
       toast({ title: "Could not delete participant", description: message, tone: "error" });
     } finally {
       setDeletingUser(null);
@@ -102,7 +88,7 @@ export default function WorkshopAdminPage() {
             <h1 className="text-3xl font-bold">All workshops</h1>
             <p className="mt-1 text-slate-400">Workshop information, certificate templates, and registered participants.</p>
           </div>
-          <button type="button" onClick={() => void fetchDetails(password, true)} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-900">
+          <button type="button" onClick={() => void fetchDetails(true)} className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-900">
             {loading ? "Refreshing…" : "Refresh"}
           </button>
         </div>

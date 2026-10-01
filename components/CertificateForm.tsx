@@ -2,22 +2,20 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import {
-  findParticipantByCertificateId,
-  participants,
-} from "@/lib/participants";
-import {
-  formatCertificateId,
-  normalizeParticipantNumber,
-} from "@/lib/formatId";
-import { getWorkshopByKey, WORKSHOPS } from "@/config/workshops";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { WorkshopDefinition } from "@/config/workshops";
+import { getWorkshops } from "@/features/workshops/api";
+import { lookupCertificate } from "@/features/certificates/api";
 import type {
   AlertState,
   CertificateCandidate,
+  DatabaseLookupResult,
   GenerationStatus,
 } from "@/types";
 import AlertMessage from "./AlertMessage";
 import LoadingSpinner from "./LoadingSpinner";
+
+type WorkshopOption = Pick<WorkshopDefinition, "key" | "workshopName">;
 
 export default function CertificateForm() {
   const router = useRouter();
@@ -26,6 +24,11 @@ export default function CertificateForm() {
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [candidates, setCandidates] = useState<CertificateCandidate[]>([]);
+  const workshopsQuery = useQuery({ queryKey: ["workshops", "public"], queryFn: getWorkshops });
+  const lookupMutation = useMutation({
+    mutationFn: ({ id, workshop }: { id: string; workshop?: string }) => lookupCertificate(id, workshop),
+  });
+  const workshops: WorkshopOption[] = workshopsQuery.data ?? [];
 
   const isLoading = status === "loading";
 
@@ -47,38 +50,14 @@ export default function CertificateForm() {
     // devices — avoids an abrupt flash before navigating away.
     await new Promise((resolve) => setTimeout(resolve, 350));
 
-    // When a workshop is selected, its participant list is searched only.
-    // This makes a simple number such as "5" open that workshop's exact
-    // certificate instead of matching a different workshop with the same ID.
-    if (selectedWorkshop) {
-      const workshop = getWorkshopByKey(selectedWorkshop);
-      const participant =
-        workshop && /^\d+$/.test(trimmedId)
-          ? participants.find(
-              (item) =>
-                item.workshop === selectedWorkshop &&
-                normalizeParticipantNumber(item.id) ===
-                  normalizeParticipantNumber(trimmedId),
-            )
-          : undefined;
-
-      if (!workshop || !participant) {
-        setStatus("error");
-        setAlert({
-          type: "error",
-          message:
-            "This Certificate ID was not found in the selected workshop.",
-        });
-        return;
-      }
-
-      router.push(
-        `/certificate?id=${encodeURIComponent(formatCertificateId(participant.id, workshop))}`,
-      );
+    let result: DatabaseLookupResult;
+    try {
+      result = await lookupMutation.mutateAsync({ id: trimmedId, workshop: selectedWorkshop || undefined });
+    } catch {
+      setStatus("error");
+      setAlert({ type: "error", message: "Unable to look up this certificate. Please try again." });
       return;
     }
-
-    const result = findParticipantByCertificateId(trimmedId);
 
     if (result.status === "not-found") {
       setStatus("error");
@@ -129,11 +108,11 @@ export default function CertificateForm() {
                 if (status !== "idle") setStatus("idle");
                 if (alert) setAlert(null);
               }}
-              disabled={isLoading}
+              disabled={isLoading || workshopsQuery.isLoading}
               className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
             >
               <option value="">Select your participation</option>
-              {WORKSHOPS.map((workshop) => (
+              {workshops.map((workshop) => (
                 <option key={workshop.key} value={workshop.key}>
                   {workshop.workshopName}
                 </option>

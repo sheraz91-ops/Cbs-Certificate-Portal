@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ORG_CONFIG } from "@/config/certificate.config";
+import Providers from "@/app/providers";
 
 export const metadata: Metadata = {
   metadataBase: new URL(ORG_CONFIG.siteUrl),
@@ -41,7 +42,9 @@ export default function RootLayout({
         To use a custom Google Font instead, swap this for
         next/font/google and update the CSS variables — see README.
       */}
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { getAdminWorkshops } from "@/features/workshops/api";
 import {
   createContext,
   useContext,
@@ -28,13 +30,7 @@ export function useAdminToast() {
 }
 
 async function validatePassword(password: string) {
-  const response = await fetch("/api/admin", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password, action: "list" }),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Invalid admin password");
+  await getAdminWorkshops(password);
 }
 
 const navigation = [
@@ -46,6 +42,8 @@ const navigation = [
 
 export default function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const validateMutation = useMutation({ mutationFn: validatePassword });
+  const validateAdmin = validateMutation.mutateAsync;
   const [password, setPassword] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [ready, setReady] = useState(false);
@@ -63,11 +61,11 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       setReady(true);
       return;
     }
-    validatePassword(saved)
+    validateAdmin(saved)
       .then(() => setPassword(saved))
       .catch(() => sessionStorage.removeItem("admin_pw"))
       .finally(() => setReady(true));
-  }, []);
+  }, [validateAdmin]);
 
   const pushToast = useMemo(
     () => (toast: ToastInput) => {
@@ -86,7 +84,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     setBusy(true);
     setError("");
     try {
-      await validatePassword(passwordInput);
+      await validateAdmin(passwordInput);
       sessionStorage.setItem("admin_pw", passwordInput);
       pushToast({
         title: "Admin session unlocked",

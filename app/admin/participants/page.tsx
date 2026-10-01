@@ -1,40 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAdminPassword, useAdminToast } from "../AdminShell";
 import { AddParticipantsForm } from "@/components/AdminForms";
-
-type WorkshopSummary = { key: string; workshopName: string };
+import { getAdminWorkshops } from "@/features/workshops/api";
 
 export default function ParticipantsPage() {
   const password = useAdminPassword();
   const toast = useAdminToast();
-  const [workshops, setWorkshops] = useState<WorkshopSummary[]>([]);
-  const [error, setError] = useState("");
+  const workshopsQuery = useQuery({
+    queryKey: ["admin", "workshops"],
+    queryFn: () => getAdminWorkshops(password),
+    enabled: Boolean(password),
+  });
+  const workshops = workshopsQuery.data ?? [];
+  const error = workshopsQuery.error instanceof Error ? workshopsQuery.error.message : "";
 
   useEffect(() => {
-    fetch("/api/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, action: "list" }),
-    })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.error || "Unable to load workshops");
-        setWorkshops(data.workshops);
-      })
-      .catch((err: unknown) => {
-        const message =
-          err instanceof Error ? err.message : "Unable to load workshops";
-        setError(message);
-        toast({
-          title: "Could not load workshops",
-          description: message,
-          tone: "error",
-        });
-      });
-  }, [password, toast]);
+    if (workshopsQuery.isError) toast({ title: "Could not load workshops", description: error, tone: "error" });
+  }, [error, toast, workshopsQuery.isError]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">

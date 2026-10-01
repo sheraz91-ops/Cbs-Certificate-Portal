@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 import { PAGE_HEIGHT_PT, PAGE_WIDTH_PT } from "@/config/certificate.config";
 import type { CertificatePlan } from "@/types";
 import { dataUrlToBytes, generateQrDataUrl } from "./qrcode";
+import { getData } from "@/lib/api-client";
 
 /** Converts a top-left-origin ratio into a PDF y-coordinate (bottom-up). */
 function toPdfY(topRatio: number): number {
@@ -22,11 +23,7 @@ function hexToRgb(hex: string) {
 
 /** Fetches a static asset (e.g. the template PNG) as raw bytes. */
 async function loadAssetBytes(path: string): Promise<ArrayBuffer> {
-  const res = await fetch(path);
-  if (!res.ok) {
-    throw new Error(`Unable to load asset: ${path}`);
-  }
-  return res.arrayBuffer();
+  return getData<ArrayBuffer>(path, undefined, "arrayBuffer");
 }
 
 /**

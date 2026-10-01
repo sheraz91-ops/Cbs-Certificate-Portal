@@ -4,14 +4,13 @@ import type { WorkshopDefinition } from "@/config/workshops";
  * Shared type definitions for the CBS Certificate Portal.
  */
 
-/** A single participant record loaded from data/participants.json */
+/** A participant record stored in MongoDB. */
 export interface Participant {
   /** Raw certificate ID as stored in the source list, e.g. "1", "07" */
   id: string;
   /** Full name exactly as it should appear on the certificate */
   name: string;
-  /** Which workshop this participant belongs to — must match a `key`
-   *  in config/workshops.ts */
+  /** Workshop key this participant belongs to. */
   workshop: string;
 }
 
@@ -28,6 +27,12 @@ export type LookupResult =
   | { status: "found"; participant: Participant; formattedId: string }
   /** A bare number (no workshop code) matched participants in more than
    *  one workshop — the caller needs to disambiguate. */
+  | { status: "ambiguous"; candidates: CertificateCandidate[] }
+  | { status: "not-found" };
+
+/** Public API result containing the workshop resolved from MongoDB. */
+export type DatabaseLookupResult =
+  | { status: "found"; participant: Participant; formattedId: string; workshop: WorkshopDefinition }
   | { status: "ambiguous"; candidates: CertificateCandidate[] }
   | { status: "not-found" };
 

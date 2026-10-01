@@ -1,0 +1,29 @@
+import { NextResponse } from "next/server";
+import { ensureDatabaseSeeded } from "@/lib/seedDatabase";
+import WorkshopModel from "@/models/Workshop";
+import { errorResponse } from "@/lib/api-response";
+
+export const runtime = "nodejs";
+
+export async function GET(_request: Request, { params }: { params: Promise<{ key: string }> }) {
+  try {
+    const { key } = await params;
+    await ensureDatabaseSeeded();
+    const workshop = await WorkshopModel.findOne({ key }).select("templateData").lean();
+    if (workshop?.templateData) {
+      const [metadata, payload] = workshop.templateData.split(",", 2);
+      const mimeType = metadata.match(/^data:(.*);base64$/)?.[1] || "image/png";
+      return new NextResponse(Buffer.from(payload, "base64"), { headers: { "Content-Type": mimeType, "Cache-Control": "public, max-age=3600" } });
+    }
+    const known = await WorkshopModel.exists({ key });
+    if (known) {
+      const staticPath = `/templates/${key}.png`;
+      const response = await fetch(new URL(staticPath, new URL(_request.url).origin));
+      if (response.ok) return new NextResponse(response.body, { headers: { "Content-Type": response.headers.get("content-type") || "image/png" } });
+    }
+    return errorResponse("Template not found", 404);
+  } catch (error) {
+    console.error("Template load error:", error);
+    return errorResponse("Unable to load template");
+  }
+}
