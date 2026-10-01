@@ -1,4 +1,4 @@
-import type { LayoutConfig } from "@/config/workshops";
+import type { LayoutConfig } from "@/types/workshop";
 
 type Box = {
   left: number;

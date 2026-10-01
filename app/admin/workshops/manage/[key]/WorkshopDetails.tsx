@@ -1,0 +1,142 @@
+"use client";
+
+import { useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deleteParticipant } from "@/features/participants/api";
+import { deleteWorkshop, getWorkshopDetails, type WorkshopDetails as WorkshopRecord } from "@/features/workshops/api";
+import { useAdminPassword, useAdminToast } from "../../../AdminShell";
+
+export default function WorkshopDetails({ workshopKey }: { workshopKey: string }) {
+  const password = useAdminPassword();
+  const toast = useAdminToast();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const queryKey = ["admin", "workshop-details"];
+  const workshopsQuery = useQuery({
+    queryKey,
+    queryFn: () => getWorkshopDetails(password),
+    enabled: Boolean(password),
+  });
+  const workshop = workshopsQuery.data?.find((item) => item.key === workshopKey);
+  const participantMutation = useMutation({
+    mutationFn: (input: { id: string; name: string }) => deleteParticipant(password, { ...input, workshop: workshopKey }),
+    onSuccess: async (_, deleted) => {
+      queryClient.setQueryData<WorkshopRecord[]>(queryKey, (current = []) => current.map((item) => item.key === workshopKey
+        ? { ...item, participants: item.participants.filter((participant) => !(participant.id === deleted.id && participant.name === deleted.name)) }
+        : item));
+      await queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] });
+    },
+  });
+  const removeWorkshopMutation = useMutation({
+    mutationFn: () => deleteWorkshop(password, workshopKey),
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshops"] }),
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
+        queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
+      ]);
+      toast({ title: "Workshop deleted", description: `${result.deletedParticipants} participant record(s) were also removed.`, tone: "success" });
+      router.replace("/admin/workshops/manage");
+    },
+    onError: (error) => toast({ title: "Could not delete workshop", description: error.message, tone: "error" }),
+  });
+
+  useEffect(() => {
+    if (workshopsQuery.isError) toast({ title: "Could not load workshop", description: workshopsQuery.error.message, tone: "error" });
+  }, [toast, workshopsQuery.error, workshopsQuery.isError]);
+
+  async function onDeleteParticipant(participant: { id: string; name: string }) {
+    if (!window.confirm(`Remove ${participant.name} (ID ${participant.id}) from ${workshop?.workshopName ?? "this workshop"}?`)) return;
+    try {
+      await participantMutation.mutateAsync(participant);
+      toast({ title: "Participant deleted", description: `${participant.name} was removed from this workshop.`, tone: "success" });
+    } catch (error) {
+      toast({ title: "Could not delete participant", description: error instanceof Error ? error.message : "Unable to delete participant", tone: "error" });
+    }
+  }
+
+  function onDeleteWorkshop() {
+    if (!workshop || !window.confirm(`Delete "${workshop.workshopName}" and all ${workshop.participants.length} participant record(s)?`)) return;
+    removeWorkshopMutation.mutate();
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6">
+      <Link href="/admin/workshops/manage" className="inline-flex items-center gap-2 text-sm font-medium text-indigo-300 hover:text-indigo-200">← Manage Workshops</Link>
+      {workshopsQuery.isPending ? (
+        <p className="rounded-2xl border border-slate-800 bg-slate-950 px-6 py-10 text-center text-sm text-slate-400">Loading workshop…</p>
+      ) : workshopsQuery.isError ? (
+        <p role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{workshopsQuery.error.message}</p>
+      ) : !workshop ? (
+        <p role="alert" className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">Workshop “{workshopKey}” was not found.</p>
+      ) : (
+        <>
+          <header>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">Admin · Workshop</p>
+            <h2 className="mt-2 text-3xl font-bold">{workshop.workshopName}</h2>
+            <p className="mt-2 font-mono text-sm text-slate-400">{workshop.key}</p>
+          </header>
+
+          <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+            <h3 className="text-lg font-semibold text-white">Workshop Details</h3>
+            <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+              <Info label="Workshop ID" value={workshop.key} />
+              <Info label="Workshop Name" value={workshop.workshopName} />
+              <Info label="Full Title" value={workshop.workshopFullTitle} />
+              <Info label="Workshop Code" value={workshop.workshopCode} />
+              <Info label="Event Year" value={workshop.eventYear} />
+              <Info label="Event Date" value={workshop.eventDate} />
+              <Info label="Organized By" value={workshop.organizedBy} />
+              <Info label="Certificate Template Path" value={workshop.templatePath} />
+              <Info label="Registered Participants" value={String(workshop.participants.length)} />
+            </dl>
+            {workshop.templatePath !== "Not set" && (
+              <div className="mt-6">
+                <h4 className="mb-3 text-sm font-semibold text-slate-200">Certificate Template</h4>
+                <a href={workshop.templatePath} target="_blank" rel="noreferrer" className="block w-fit overflow-hidden rounded-xl border border-slate-700 hover:border-indigo-400">
+                  <Image src={workshop.templatePath} alt={`${workshop.workshopName} certificate template`} width={1000} height={700} className="max-h-80 w-auto bg-slate-950 object-contain" />
+                </a>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+            <h3 className="text-lg font-semibold text-white">Participants ({workshop.participants.length})</h3>
+            {workshop.participants.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-400">No users are enrolled in this workshop.</p>
+            ) : (
+              <div className="mt-4 overflow-x-auto rounded-xl border border-slate-800">
+                <table className="w-full min-w-[680px] text-left text-sm">
+                  <thead className="bg-slate-900 text-xs uppercase text-slate-400"><tr><th className="px-4 py-3">User ID</th><th className="px-4 py-3">Certificate ID</th><th className="px-4 py-3">Full Name</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {workshop.participants.map((participant) => (
+                      <tr key={`${participant.id}-${participant.name}`}>
+                        <td className="px-4 py-3 font-mono text-indigo-200">{participant.userId ?? "Legacy record"}</td>
+                        <td className="px-4 py-3 font-mono text-indigo-200">{participant.id}</td>
+                        <td className="px-4 py-3 text-slate-200">{participant.name}</td>
+                        <td className="px-4 py-3 text-right"><button type="button" disabled={participantMutation.isPending} onClick={() => void onDeleteParticipant(participant)} className="rounded-md border border-red-500/30 px-2.5 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50">Remove</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <section className="flex flex-col gap-3 rounded-2xl border border-red-500/20 bg-slate-950 p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div><h3 className="font-semibold text-red-200">Delete Workshop</h3><p className="mt-1 text-sm text-slate-400">Deletes this workshop and all its participant enrollments. Registered users remain.</p></div>
+            <button type="button" disabled={removeWorkshopMutation.isPending} onClick={onDeleteWorkshop} className="rounded-lg border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10 disabled:opacity-50">{removeWorkshopMutation.isPending ? "Deleting…" : "Delete Workshop"}</button>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return <div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 break-words text-sm font-medium text-slate-100">{value || "—"}</dd></div>;
+}

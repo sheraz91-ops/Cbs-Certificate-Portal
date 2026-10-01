@@ -1,8 +1,8 @@
 import { getData, postData } from "@/lib/api-client";
-import type { WorkshopDefinition } from "@/config/workshops";
+import type { WorkshopDefinition } from "@/types/workshop";
 
 export type WorkshopSummary = Pick<WorkshopDefinition, "key" | "workshopName">;
-export type WorkshopDetails = WorkshopDefinition & { participants: { id: string; name: string; workshop: string }[] };
+export type WorkshopDetails = WorkshopDefinition & { participants: { id: string; name: string; workshop: string; userId?: string }[] };
 
 export function getWorkshops(): Promise<WorkshopSummary[]> {
   return getData<WorkshopSummary[]>("/api/workshops");

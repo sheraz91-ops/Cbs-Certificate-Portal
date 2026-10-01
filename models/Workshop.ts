@@ -1,5 +1,5 @@
 import { model, models, Schema, type InferSchemaType } from "mongoose";
-import type { LayoutConfig } from "@/config/workshops";
+import type { LayoutConfig } from "@/types/workshop";
 
 const workshopSchema = new Schema({
   key: { type: String, required: true, unique: true, trim: true, lowercase: true },

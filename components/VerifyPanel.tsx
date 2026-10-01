@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import type { WorkshopDefinition } from "@/config/workshops";
+import type { WorkshopDefinition } from "@/types/workshop";
 import type { CertificateCandidate, DatabaseLookupResult, Participant, VerifyStatus } from "@/types";
 import { lookupCertificate } from "@/features/certificates/api";
 import LoadingSpinner from "./LoadingSpinner";

@@ -4,10 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import NextImage from "next/image";
 import { DEFAULT_LAYOUT_CONFIG } from "@/config/certificate.config";
-import type { LayoutConfig } from "@/config/workshops";
+import type { LayoutConfig } from "@/types/workshop";
 import { detectTemplateLayout } from "@/lib/detectTemplateLayout";
 import { useAdminToast } from "@/app/admin/AdminShell";
-import { addWorkshop as createWorkshop, deleteWorkshop as removeWorkshop } from "@/features/workshops/api";
+import { addWorkshop as createWorkshop } from "@/features/workshops/api";
 import { addParticipants } from "@/features/participants/api";
 
 type WorkshopSummary = { key: string; workshopName: string };
@@ -451,108 +451,6 @@ function LayoutEditor({
         </div>
       </div>
     </div>
-  );
-}
-
-export function ManageWorkshops({
-  password,
-  workshops,
-  onDeleted,
-}: {
-  password: string;
-  workshops: WorkshopSummary[];
-  onDeleted: (workshop: WorkshopSummary, deletedParticipants: number) => void;
-}) {
-  const toast = useAdminToast();
-  const queryClient = useQueryClient();
-  const deleteMutation = useMutation({
-    mutationFn: (workshop: WorkshopSummary) => removeWorkshop(password, workshop.key),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin", "workshops"] }),
-        queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
-        queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
-        queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
-      ]);
-    },
-  });
-  const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function deleteWorkshop(workshop: WorkshopSummary) {
-    if (
-      !window.confirm(
-        `Delete "${workshop.workshopName}"? Its participant records will also be removed.`,
-      )
-    )
-      return;
-
-    setBusyKey(workshop.key);
-    setError(null);
-    try {
-      const result = await deleteMutation.mutateAsync(workshop);
-      onDeleted(workshop, result.deletedParticipants);
-      toast({
-        title: "Workshop deleted",
-        description: `${workshop.workshopName} and ${result.deletedParticipants} participant record(s) removed.`,
-        tone: "success",
-      });
-    } catch (e: any) {
-      setError(e.message);
-      toast({
-        title: "Could not delete workshop",
-        description: e.message,
-        tone: "error",
-      });
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
-  return (
-    <section className="rounded-2xl border border-red-500/20 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
-      <h2 className="text-lg font-semibold text-white">Manage Workshops</h2>
-      <p className="mt-1 text-sm text-slate-400">
-        Delete a workshop and all of its participant records.
-      </p>
-      {error && (
-        <p className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          {error}
-        </p>
-      )}
-      <div className="mt-4 divide-y divide-slate-800 rounded-xl border border-slate-800">
-        {workshops.map((workshop) => (
-          <div
-            key={workshop.key}
-            className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-          >
-            <div>
-              <p className="font-medium text-slate-100">
-                {workshop.workshopName}
-              </p>
-              <p className="text-xs text-slate-500">{workshop.key}</p>
-            </div>
-            <button
-              type="button"
-              disabled={busyKey !== null}
-              onClick={() => deleteWorkshop(workshop)}
-              className="rounded-lg border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {busyKey === workshop.key ? "Deleting" : "Delete workshop"}
-            </button>
-          </div>
-        ))}
-        {workshops.length === 0 && (
-          <p className="px-4 py-3 text-sm text-slate-500">
-            No workshops found.
-          </p>
-        )}
-      </div>
-      <p className="mt-3 text-xs text-slate-500">
-        The certificate template image is retained so it can be recovered or
-        reused.
-      </p>
-    </section>
   );
 }
 
@@ -1005,8 +903,8 @@ export function AddParticipantsForm({
   const toast = useAdminToast();
   const queryClient = useQueryClient();
   const addMutation = useMutation({
-    mutationFn: (input: { workshop: string; entries: { id: string; name: string }[] }) =>
-      addParticipants(password, input.workshop, input.entries),
+    mutationFn: (input: { workshop: string; userIds: string[] }) =>
+      addParticipants(password, input.workshop, input.userIds),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
@@ -1015,19 +913,28 @@ export function AddParticipantsForm({
     },
   });
   const [workshop, setWorkshop] = useState("");
-  const [entries, setEntries] = useState([{ id: "", name: "" }]);
+  const [entries, setEntries] = useState([""]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [skipped, setSkipped] = useState<string[]>([]);
 
   async function submit() {
+    if (!workshop) {
+      setError("Select a workshop first.");
+      return;
+    }
+    const incomplete = entries.findIndex((entry) => !entry.trim());
+    if (incomplete >= 0) {
+      setError(`Enter an assigned user ID for row ${incomplete + 1}.`);
+      return;
+    }
     setBusy(true);
     setError(null);
     setSkipped([]);
     try {
       const data = await addMutation.mutateAsync({
         workshop,
-        entries: entries.filter((entry) => entry.name.trim()),
+        userIds: entries.map((entry) => entry.trim()),
       });
       onDone(
         `${data.added} participant(s) added:\n${data.assignedIds.join("\n")}`,
@@ -1044,7 +951,7 @@ export function AddParticipantsForm({
           description: `${data.skipped.length} duplicate or invalid ID(s) need review.`,
           tone: "info",
         });
-      setEntries([{ id: "", name: "" }]);
+      setEntries([""]);
     } catch (e: any) {
       setError(e.message);
       toast({
@@ -1060,11 +967,9 @@ export function AddParticipantsForm({
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-white">Add Participants</h2>
+        <h2 className="text-lg font-semibold text-white">Add Users to Workshop</h2>
 
-        <p className="mt-1 text-sm text-slate-400">
-          Assign certificate numbers to workshop participants.
-        </p>
+        <p className="mt-1 text-sm text-slate-400">Add registered users to this workshop using their assigned user IDs.</p>
       </div>
 
       <div className="space-y-5">
@@ -1094,80 +999,32 @@ export function AddParticipantsForm({
           </select>
         </div>
 
-        <div>
-          <div className="mb-2 grid grid-cols-[6rem_1fr_2.5rem] gap-2 text-xs font-medium text-slate-400">
-            <span>
-              Certificate ID <span className="text-slate-600">(optional)</span>
-            </span>
-            <span>Participant Name</span>
-            <span className="sr-only">Remove row</span>
-          </div>
-          <div className="space-y-2">
-            {entries.map((entry, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[6rem_1fr_2.5rem] gap-2"
-              >
+        <div className="space-y-4">
+          {entries.map((entry, index) => (
+            <div key={index} className="flex gap-2">
+              <label className="min-w-0 flex-1 text-xs font-medium text-slate-300">
+                Assigned User ID {index + 1}
                 <input
-                  aria-label={`Certificate ID for participant ${index + 1}`}
-                  inputMode="numeric"
-                  value={entry.id}
-                  onChange={(event) =>
-                    setEntries((current) =>
-                      current.map((item, row) =>
-                        row === index
-                          ? { ...item, id: event.target.value }
-                          : item,
-                      ),
-                    )
-                  }
-                  placeholder="Auto"
-                  className="h-11 min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500"
+                  aria-label={`Assigned user ID ${index + 1}`}
+                  value={entry}
+                  onChange={(event) => setEntries((current) => current.map((item, row) => row === index ? event.target.value : item))}
+                  placeholder="CBSU-000001"
+                  autoComplete="off"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500"
                 />
-                <input
-                  aria-label={`Participant name ${index + 1}`}
-                  value={entry.name}
-                  onChange={(event) =>
-                    setEntries((current) =>
-                      current.map((item, row) =>
-                        row === index
-                          ? { ...item, name: event.target.value }
-                          : item,
-                      ),
-                    )
-                  }
-                  placeholder="Full name"
-                  className="h-11 min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500"
-                />
-                <button
-                  type="button"
-                  aria-label={`Remove participant row ${index + 1}`}
-                  disabled={entries.length === 1}
-                  onClick={() =>
-                    setEntries((current) =>
-                      current.filter((_, row) => row !== index),
-                    )
-                  }
-                  className="rounded-lg border border-slate-700 text-slate-400 hover:border-red-500/50 hover:text-red-300 disabled:opacity-30"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
+              </label>
+              <button type="button" aria-label={`Remove user ID row ${index + 1}`} disabled={entries.length === 1} onClick={() => setEntries((current) => current.filter((_, row) => row !== index))} className="mt-5 h-11 rounded-lg border border-slate-700 px-3 text-slate-400 hover:border-red-500/50 hover:text-red-300 disabled:opacity-30">×</button>
+            </div>
+          ))}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
             <button
               type="button"
-              onClick={() =>
-                setEntries((current) => [...current, { id: "", name: "" }])
-              }
+              onClick={() => setEntries((current) => [...current, ""])}
               className="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:border-indigo-500/50 hover:text-indigo-200"
             >
-              + Add another participant
+              + Add another user ID
             </button>
-            <p className="text-xs text-slate-500">
-              Leave an ID blank to assign the next available number.
-            </p>
+            <p className="text-xs text-slate-500">Find assigned IDs on the Users page.</p>
           </div>
         </div>
 
@@ -1227,12 +1084,12 @@ export function AddParticipantsForm({
 
         <button
           disabled={
-            busy || !workshop || !entries.some((entry) => entry.name.trim())
+            busy || !workshop
           }
           onClick={submit}
           className="h-12 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-950/20 transition-all hover:bg-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
         >
-          {busy ? "Saving" : "Save Participants"}
+          {busy ? "Adding users" : "Add Users to Workshop"}
         </button>
       </div>
     </section>

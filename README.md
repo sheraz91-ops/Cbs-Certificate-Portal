@@ -18,7 +18,7 @@ Requirements: Node.js 20.19+ and npm.
 3. Set `MONGODB_URI` to a MongoDB connection string. The database name defaults to `CBS`; change it with `MONGODB_DB_NAME` if needed. Set a private `ADMIN_PASSWORD` too.
 4. Start the app with `npm run dev`.
 
-Open http://localhost:3000. The first API request imports the initial workshops in `config/workshops.ts` and participants in `data/participants.json` into MongoDB. A seed marker prevents the checked-in starter data from being re-imported after subsequent changes or deletions.
+Open http://localhost:3000. The database is not populated automatically. Create workshops and add participants through the admin pages. Existing MongoDB records remain available; the app no longer imports records from files.
 
 Keep these environment variables server-only. Do not prefix them with `NEXT_PUBLIC_`. For deployment, configure them in the hosting provider's environment settings. MongoDB Atlas users must allow connections from the hosting environment.
 
@@ -32,24 +32,24 @@ app/api/
   workshops/route.ts              Public workshop list
 models/
   Participant.ts                  Participant schema and unique workshop ID index
-  PortalMeta.ts                   One-time seed marker
+  User.ts                          Registered user profile schema
+  UserSequence.ts                  Atomic assigned user ID counter
   Workshop.ts                     Workshop, layout, and template schema
 lib/
   mongodb.ts                      Cached Mongoose connection
-  seedDatabase.ts                 Initial checked-in data import
   adminAuth.ts                    Server-side admin password check
   api-client.ts                   Shared getData/postData and envelope handling
   api-response.ts                 Shared server response envelope
 features/
   certificates/api.ts             Certificate lookup requests
   participants/api.ts             Participant management requests
+  users/api.ts                    Admin user registration and list requests
   workshops/api.ts                Workshop management requests
 app/providers.tsx                 TanStack Query provider
-config/                            Initial workshop and certificate settings
-data/                              Initial participant seed
+config/                            Certificate settings
 ```
 
-The checked-in workshop and participant files seed a new database once. After initialization, use the admin pages to add or delete workshops and participants. Uploaded template artwork and workshop layouts are stored with their MongoDB workshop records.
+Use the admin pages to register users, create workshops, enroll users by assigned ID, and manage workshop participants. Uploaded template artwork and workshop layouts are stored with their MongoDB workshop records.
 
 JSON APIs use the same response shape:
 

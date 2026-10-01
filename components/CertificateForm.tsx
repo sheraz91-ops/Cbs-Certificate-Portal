@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { WorkshopDefinition } from "@/config/workshops";
+import type { WorkshopDefinition } from "@/types/workshop";
 import { getWorkshops } from "@/features/workshops/api";
 import { lookupCertificate } from "@/features/certificates/api";
 import type {

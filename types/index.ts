@@ -1,4 +1,4 @@
-import type { WorkshopDefinition } from "@/config/workshops";
+import type { WorkshopDefinition } from "@/types/workshop";
 
 /**
  * Shared type definitions for the CBS Certificate Portal.

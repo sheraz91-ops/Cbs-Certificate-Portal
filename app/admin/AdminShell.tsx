@@ -35,9 +35,15 @@ async function validatePassword(password: string) {
 
 const navigation = [
   { href: "/admin", label: "Overview", icon: "⌂" },
-  { href: "/admin/workshops", label: "Workshops", icon: "▦" },
-  { href: "/admin/all-workshops", label: "All workshop", icon: "☷" },
-  { href: "/admin/participants", label: "Add Participants", icon: "＋" },
+  { key: "workshops", label: "Workshop", icon: "▦", children: [
+    { href: "/admin/workshops", label: "Create Workshop" },
+    { href: "/admin/workshops/manage", label: "Manage Workshop" },
+  ] },
+  { key: "users", label: "User", icon: "♙", children: [
+    { href: "/admin/users", label: "Add User" },
+    { href: "/admin/users/all", label: "All Users" },
+  ] },
+  { href: "/admin/participants", label: "Add Users to Workshop", icon: "＋" },
 ];
 
 export default function AdminShell({ children }: { children: ReactNode }) {
@@ -51,6 +57,10 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [openMenus, setOpenMenus] = useState({
+    users: pathname.toLowerCase().startsWith("/admin/users"),
+    workshops: pathname.toLowerCase().startsWith("/admin/workshops"),
+  });
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("admin_theme");
@@ -66,6 +76,11 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       .catch(() => sessionStorage.removeItem("admin_pw"))
       .finally(() => setReady(true));
   }, [validateAdmin]);
+
+  useEffect(() => {
+    if (pathname.toLowerCase().startsWith("/admin/users")) setOpenMenus((current) => ({ ...current, users: true }));
+    if (pathname.toLowerCase().startsWith("/admin/workshops")) setOpenMenus((current) => ({ ...current, workshops: true }));
+  }, [pathname]);
 
   const pushToast = useMemo(
     () => (toast: ToastInput) => {
@@ -185,10 +200,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     );
   }
 
-  const currentPage =
-    navigation.find(
-      (item) => item.href.toLowerCase() === pathname.toLowerCase(),
-    )?.label ?? "Admin";
+  const flatNavigation = navigation.flatMap((item) => "children" in item ? item.children : [item]);
+  const currentPage = flatNavigation.find((item) => item.href.toLowerCase() === pathname.toLowerCase())?.label
+    ?? (pathname.toLowerCase().startsWith("/admin/users/") ? "User Details" : pathname.toLowerCase().startsWith("/admin/workshops/") ? "Workshop Details" : "Admin");
 
   return (
     <AdminPasswordContext.Provider value={password}>
@@ -219,10 +233,46 @@ export default function AdminShell({ children }: { children: ReactNode }) {
               className="flex gap-2 overflow-x-auto px-3 pb-4 md:flex-col md:overflow-visible md:px-4"
             >
               {navigation.map((item) => {
-                const active =
-                  item.href === "/admin"
-                    ? pathname === item.href
-                    : pathname.toLowerCase() === item.href.toLowerCase();
+                if ("children" in item) {
+                  const active = pathname.toLowerCase().startsWith(`/admin/${item.key}`);
+                  const isOpen = openMenus[item.key];
+                  return (
+                    <div key={item.label} className="flex shrink-0 flex-col">
+                      <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        aria-controls={`admin-${item.key}-submenu`}
+                        onClick={() => setOpenMenus((current) => ({ ...current, [item.key]: !current[item.key] }))}
+                        className={`admin-nav-link flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${active ? "is-active" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
+                      >
+                        <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center text-base">{item.icon}</span>
+                        <span className="flex-1">{item.label}</span>
+                        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}>
+                          <path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                      {isOpen && (
+                        <div id={`admin-${item.key}-submenu`} className="mt-1 flex flex-col gap-1 pl-9">
+                          {item.children.map((child) => {
+                            const childActive = pathname.toLowerCase() === child.href.toLowerCase();
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                aria-current={childActive ? "page" : undefined}
+                                className={`rounded-lg px-3 py-2 text-sm transition ${childActive ? "bg-indigo-500/10 font-semibold text-indigo-200" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
+                              >
+                                {child.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                const active = item.href === "/admin" ? pathname === item.href : pathname.toLowerCase() === item.href.toLowerCase();
                 return (
                   <Link
                     key={item.href}
@@ -230,12 +280,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                     aria-current={active ? "page" : undefined}
                     className={`admin-nav-link flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "is-active" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
                   >
-                    <span
-                      aria-hidden="true"
-                      className="flex h-6 w-6 items-center justify-center text-base"
-                    >
-                      {item.icon}
-                    </span>
+                    <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center text-base">{item.icon}</span>
                     <span>{item.label}</span>
                   </Link>
                 );

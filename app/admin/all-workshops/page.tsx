@@ -1,5 +1,5 @@
-import WorkshopDetails from "../workshops/Details";
+import { redirect } from "next/navigation";
 
-export default function AllWorkshopsPage() {
-  return <WorkshopDetails />;
+export default function LegacyAllWorkshopsPage() {
+  redirect("/admin/workshops/manage");
 }

@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
-import { ensureDatabaseSeeded } from "@/lib/seedDatabase";
+import { connectToDatabase } from "@/lib/mongodb";
 import { formatCertificateId } from "@/lib/formatId";
 import { normalizeParticipantId } from "@/lib/participantId";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import ParticipantModel from "@/models/Participant";
 import WorkshopModel from "@/models/Workshop";
 import type { CertificateCandidate, DatabaseLookupResult, Participant } from "@/types";
-import type { WorkshopDefinition } from "@/config/workshops";
+import type { WorkshopDefinition } from "@/types/workshop";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { id?: unknown; workshop?: unknown };
     if (typeof body.id !== "string" || !body.id.trim()) return errorResponse("A certificate ID is required", 400);
-    await ensureDatabaseSeeded();
+    await connectToDatabase();
     const selectedKey = typeof body.workshop === "string" ? body.workshop : undefined;
     const parts = body.id.trim().toUpperCase().split(/[\s\-_/]+/).filter(Boolean);
     const workshopCode = parts.find((part) => /^[A-Z0-9]+$/.test(part) && part !== "CBS" && !/^\d+$/.test(part));

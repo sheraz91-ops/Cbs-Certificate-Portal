@@ -27,10 +27,9 @@ export default function ParticipantsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
           Admin
         </p>
-        <h1 className="mt-2 text-3xl font-bold">Add Participants</h1>
+        <h1 className="mt-2 text-3xl font-bold">Add Users to Workshop</h1>
         <p className="mt-2 text-sm text-slate-400">
-          Choose a workshop, then enter each participant with an optional
-          certificate ID.
+          Choose a workshop and enter one or more assigned user IDs. User details are registered on the Users page.
         </p>
       </header>
       {error && (
