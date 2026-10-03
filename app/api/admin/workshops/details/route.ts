@@ -19,6 +19,7 @@ export const POST = adminPost(async () => {
   }
   const content = workshops.map((workshop) => ({
     ...workshop,
+    isActive: workshop.isActive !== false,
     participants: participantsByWorkshop.get(workshop.key) ?? [],
   }));
   return successResponse(content, "Successfully retrieved workshop details", content.length);

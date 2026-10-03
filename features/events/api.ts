@@ -9,6 +9,7 @@ export type EventOption = {
   workshopCode: string;
   eventYear: string;
   eventDate: string;
+  isActive: boolean;
   allowOutsiders?: boolean;
 };
 

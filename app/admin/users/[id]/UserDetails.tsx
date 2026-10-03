@@ -162,7 +162,7 @@ export default function UserDetails({ userId }: { userId: string }) {
 
       {userQuery.isPending ? (
         <p className="rounded-2xl border border-slate-800 bg-slate-950 px-6 py-10 text-center text-sm text-slate-400">
-          Loading user details
+          Loading user details...
         </p>
       ) : userQuery.isError ? (
         <p

@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const POST = adminPost(async (body: AdminBody) => {
   const parsed = createWorkshopSchema.safeParse(body);
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
-  const { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, allowOutsiders, imageExt, imageBase64, layout } = parsed.data;
+  const { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, isActive, allowOutsiders, imageExt, imageBase64, layout } = parsed.data;
   if (await WorkshopModel.exists({ key })) return errorResponse(`Workshop key "${key}" already exists`, 409);
 
   const extension = imageExt ?? "png";
@@ -24,6 +24,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     workshopCode,
     eventYear,
     eventDate,
+    isActive,
     allowOutsiders,
     organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
     templatePath: imageData ? `/api/templates/${key}` : "Not set",
@@ -32,7 +33,7 @@ export const POST = adminPost(async (body: AdminBody) => {
 
   await WorkshopModel.create({ ...workshop, templateData: imageData ? `data:${mimeType};base64,${imageData}` : null });
   return successResponse({
-    workshop: { key, workshopName: workshop.workshopName },
+    workshop: { key, workshopName: workshop.workshopName, isActive },
     note: imageData
       ? layout ? "Workshop and template saved to MongoDB with a custom layout." : "Workshop and template saved to MongoDB."
       : "Workshop saved without a template image. Add a template before generating certificates.",
