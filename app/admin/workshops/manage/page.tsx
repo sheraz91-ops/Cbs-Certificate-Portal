@@ -50,7 +50,7 @@ export default function ManageWorkshopsPage() {
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-slate-900 text-xs uppercase text-slate-400">
                 <tr>
-                  {["Workshop ID", "Workshop Name", "Code", "Event Date", "Participants"].map((label) => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}
+                  {["Workshop ID", "Workshop Name", "Code", "Event Date", "Outside Participants", "Participants"].map((label) => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
@@ -62,6 +62,7 @@ export default function ManageWorkshopsPage() {
                     <td className="px-4 py-3 font-medium text-slate-200">{workshop.workshopName}</td>
                     <td className="px-4 py-3 font-mono text-slate-300">{workshop.workshopCode}</td>
                     <td className="px-4 py-3 text-slate-300">{workshop.eventDate} ({workshop.eventYear})</td>
+                    <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${workshop.allowOutsiders ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{workshop.allowOutsiders ? "Allowed" : "Not allowed"}</span></td>
                     <td className="px-4 py-3 tabular-nums text-slate-300">{workshop.participants.length}</td>
                   </tr>
                 ))}

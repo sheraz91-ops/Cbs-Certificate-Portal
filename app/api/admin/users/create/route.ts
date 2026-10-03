@@ -3,12 +3,12 @@ import { errorResponse, successResponse } from "@/lib/api-response";
 import UserModel from "@/models/User";
 import UserSequenceModel from "@/models/UserSequence";
 import type { UserProfileInput, UserRecord } from "@/types/user";
-import { userProfileSchema, validationMessage } from "@/lib/validation/schemas";
+import { campusUserProfileSchema, validationMessage } from "@/lib/validation/schemas";
 
 export const runtime = "nodejs";
 
 export const POST = adminPost(async (body: AdminBody) => {
-  const parsed = userProfileSchema.safeParse(body);
+  const parsed = campusUserProfileSchema.safeParse(body);
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
   const profile = parsed.data;
 

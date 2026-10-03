@@ -5,22 +5,23 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import InputField from "@/components/InputField";
 import PasswordField from "@/components/PasswordField";
+import UserProfileField from "@/components/UserProfileField";
 import { getEvents } from "@/features/events/api";
 import { getOrganizerById, updateOrganizer, type OrganizerDetails as OrganizerRecord } from "@/features/organizers/api";
 import { useAdminSession, useAdminToast } from "../../AdminShell";
-import { updateOrganizerSchema, userProfileSchema, validationMessage } from "@/lib/validation/schemas";
+import { updateOrganizerSchema, validationMessage } from "@/lib/validation/schemas";
 import type { UserProfileInput } from "@/types/user";
 
 const fields = [
-  ["emailAddress", "Email Address", "email"],
-  ["fullName", "Full Name", "text"],
-  ["registrationNumber", "Registration Number", "text"],
-  ["department", "Department", "text"],
-  ["semester", "Semester", "text"],
-  ["section", "Section", "text"],
-  ["institute", "Institute", "text"],
-  ["whatsappNumber", "WhatsApp Number", "tel"],
-  ["cnic", "CNIC", "text"],
+  ["emailAddress", "Email Address"],
+  ["fullName", "Full Name"],
+  ["registrationNumber", "Registration Number"],
+  ["department", "Department"],
+  ["semester", "Semester"],
+  ["section", "Section"],
+  ["institute", "Institute"],
+  ["whatsappNumber", "WhatsApp Number"],
+  ["cnic", "CNIC"],
 ] as const;
 
 type OrganizerProfile = UserProfileInput & { workshops: string[]; password: string };
@@ -111,9 +112,9 @@ export default function OrganizerDetails({ organizerId }: { organizerId: string 
           {editing ? (
             <form onSubmit={submit}>
               <div className="grid gap-4 sm:grid-cols-2">
-                {fields.map(([key, label, type]) => (
+                {fields.map(([key, label]) => (
                   <label key={key} className="block text-xs font-medium text-slate-300">{label}
-                    <InputField type={type} value={profile[key]} validationSchema={userProfileSchema.shape[key]} onChange={(event) => setProfile((current) => current ? { ...current, [key]: event.target.value } : current)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
+                    <UserProfileField name={key} registrationMode="campus" value={profile[key]} onValueChange={(value) => setProfile((current) => current ? { ...current, [key]: value } : current)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
                   </label>
                 ))}
                 <label className="block text-xs font-medium text-slate-300 sm:col-span-2">Set a new password (optional)

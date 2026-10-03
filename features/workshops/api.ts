@@ -1,6 +1,6 @@
 import { getData, postData } from "@/lib/api-client";
 import type { WorkshopDefinition } from "@/types/workshop";
-import { createWorkshopSchema, workshopKeyBodySchema } from "@/lib/validation/schemas";
+import { createWorkshopSchema, updateWorkshopSchema, workshopKeyBodySchema } from "@/lib/validation/schemas";
 
 export type WorkshopSummary = Pick<WorkshopDefinition, "key" | "workshopName">;
 export type WorkshopDetails = WorkshopDefinition & { participants: { id: string; name: string; workshop: string; userId?: string }[] };
@@ -24,6 +24,7 @@ export type AddWorkshopInput = {
   workshopCode: string;
   eventYear: string;
   eventDate: string;
+  allowOutsiders: boolean;
   imageBase64?: string;
   imageExt?: string;
   layout?: unknown;
@@ -32,6 +33,20 @@ export type AddWorkshopInput = {
 export type AddWorkshopResult = { workshop: WorkshopSummary; note: string };
 export function addWorkshop(input: AddWorkshopInput): Promise<AddWorkshopResult> {
   return postData<AddWorkshopResult, AddWorkshopInput>("/api/admin/workshops/create", createWorkshopSchema.parse(input));
+}
+
+export type UpdateWorkshopInput = {
+  key: string;
+  workshopName: string;
+  workshopFullTitle: string;
+  workshopCode: string;
+  eventYear: string;
+  eventDate: string;
+  allowOutsiders: boolean;
+};
+
+export function updateWorkshop(input: UpdateWorkshopInput): Promise<WorkshopDefinition> {
+  return postData<WorkshopDefinition, UpdateWorkshopInput>("/api/admin/workshops/update", updateWorkshopSchema.parse(input));
 }
 
 export type DeleteWorkshopResult = { deletedParticipants: number };

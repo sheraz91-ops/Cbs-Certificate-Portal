@@ -67,6 +67,12 @@ export default function CertificateForm() {
       return;
     }
 
+    if (result.status === "attendance-required") {
+      setStatus("error");
+      setAlert({ type: "error", message: "You were not present in this event. Your certificate is available after the organizer marks your attendance Present." });
+      return;
+    }
+
     if (result.status === "ambiguous") {
       setStatus("idle");
       setCandidates(result.candidates);
@@ -133,9 +139,7 @@ export default function CertificateForm() {
               name="certificateId"
               type="text"
               autoComplete="off"
-              placeholder={
-                selectedWorkshop ? "e.g. 5" : "e.g. 5 or CBS-LSW-2026-005"
-              }
+              placeholder="Enter certificate ID"
               value={certificateId}
               validationSchema={certificateLookupSchema.shape.id}
               onChange={(e) => {

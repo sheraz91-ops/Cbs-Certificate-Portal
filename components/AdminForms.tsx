@@ -461,6 +461,7 @@ export function AddWorkshopForm({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
         queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
         queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
       ]);
     },
@@ -471,6 +472,7 @@ export function AddWorkshopForm({
   const [workshopCode, setWorkshopCode] = useState("");
   const [eventYear, setEventYear] = useState(String(new Date().getFullYear()));
   const [eventDate, setEventDate] = useState("");
+  const [allowOutsiders, setAllowOutsiders] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewSize, setPreviewSize] = useState<{
@@ -565,7 +567,7 @@ export function AddWorkshopForm({
       const layout =
         draftLayout ?? (file ? await detectTemplateLayout(file) : undefined);
       const parsed = createWorkshopSchema.safeParse({
-        key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate,
+        key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, allowOutsiders,
         imageBase64, imageExt, layout,
       });
       if (!parsed.success) throw new Error(validationMessage(parsed.error));
@@ -588,6 +590,7 @@ export function AddWorkshopForm({
       setWorkshopFullTitle("");
       setWorkshopCode("");
       setEventDate("");
+      setAllowOutsiders(false);
       setFile(null);
     } catch (e: any) {
       setError(e.message);
@@ -619,7 +622,7 @@ export function AddWorkshopForm({
 
           <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-            placeholder="nbw-2026"
+            placeholder="Enter workshop key"
             validationSchema={workshopKeySchema}
             value={key}
             onChange={(e) => setKey(e.target.value)}
@@ -637,7 +640,7 @@ export function AddWorkshopForm({
 
           <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-            placeholder="National Bootcamp Workshop"
+            placeholder="Enter workshop name"
             validationSchema={createWorkshopSchema.shape.workshopName}
             value={workshopName}
             onChange={(e) => setWorkshopName(e.target.value)}
@@ -651,7 +654,7 @@ export function AddWorkshopForm({
 
           <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-            placeholder="Full workshop title"
+            placeholder="Enter workshop title"
             validationSchema={createWorkshopSchema.shape.workshopFullTitle}
             value={workshopFullTitle}
             onChange={(e) => setWorkshopFullTitle(e.target.value)}
@@ -666,7 +669,7 @@ export function AddWorkshopForm({
 
             <InputField
               className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm uppercase text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-              placeholder="NBW"
+              placeholder="Enter workshop code"
               validationSchema={createWorkshopSchema.shape.workshopCode}
               value={workshopCode}
               onChange={(e) => setWorkshopCode(e.target.value.toUpperCase())}
@@ -680,7 +683,7 @@ export function AddWorkshopForm({
 
             <InputField
               className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-              placeholder="2026"
+              placeholder="Enter event year"
               validationSchema={createWorkshopSchema.shape.eventYear}
               value={eventYear}
               onChange={(e) => setEventYear(e.target.value)}
@@ -695,12 +698,17 @@ export function AddWorkshopForm({
 
           <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-            placeholder="12 December 2026"
+            placeholder="Enter event date"
             validationSchema={createWorkshopSchema.shape.eventDate}
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
           />
         </div>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
+          <InputField type="checkbox" checked={allowOutsiders} validationSchema={createWorkshopSchema.shape.allowOutsiders} onChange={(event) => setAllowOutsiders(event.target.checked)} className="mt-0.5 accent-indigo-500" />
+          <span><span className="block font-medium">Allow outside participants</span><span className="mt-1 block text-xs leading-5 text-slate-400">When enabled, people without an MNSUAM registration number may register for this event.</span></span>
+        </label>
 
         <div>
           <label className="block text-sm font-medium text-slate-200 mb-2">
@@ -1009,7 +1017,7 @@ export function AddParticipantsForm({
                   value={entry}
                   validationSchema={userIdSchema}
                   onChange={(event) => setEntries((current) => current.map((item, row) => row === index ? event.target.value : item))}
-                  placeholder="CBSU-000001"
+                  placeholder="Enter assigned user ID"
                   autoComplete="off"
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500"
                 />

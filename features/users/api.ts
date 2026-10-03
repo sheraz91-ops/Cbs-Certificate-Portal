@@ -1,13 +1,13 @@
 import { postData } from "@/lib/api-client";
 import type { UserDetailsRecord, UserProfileInput, UserRecord, UserSummary } from "@/types/user";
-import { adminUpdateUserSchema, assignUserEventSchema, userDetailsSchema, userProfileSchema } from "@/lib/validation/schemas";
+import { adminUpdateUserSchema, assignUserEventSchema, campusUserProfileSchema, userDetailsSchema } from "@/lib/validation/schemas";
 
 export function getUsers(): Promise<UserSummary[]> {
   return postData<UserSummary[], Record<string, never>>("/api/admin/users/list", {});
 }
 
 export function createUser(user: UserProfileInput): Promise<UserRecord> {
-  return postData<UserRecord, UserProfileInput>("/api/admin/users/create", userProfileSchema.parse(user));
+  return postData<UserRecord, UserProfileInput>("/api/admin/users/create", campusUserProfileSchema.parse(user));
 }
 
 export function getUserById(userId: string): Promise<UserDetailsRecord> {

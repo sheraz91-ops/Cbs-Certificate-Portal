@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import InputField from "@/components/InputField";
+import UserProfileField from "@/components/UserProfileField";
 import PasswordField from "@/components/PasswordField";
 import { useAdminSession, useAdminToast } from "../../AdminShell";
 import { createOrganizer, type CreateOrganizerInput } from "@/features/organizers/api";
@@ -10,15 +11,15 @@ import { getEvents } from "@/features/events/api";
 import { createOrganizerBaseSchema, createOrganizerSchema, validationMessage } from "@/lib/validation/schemas";
 
 const profileFields = [
-  ["emailAddress", "Email Address", "email"],
-  ["fullName", "Full Name", "text"],
-  ["registrationNumber", "Registration Number", "text"],
-  ["department", "Department", "text"],
-  ["semester", "Semester", "text"],
-  ["section", "Section", "text"],
-  ["institute", "Institute", "text"],
-  ["whatsappNumber", "WhatsApp Number", "tel"],
-  ["cnic", "CNIC", "text"],
+  ["emailAddress", "Email Address"],
+  ["fullName", "Full Name"],
+  ["registrationNumber", "Registration Number"],
+  ["department", "Department"],
+  ["semester", "Semester"],
+  ["section", "Section"],
+  ["institute", "Institute"],
+  ["whatsappNumber", "WhatsApp Number"],
+  ["cnic", "CNIC"],
 ] as const;
 
 const empty: CreateOrganizerInput = {
@@ -64,8 +65,8 @@ export default function CreateOrganizerPage() {
       <form onSubmit={submit} className="space-y-6 rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
         <div><h3 className="text-lg font-semibold text-white">Organizer Details</h3><p className="mt-1 text-sm text-slate-400">CBS assigns the Organizer ID after this form is saved.</p></div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {profileFields.map(([key, label, type]) => <label key={key} className="text-xs font-medium text-slate-300">{label} <span className="text-red-300">*</span>
-            <InputField required type={type} autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"} value={form[key]} validationSchema={createOrganizerBaseSchema.shape[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />
+          {profileFields.map(([key, label]) => <label key={key} className="text-xs font-medium text-slate-300">{label} <span className="text-red-300">*</span>
+            <UserProfileField name={key} required registrationMode="campus" autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"} value={form[key]} onValueChange={(value) => setForm((current) => ({ ...current, [key]: value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />
           </label>)}
           <label className="text-xs font-medium text-slate-300 sm:col-span-2 lg:col-span-3">Organizer Password <span className="text-red-300">*</span>
             <PasswordField required autoComplete="new-password" value={form.password} validationSchema={createOrganizerBaseSchema.shape.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />

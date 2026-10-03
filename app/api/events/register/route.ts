@@ -2,9 +2,10 @@ import { NextRequest } from "next/server";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { connectToDatabase } from "@/lib/mongodb";
 import { normalizeParticipantId } from "@/lib/participantId";
+import { formatCnic } from "@/lib/inputMasks";
 import { formatCertificateId } from "@/lib/formatId";
 import { allocateParticipantIds } from "@/lib/participantSequence";
-import { eventRegistrationSchema, validationMessage } from "@/lib/validation/schemas";
+import { campusRegistrationNumberSchema, eventRegistrationSchema, validationMessage } from "@/lib/validation/schemas";
 import ParticipantModel from "@/models/Participant";
 import UserModel from "@/models/User";
 import UserSequenceModel from "@/models/UserSequence";
@@ -30,9 +31,14 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const workshop = await WorkshopModel.findOne({ key: workshopKey }).lean() as unknown as WorkshopDefinition | null;
     if (!workshop) return errorResponse("The selected event was not found", 404);
+    if (!workshop.allowOutsiders) {
+      const registrationNumber = campusRegistrationNumberSchema.safeParse(profile.registrationNumber);
+      if (!registrationNumber.success) return errorResponse(validationMessage(registrationNumber.error), 400);
+      profile.registrationNumber = registrationNumber.data;
+    }
 
     const matchingUsers = await UserModel.find({
-      $or: [{ emailAddress: profile.emailAddress }, { cnic: profile.cnic }],
+      $or: [{ emailAddress: profile.emailAddress }, { cnic: profile.cnic }, { cnic: profile.cnic.replace(/-/g, "") }],
     }).limit(2).lean();
     if (matchingUsers.length > 1) {
       return errorResponse("These details match more than one CBS account. Please contact the CBS team.", 409);
@@ -54,7 +60,8 @@ export async function POST(request: NextRequest) {
       };
       const detailsMatch = Object.keys(profile).every((key) => {
         const field = key as keyof UserProfileInput;
-        return existingProfile[field] === profile[field];
+        const existingValue = field === "cnic" ? formatCnic(existingProfile.cnic) : existingProfile[field];
+        return existingValue === profile[field];
       });
       if (!detailsMatch) {
         return errorResponse("These details do not match the existing CBS account. Please contact the CBS team.", 409);

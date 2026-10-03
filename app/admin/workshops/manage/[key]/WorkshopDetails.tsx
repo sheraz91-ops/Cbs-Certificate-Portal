@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteParticipant } from "@/features/participants/api";
-import { deleteWorkshop, getWorkshopDetails, type WorkshopDetails as WorkshopRecord } from "@/features/workshops/api";
+import { deleteWorkshop, getWorkshopDetails, updateWorkshop, type UpdateWorkshopInput, type WorkshopDetails as WorkshopRecord } from "@/features/workshops/api";
+import InputField from "@/components/InputField";
+import { updateWorkshopSchema, validationMessage } from "@/lib/validation/schemas";
 import { useAdminSession, useAdminToast } from "../../../AdminShell";
 
 export default function WorkshopDetails({ workshopKey }: { workshopKey: string }) {
@@ -14,6 +16,9 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
   const toast = useAdminToast();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<UpdateWorkshopInput | null>(null);
+  const [formError, setFormError] = useState("");
   const queryKey = ["admin", "workshop-details"];
   const workshopsQuery = useQuery({
     queryKey,
@@ -21,6 +26,22 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
     enabled: authenticated,
   });
   const workshop = workshopsQuery.data?.find((item) => item.key === workshopKey);
+  const updateMutation = useMutation({
+    mutationFn: updateWorkshop,
+    onSuccess: async (updated) => {
+      queryClient.setQueryData<WorkshopRecord[]>(queryKey, (current = []) => current.map((item) => item.key === workshopKey ? { ...item, ...updated } : item));
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshops"] }),
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
+        queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
+        queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
+      ]);
+      setEditing(false);
+      setFormError("");
+      toast({ title: "Workshop updated", description: `${updated.workshopName} details were saved.`, tone: "success" });
+    },
+  });
   const participantMutation = useMutation({
     mutationFn: (input: { id: string; name: string }) => deleteParticipant({ ...input, workshop: workshopKey }),
     onSuccess: async (_, deleted) => {
@@ -37,6 +58,7 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
         queryClient.invalidateQueries({ queryKey: ["admin", "workshops"] }),
         queryClient.invalidateQueries({ queryKey }),
         queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
+        queryClient.invalidateQueries({ queryKey: ["events"] }),
         queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
       ]);
       toast({ title: "Workshop deleted", description: `${result.deletedParticipants} participant record(s) were also removed.`, tone: "success" });
@@ -64,6 +86,33 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
     removeWorkshopMutation.mutate();
   }
 
+  function beginEditing() {
+    if (!workshop) return;
+    setDraft({
+      key: workshop.key,
+      workshopName: workshop.workshopName,
+      workshopFullTitle: workshop.workshopFullTitle,
+      workshopCode: workshop.workshopCode,
+      eventYear: workshop.eventYear,
+      eventDate: workshop.eventDate,
+      allowOutsiders: workshop.allowOutsiders ?? false,
+    });
+    setFormError("");
+    setEditing(true);
+  }
+
+  function submitUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!draft) return;
+    const parsed = updateWorkshopSchema.safeParse(draft);
+    if (!parsed.success) {
+      setFormError(validationMessage(parsed.error));
+      return;
+    }
+    setFormError("");
+    updateMutation.mutate(parsed.data);
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <Link href="/admin/workshops/manage" className="inline-flex items-center gap-2 text-sm font-medium text-indigo-300 hover:text-indigo-200">← Manage Workshops</Link>
@@ -82,18 +131,48 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
           </header>
 
           <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
-            <h3 className="text-lg font-semibold text-white">Workshop Details</h3>
-            <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-              <Info label="Workshop ID" value={workshop.key} />
-              <Info label="Workshop Name" value={workshop.workshopName} />
-              <Info label="Full Title" value={workshop.workshopFullTitle} />
-              <Info label="Workshop Code" value={workshop.workshopCode} />
-              <Info label="Event Year" value={workshop.eventYear} />
-              <Info label="Event Date" value={workshop.eventDate} />
-              <Info label="Organized By" value={workshop.organizedBy} />
-              <Info label="Certificate Template Path" value={workshop.templatePath} />
-              <Info label="Registered Participants" value={String(workshop.participants.length)} />
-            </dl>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold text-white">Workshop Details</h3>
+              {!editing && <button type="button" onClick={beginEditing} className="rounded-xl border border-indigo-400/30 px-4 py-2 text-sm font-semibold text-indigo-200 hover:bg-indigo-500/10">Edit workshop fields</button>}
+            </div>
+            {editing && draft ? (
+              <form onSubmit={submitUpdate} className="mt-5 space-y-5">
+                <p className="text-xs text-slate-500">Workshop ID is fixed because participant records and organizer access use it.</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {([
+                    ["workshopName", "Workshop Name"],
+                    ["workshopFullTitle", "Full Descriptive Title"],
+                    ["workshopCode", "Workshop Code"],
+                    ["eventYear", "Event Year"],
+                    ["eventDate", "Event Date"],
+                  ] as const).map(([field, label]) => <label key={field} className="block text-xs font-medium text-slate-300">{label}
+                    <InputField required type="text" inputMode={field === "eventYear" ? "numeric" : undefined} placeholder={`Enter ${label.toLowerCase()}`} value={draft[field]} validationSchema={updateWorkshopSchema.shape[field]} onChange={(event) => setDraft((current) => current ? { ...current, [field]: event.target.value } : current)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
+                  </label>)}
+                </div>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
+                  <InputField type="checkbox" checked={draft.allowOutsiders} validationSchema={updateWorkshopSchema.shape.allowOutsiders} onChange={(event) => setDraft((current) => current ? { ...current, allowOutsiders: event.target.checked } : current)} className="mt-0.5 accent-indigo-500" />
+                  <span><span className="block font-medium">Allow outside participants</span><span className="mt-1 block text-xs text-slate-400">Outside participants can register with any registration number format.</span></span>
+                </label>
+                {(formError || updateMutation.isError) && <p role="alert" className="text-sm text-red-300">{formError || (updateMutation.isError ? updateMutation.error.message : "")}</p>}
+                <div className="flex flex-wrap gap-3">
+                  <button type="submit" disabled={updateMutation.isPending} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">{updateMutation.isPending ? "Saving…" : "Save workshop fields"}</button>
+                  <button type="button" onClick={() => { setEditing(false); setDraft(null); setFormError(""); }} className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-900">Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                <Info label="Workshop ID" value={workshop.key} />
+                <Info label="Workshop Name" value={workshop.workshopName} />
+                <Info label="Full Title" value={workshop.workshopFullTitle} />
+                <Info label="Workshop Code" value={workshop.workshopCode} />
+                <Info label="Event Year" value={workshop.eventYear} />
+                <Info label="Event Date" value={workshop.eventDate} />
+                <Info label="Outside Participants" value={workshop.allowOutsiders ? "Allowed" : "Not allowed"} />
+                <Info label="Organized By" value={workshop.organizedBy} />
+                <Info label="Certificate Template Path" value={workshop.templatePath} />
+                <Info label="Registered Participants" value={String(workshop.participants.length)} />
+              </dl>
+            )}
             {workshop.templatePath !== "Not set" && (
               <div className="mt-6">
                 <h4 className="mb-3 text-sm font-semibold text-slate-200">Certificate Template</h4>

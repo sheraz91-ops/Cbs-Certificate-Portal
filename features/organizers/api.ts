@@ -20,6 +20,7 @@ export type CreateOrganizerInput = UserProfileInput & {
 };
 
 export type OrganizerDetails = OrganizerSummary & UserProfileInput;
+export type UpdateOrganizerInput = UserProfileInput & { organizerId: string; workshops: string[]; password?: string };
 
 export type OrganizerParticipant = {
   participantId: string;
@@ -50,7 +51,7 @@ export function getOrganizerById(organizerId: string): Promise<OrganizerDetails>
   return postData("/api/admin/organizers/details", organizerDetailsSchema.parse({ organizerId }));
 }
 
-export function updateOrganizer(input: OrganizerDetails & { password?: string }): Promise<OrganizerDetails> {
+export function updateOrganizer(input: UpdateOrganizerInput): Promise<OrganizerDetails> {
   return postData("/api/admin/organizers/update", updateOrganizerSchema.parse(input));
 }
 

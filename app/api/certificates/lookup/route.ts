@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
       ? "Certificate found"
       : result.status === "ambiguous"
         ? "Multiple certificates found"
+        : result.status === "attendance-required"
+          ? "Certificate is unavailable until attendance is marked present"
         : "Certificate not found";
     const count = result.status === "ambiguous" ? result.candidates.length : result.status === "found" ? 1 : 0;
     return successResponse(result, message, count);
@@ -61,8 +63,16 @@ async function lookup(rawId: string, selectedKey: string | undefined, workshops:
   const chosen = selectedKey ? workshops.find((workshop) => workshop.key === selectedKey) : codeMatch;
   const candidates = chosen ? [chosen] : workshops;
   const candidateKeys = candidates.map((workshop) => workshop.key);
-  const matches = await ParticipantModel.find({ workshop: { $in: candidateKeys }, normalizedId: number }).lean();
-  const found: CertificateCandidate[] = matches.flatMap((record) => {
+  const matches = await ParticipantModel.find({
+    workshop: { $in: candidateKeys },
+    $or: [
+      { normalizedId: number },
+      { id: { $regex: `^0*${number}$` } },
+    ],
+  }).lean();
+  const attendedMatches = matches.filter((record) => record.attendance === true);
+  if (attendedMatches.length === 0 && matches.length > 0) return { status: "attendance-required" };
+  const found: CertificateCandidate[] = attendedMatches.flatMap((record) => {
     const workshop = workshops.find((entry) => entry.key === record.workshop);
     if (!workshop) return [];
     const participant: Participant = { id: record.id, name: record.name, workshop: record.workshop };

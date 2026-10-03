@@ -30,12 +30,14 @@ export type LookupResult =
   /** A bare number (no workshop code) matched participants in more than
    *  one workshop — the caller needs to disambiguate. */
   | { status: "ambiguous"; candidates: CertificateCandidate[] }
+  | { status: "attendance-required" }
   | { status: "not-found" };
 
 /** Public API result containing the workshop resolved from MongoDB. */
 export type DatabaseLookupResult =
   | { status: "found"; participant: Participant; formattedId: string; workshop: WorkshopDefinition }
   | { status: "ambiguous"; candidates: CertificateCandidate[] }
+  | { status: "attendance-required" }
   | { status: "not-found" };
 
 /** A fully-resolved certificate ready to render (PDF/PNG/verify) */
@@ -53,6 +55,7 @@ export type GenerationStatus = "idle" | "loading" | "error";
 export type PreviewStatus =
   | "loading"
   | "ready"
+  | "attendance-required"
   | "not-found"
   | "ambiguous"
   | "error";
@@ -62,6 +65,7 @@ export type VerifyStatus =
   | "idle"
   | "checking"
   | "verified"
+  | "attendance-required"
   | "ambiguous"
   | "not-found";
 

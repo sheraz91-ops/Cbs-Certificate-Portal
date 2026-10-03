@@ -40,6 +40,7 @@ export interface WorkshopDefinition {
   workshopCode: string;
   eventYear: string;
   eventDate: string;
+  allowOutsiders?: boolean;
   organizedBy: string;
   templatePath: string;
   layout: LayoutConfig;

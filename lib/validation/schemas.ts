@@ -1,21 +1,30 @@
 import { z } from "zod";
 
-const requiredText = (label: string, max = 200) => z.string().trim().min(1, `${label} is required`).max(max, `${label} must be ${max} characters or fewer`);
+const requiredText = (_label: string, max = 200) => z.string({ error: "Required" }).trim().min(1, "Required").max(max, `Must be ${max} characters or fewer`);
+
+export const campusRegistrationNumberSchema = z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}-uam-\d{4}$/i, "Invalid format").transform((value) => value.toLowerCase());
+const semesterSchema = z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "Graduated"], { error: "Required" });
+const sectionSchema = z.enum(["A", "B", "C", "D", "E", "F"], { error: "Required" });
+const cnicSchema = z.string({ error: "Required" }).trim().min(1, "Required").regex(/^(?:\d{13}|\d{5}-\d{7}-\d)$/, "Invalid format").transform((value) => {
+  const digits = value.replace(/\D/g, "");
+  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+});
 
 export const userProfileSchema = z.object({
-  emailAddress: z.string().trim().email("Enter a valid email address").max(254).transform((value) => value.toLowerCase()),
+  emailAddress: z.string({ error: "Required" }).trim().min(1, "Required").email("Invalid format").max(254).transform((value) => value.toLowerCase()),
   fullName: requiredText("Full name", 160),
   registrationNumber: requiredText("Registration number", 80),
   department: requiredText("Department", 120),
-  semester: requiredText("Semester", 40),
-  section: requiredText("Section", 40),
+  semester: semesterSchema,
+  section: sectionSchema,
   institute: requiredText("Institute", 160),
-  whatsappNumber: requiredText("WhatsApp number", 32).regex(/^[+()\d .-]+$/, "Enter a valid WhatsApp number").refine((value) => {
+  whatsappNumber: requiredText("WhatsApp number", 32).regex(/^[+()\d .-]+$/, "Invalid format").refine((value) => {
     const digits = value.replace(/\D/g, "").length;
     return digits >= 7 && digits <= 15;
-  }, "WhatsApp number must contain 7 to 15 digits"),
-  cnic: requiredText("CNIC", 15).regex(/^(?:\d{13}|\d{5}-\d{7}-\d)$/, "CNIC must contain 13 digits, optionally formatted as 12345-1234567-1"),
+  }, "Invalid format"),
+  cnic: cnicSchema,
 }).strict();
+export const campusUserProfileSchema = userProfileSchema.extend({ registrationNumber: campusRegistrationNumberSchema });
 
 const ratio = z.number().finite().min(0).max(1);
 export const layoutRatioSchema = ratio;
@@ -61,17 +70,18 @@ export const layoutConfigSchema = z.object({
 }).strict();
 
 export const createWorkshopSchema = z.object({
-  key: requiredText("Workshop key", 80).toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Workshop key must use lowercase letters, numbers, and single hyphens"),
+  key: requiredText("Workshop key", 80).toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid format"),
   workshopName: requiredText("Workshop name", 160),
   workshopFullTitle: requiredText("Workshop full title", 240),
-  workshopCode: requiredText("Workshop code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Workshop code must use letters and numbers only"),
-  eventYear: z.string().trim().regex(/^\d{4}$/, "Event year must be a four-digit year"),
+  workshopCode: requiredText("Workshop code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
+  eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
   eventDate: requiredText("Event date", 100),
+  allowOutsiders: z.boolean().default(false),
   imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
-  imageExt: z.string().trim().toLowerCase().pipe(z.enum(["png", "jpg", "jpeg"])).optional(),
+  imageExt: z.string().trim().toLowerCase().pipe(z.enum(["png", "jpg", "jpeg"], { error: "Invalid format" })).optional(),
   layout: layoutConfigSchema.optional(),
 }).strict().refine((value) => !value.imageBase64 || value.imageExt, {
-  message: "A template image extension is required when uploading an image",
+  message: "Required",
   path: ["imageExt"],
 });
 
@@ -80,34 +90,43 @@ export const templateFileMetadataSchema = z.object({
   size: z.number().positive("Choose an image file").max(15 * 1024 * 1024, "Template image must be 15 MB or smaller"),
 });
 
-export const userIdSchema = z.string().trim().toUpperCase().regex(/^CBSU-\d{6,}$/, "Enter a valid assigned user ID");
-export const workshopKeySchema = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Enter a valid workshop key");
+export const userIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSU-\d{6,}$/, "Invalid format");
+export const workshopKeySchema = z.string({ error: "Required" }).trim().min(1, "Required").toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid format");
+export const updateWorkshopSchema = z.object({
+  key: workshopKeySchema,
+  workshopName: requiredText("Workshop name", 160),
+  workshopFullTitle: requiredText("Workshop full title", 240),
+  workshopCode: requiredText("Workshop code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
+  eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
+  eventDate: requiredText("Event date", 100),
+  allowOutsiders: z.boolean({ error: "Required" }),
+}).strict();
 export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema });
 export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
-export const organizerIdSchema = z.string().trim().toUpperCase().regex(/^CBSO-\d{6,}$/, "Enter a valid assigned organizer ID");
-export const createOrganizerBaseSchema = userProfileSchema.extend({
-  password: z.string().min(16, "Organizer password must contain at least 16 characters").max(128),
-  workshops: z.array(workshopKeySchema).min(1, "Assign at least one event").max(100),
+export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");
+export const createOrganizerBaseSchema = campusUserProfileSchema.extend({
+  password: z.string({ error: "Required" }).min(1, "Required").min(16, "Password must contain at least 16 characters").max(128),
+  workshops: z.array(workshopKeySchema, { error: "Required" }).min(1, "Required").max(100),
 });
 export const createOrganizerSchema = createOrganizerBaseSchema.transform((value) => ({ ...value, workshops: [...new Set(value.workshops)] }));
 export const organizerDetailsSchema = z.object({ organizerId: organizerIdSchema }).strict();
-export const updateOrganizerSchema = userProfileSchema.extend({
+export const updateOrganizerSchema = campusUserProfileSchema.extend({
   organizerId: organizerIdSchema,
-  workshops: z.array(workshopKeySchema).max(100),
+  workshops: z.array(workshopKeySchema, { error: "Required" }).max(100),
   password: z.string().max(128).refine((value) => value.length === 0 || value.length >= 16, "New password must contain at least 16 characters").optional(),
 }).strict().transform((value) => ({ ...value, workshops: [...new Set(value.workshops)], password: value.password || undefined }));
 export const organizerLoginSchema = z.object({
-  email: z.string().trim().email("Enter a valid email").max(254).transform((value) => value.toLowerCase()),
-  password: z.string().min(1, "Password is required").max(128),
+  email: z.string({ error: "Required" }).trim().min(1, "Required").email("Invalid format").max(254).transform((value) => value.toLowerCase()),
+  password: z.string({ error: "Required" }).min(1, "Required").max(128),
 }).strict();
 export const organizerAssignmentSchema = z.object({
   organizerId: organizerIdSchema,
-  workshops: z.array(workshopKeySchema).max(100),
+  workshops: z.array(workshopKeySchema, { error: "Required" }).max(100),
 }).strict().transform((value) => ({ ...value, workshops: [...new Set(value.workshops)] }));
 export const organizerAttendanceSchema = z.object({
   workshop: workshopKeySchema,
-  participantId: z.string().trim().min(1).max(32),
+  participantId: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
   present: z.boolean(),
 }).strict();
 
@@ -115,18 +134,18 @@ export const userDetailsSchema = z.object({ userId: userIdSchema }).strict();
 export const workshopKeyBodySchema = z.object({ workshop: workshopKeySchema }).strict();
 export const participantDeleteSchema = z.object({
   workshop: workshopKeySchema,
-  id: z.string().trim().min(1).max(32),
+  id: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
   name: requiredText("Participant name", 160),
 }).strict();
 export const addParticipantsSchema = z.object({
   workshop: workshopKeySchema,
-  userIds: z.array(userIdSchema).min(1, "Enter at least one assigned user ID").max(500, "You can add at most 500 users at a time"),
+  userIds: z.array(userIdSchema, { error: "Required" }).min(1, "Required").max(500, "You can add at most 500 users at a time"),
 }).strict().transform(({ workshop, userIds }) => ({ workshop, userIds: [...new Set(userIds)] }));
 
-export const adminLoginSchema = z.object({ password: z.string().min(1, "Admin password is required").max(1024) }).strict();
+export const adminLoginSchema = z.object({ password: z.string({ error: "Required" }).min(1, "Required").max(1024) }).strict();
 export const certificateLookupSchema = z.object({
-  id: z.string().trim().min(1, "A certificate ID is required").max(160, "Certificate ID is too long").regex(/^[A-Za-z0-9]+(?:[\s\-_/][A-Za-z0-9]+)*$/, "Certificate ID contains unsupported characters"),
-  workshop: z.string().trim().max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/i, "Enter a valid workshop key").optional().transform((value) => value || undefined),
+  id: z.string({ error: "Required" }).trim().min(1, "Required").max(160, "Certificate ID is too long").regex(/^[A-Za-z0-9]+(?:[\s\-_/][A-Za-z0-9]+)*$/, "Invalid format"),
+  workshop: z.string().trim().max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/i, "Invalid format").optional().transform((value) => value || undefined),
 }).strict();
 
 export const apiEnvelopeSchema = z.object({

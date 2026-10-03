@@ -3,23 +3,23 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import InputField from "@/components/InputField";
+import UserProfileField from "@/components/UserProfileField";
 import { useAdminSession, useAdminToast } from "../../AdminShell";
 import { enrollUserInEvent, getUserById, updateUser } from "@/features/users/api";
 import { getAdminWorkshops } from "@/features/workshops/api";
-import { userProfileSchema, validationMessage } from "@/lib/validation/schemas";
+import { campusRegistrationNumberSchema, userProfileSchema, validationMessage } from "@/lib/validation/schemas";
 import type { UserProfileInput } from "@/types/user";
 
 const fields = [
-  ["emailAddress", "Email Address", "email"],
-  ["fullName", "Full Name", "text"],
-  ["registrationNumber", "Registration Number", "text"],
-  ["department", "Department", "text"],
-  ["semester", "Semester", "text"],
-  ["section", "Section", "text"],
-  ["institute", "Institute", "text"],
-  ["whatsappNumber", "WhatsApp Number", "tel"],
-  ["cnic", "CNIC", "text"],
+  ["emailAddress", "Email Address"],
+  ["fullName", "Full Name"],
+  ["registrationNumber", "Registration Number"],
+  ["department", "Department"],
+  ["semester", "Semester"],
+  ["section", "Section"],
+  ["institute", "Institute"],
+  ["whatsappNumber", "WhatsApp Number"],
+  ["cnic", "CNIC"],
 ] as const;
 
 function toProfile(user: UserProfileInput): UserProfileInput {
@@ -119,9 +119,9 @@ export default function UserDetails({ userId }: { userId: string }) {
             {editing ? (
               <form onSubmit={submitProfile}>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {fields.map(([key, label, type]) => (
+                  {fields.map(([key, label]) => (
                     <label key={key} className="block text-xs font-medium text-slate-300">{label}
-                      <InputField type={type} value={profile[key]} validationSchema={userProfileSchema.shape[key]} error={fieldErrors[key]} onChange={(event) => { setProfile((current) => current ? { ...current, [key]: event.target.value } : current); setFieldErrors((current) => ({ ...current, [key]: "" })); }} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
+                    <UserProfileField name={key} registrationMode={campusRegistrationNumberSchema.safeParse(user.registrationNumber).success ? "campus" : "free"} value={profile[key]} error={fieldErrors[key]} onValueChange={(value) => { setProfile((current) => current ? { ...current, [key]: value } : current); setFieldErrors((current) => ({ ...current, [key]: "" })); }} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
                     </label>
                   ))}
                 </div>

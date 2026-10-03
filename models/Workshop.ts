@@ -8,6 +8,7 @@ const workshopSchema = new Schema({
   workshopCode: { type: String, required: true, trim: true, uppercase: true },
   eventYear: { type: String, required: true, trim: true },
   eventDate: { type: String, required: true, trim: true },
+  allowOutsiders: { type: Boolean, required: true, default: false },
   organizedBy: { type: String, required: true, trim: true },
   templatePath: { type: String, required: true },
   layout: { type: Schema.Types.Mixed, required: true },

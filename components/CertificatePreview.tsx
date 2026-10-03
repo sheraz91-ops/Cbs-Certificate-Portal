@@ -58,6 +58,11 @@ export default function CertificatePreview() {
         return;
       }
 
+      if (result.status === "attendance-required") {
+        setStatus("attendance-required");
+        return;
+      }
+
       if (result.status === "ambiguous") {
         setCandidates(
           result.candidates.map((c) => ({
@@ -172,19 +177,23 @@ export default function CertificatePreview() {
     );
   }
 
-  if (status === "not-found" || status === "error") {
+  if (status === "not-found" || status === "attendance-required" || status === "error") {
     return (
       <div className="w-full max-w-md animate-scale-in rounded-3xl bg-white/95 p-8 shadow-card ring-1 ring-black/5 text-center flex flex-col items-center gap-4">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 text-xl font-bold">
           !
         </span>
         <h2 className="font-display text-xl font-semibold text-navy-900">
-          {status === "not-found"
+          {status === "attendance-required"
+            ? "You were not present in this event."
+            : status === "not-found"
             ? "Certificate ID not found."
             : "Something went wrong."}
         </h2>
         <p className="text-sm text-navy-500">
-          {status === "not-found"
+          {status === "attendance-required"
+            ? "Your certificate is available after the organizer marks your attendance Present."
+            : status === "not-found"
             ? "Please double-check your Certificate ID and try again."
             : "We couldn't render your certificate. Please try again."}
         </p>

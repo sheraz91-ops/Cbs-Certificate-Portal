@@ -2,27 +2,43 @@
 
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import InputField from "@/components/InputField";
-import { getEvents, registerForEvent, type EventRegistrationResult } from "@/features/events/api";
-import { eventRegistrationSchema, userProfileSchema, validationMessage, workshopKeySchema } from "@/lib/validation/schemas";
+import UserProfileField from "@/components/UserProfileField";
+import {
+  getEvents,
+  registerForEvent,
+  type EventRegistrationResult,
+} from "@/features/events/api";
+import {
+  campusRegistrationNumberSchema,
+  eventRegistrationSchema,
+  validationMessage,
+  workshopKeySchema,
+} from "@/lib/validation/schemas";
 import type { UserProfileInput } from "@/types/user";
 
 const fields = [
-  ["emailAddress", "Email Address", "email"],
-  ["fullName", "Full Name", "text"],
-  ["registrationNumber", "Registration Number", "text"],
-  ["department", "Department", "text"],
-  ["semester", "Semester", "text"],
-  ["section", "Section", "text"],
-  ["institute", "Institute", "text"],
-  ["whatsappNumber", "WhatsApp Number", "tel"],
-  ["cnic", "CNIC", "text"],
+  ["emailAddress", "Email Address"],
+  ["fullName", "Full Name"],
+  ["registrationNumber", "Registration Number"],
+  ["department", "Department"],
+  ["semester", "Semester"],
+  ["section", "Section"],
+  ["institute", "Institute"],
+  ["whatsappNumber", "WhatsApp Number"],
+  ["cnic", "CNIC"],
 ] as const;
 
 function emptyProfile(): UserProfileInput {
   return {
-    emailAddress: "", fullName: "", registrationNumber: "", department: "",
-    semester: "", section: "", institute: "", whatsappNumber: "", cnic: "",
+    emailAddress: "",
+    fullName: "",
+    registrationNumber: "",
+    department: "",
+    semester: "",
+    section: "",
+    institute: "",
+    whatsappNumber: "",
+    cnic: "",
   };
 }
 
@@ -35,6 +51,7 @@ export default function EventRegistrationForm() {
   const eventsQuery = useQuery({ queryKey: ["events"], queryFn: getEvents });
   const registerMutation = useMutation({ mutationFn: registerForEvent });
   const events = eventsQuery.data ?? [];
+  const selectedEvent = events.find((item) => item.key === workshop);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,6 +69,24 @@ export default function EventRegistrationForm() {
       return;
     }
 
+    if (selectedEvent && !selectedEvent.allowOutsiders) {
+      const registrationNumber = campusRegistrationNumberSchema.safeParse(
+        parsed.data.registrationNumber,
+      );
+      if (!registrationNumber.success) {
+        const message =
+          registrationNumber.error.issues[0]?.message ??
+          "Use the required campus registration number format.";
+        setFieldErrors((current) => ({
+          ...current,
+          registrationNumber: message,
+        }));
+        setFormError(`Registration Number: ${message}`);
+        return;
+      }
+      parsed.data.registrationNumber = registrationNumber.data;
+    }
+
     setFieldErrors({});
     try {
       const registration = await registerMutation.mutateAsync(parsed.data);
@@ -59,35 +94,85 @@ export default function EventRegistrationForm() {
       setProfile(emptyProfile());
       setWorkshop("");
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Unable to complete registration");
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "Unable to complete registration",
+      );
     }
   }
 
   if (result) {
     return (
-      <div role="status" className="rounded-3xl border border-emerald-200 bg-white p-7 shadow-card sm:p-9">
-        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl font-bold text-emerald-700">✓</div>
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Registration complete</p>
-        <h2 className="mt-2 font-display text-2xl font-semibold text-navy-900">You’re registered for {result.eventName}</h2>
-        <p className="mt-3 text-sm leading-6 text-navy-600">CBS assigned your IDs. Keep them safe to access your certificate after the event.</p>
+      <div
+        role="status"
+        className="rounded-3xl border border-emerald-200 bg-white p-7 shadow-card sm:p-9"
+      >
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl font-bold text-emerald-700">
+          ✓
+        </div>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
+          Registration complete
+        </p>
+        <h2 className="mt-2 font-display text-2xl font-semibold text-navy-900">
+          You’re registered for {result.eventName}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-navy-600">
+          CBS assigned your IDs. Keep them safe to access your certificate after
+          the event.
+        </p>
         <dl className="mt-6 grid gap-3 rounded-2xl bg-navy-50 p-4 text-sm sm:grid-cols-2">
-          <div><dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">CBS Participant ID</dt><dd className="mt-1 font-mono font-bold text-navy-900">{result.userId}</dd></div>
-          <div><dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">Event Certificate ID</dt><dd className="mt-1 font-mono font-bold text-navy-900">{result.certificateId}</dd></div>
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
+              CBS Participant ID
+            </dt>
+            <dd className="mt-1 font-mono font-bold text-navy-900">
+              {result.userId}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
+              Event Certificate ID
+            </dt>
+            <dd className="mt-1 font-mono font-bold text-navy-900">
+              {result.certificateId}
+            </dd>
+          </div>
         </dl>
-        <button type="button" onClick={() => setResult(null)} className="mt-6 text-sm font-semibold text-navy-700 underline underline-offset-4 hover:text-gold-700">Register for another event</button>
+        <button
+          type="button"
+          onClick={() => setResult(null)}
+          className="mt-6 text-sm font-semibold text-navy-700 underline underline-offset-4 hover:text-gold-700"
+        >
+          Register for another event
+        </button>
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="rounded-3xl border border-white/60 bg-white p-6 shadow-card sm:p-9" noValidate>
+    <form
+      onSubmit={submit}
+      className="rounded-3xl border border-white/60 bg-white p-6 shadow-card sm:p-9"
+      noValidate
+    >
       <div className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">Event registration</p>
-        <h2 className="mt-2 font-display text-2xl font-semibold text-navy-900">Your details</h2>
-        <p className="mt-2 text-sm leading-6 text-navy-600">Your participant ID is assigned automatically by CBS and cannot be changed here.</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
+          Event registration
+        </p>
+        <h2 className="mt-2 font-display text-2xl font-semibold text-navy-900">
+          Your details
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-navy-600">
+          Your participant ID is assigned automatically by CBS and cannot be
+          changed here.
+        </p>
       </div>
 
-      <label className="mb-5 block text-sm font-semibold text-navy-800" htmlFor="registration-event">
+      <label
+        className="mb-5 block text-sm font-semibold text-navy-800"
+        htmlFor="registration-event"
+      >
         Select an event <span className="text-red-600">*</span>
         <select
           id="registration-event"
@@ -95,47 +180,108 @@ export default function EventRegistrationForm() {
           value={workshop}
           disabled={eventsQuery.isPending || events.length === 0}
           aria-invalid={Boolean(fieldErrors.workshop)}
-          aria-describedby={fieldErrors.workshop ? "registration-event-error" : undefined}
+          aria-describedby={
+            fieldErrors.workshop ? "registration-event-error" : undefined
+          }
           onChange={(event) => {
-            setWorkshop(workshopKeySchema.safeParse(event.target.value).success ? event.target.value : "");
+            setWorkshop(
+              workshopKeySchema.safeParse(event.target.value).success
+                ? event.target.value
+                : "",
+            );
             setFieldErrors((current) => ({ ...current, workshop: "" }));
           }}
           className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
         >
-          <option value="">{eventsQuery.isPending ? "Loading events…" : "Choose an event"}</option>
-          {events.map((item) => <option key={item.key} value={item.key}>{item.workshopName} · {item.eventYear} · {item.eventDate}</option>)}
+          <option value="">
+            {eventsQuery.isPending ? "Loading events…" : "Choose an event"}
+          </option>
+          {events.map((item) => (
+            <option key={item.key} value={item.key}>
+              {item.workshopName} · {item.eventYear} · {item.eventDate} ·{" "}
+              {item.allowOutsiders ? "Outsiders allowed" : "Campus only"}
+            </option>
+          ))}
         </select>
-        {fieldErrors.workshop && <span id="registration-event-error" role="alert" className="mt-1 block text-xs text-red-600">{fieldErrors.workshop}</span>}
-        {eventsQuery.isError && <span role="alert" className="mt-1 block text-xs text-red-600">Events could not be loaded. Refresh and try again.</span>}
-        {!eventsQuery.isPending && !eventsQuery.isError && events.length === 0 && <span className="mt-1 block text-xs text-navy-500">There are no events available for registration right now.</span>}
+        {fieldErrors.workshop && (
+          <span
+            id="registration-event-error"
+            role="alert"
+            className="mt-1 block text-xs text-red-600"
+          >
+            {fieldErrors.workshop}
+          </span>
+        )}
+        {selectedEvent && (
+          <span
+            className={`mt-2 block text-xs ${selectedEvent.allowOutsiders ? "text-emerald-700" : "text-amber-700"}`}
+          >
+            {selectedEvent.allowOutsiders
+              ? "Outside participants are allowed for this event."
+              : "Outside participants are not allowed for this event. Use your campus registration number in YYYY-uam-RRRR format."}
+          </span>
+        )}
+        {eventsQuery.isError && (
+          <span role="alert" className="mt-1 block text-xs text-red-600">
+            Events could not be loaded. Refresh and try again.
+          </span>
+        )}
+        {!eventsQuery.isPending &&
+          !eventsQuery.isError &&
+          events.length === 0 && (
+            <span className="mt-1 block text-xs text-navy-500">
+              There are no events available for registration right now.
+            </span>
+          )}
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {fields.map(([key, label, type]) => (
-          <label key={key} className="block text-sm font-semibold text-navy-800">
+        {fields.map(([key, label]) => (
+          <label
+            key={key}
+            className="block text-sm font-semibold text-navy-800"
+          >
             {label} <span className="text-red-600">*</span>
-            <InputField
+            <UserProfileField
+              name={key}
               required
-              type={type}
-              autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"}
+              registrationMode={
+                selectedEvent?.allowOutsiders ? "free" : "campus"
+              }
+              autoComplete={
+                key === "emailAddress"
+                  ? "email"
+                  : key === "whatsappNumber"
+                    ? "tel"
+                    : "off"
+              }
               value={profile[key]}
-              validationSchema={userProfileSchema.shape[key]}
-              error={fieldErrors[key]}
-              onChange={(event) => {
-                setProfile((current) => ({ ...current, [key]: event.target.value }));
+              onValueChange={(value) => {
+                setProfile((current) => ({ ...current, [key]: value }));
                 setFieldErrors((current) => ({ ...current, [key]: "" }));
               }}
+              error={fieldErrors[key]}
               className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
             />
           </label>
         ))}
       </div>
 
-      {formError && <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>}
-      <button type="submit" disabled={registerMutation.isPending || eventsQuery.isPending || events.length === 0} className="mt-6 h-12 w-full rounded-xl bg-navy-800 px-5 text-sm font-semibold text-white shadow-gold transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={
+          registerMutation.isPending ||
+          eventsQuery.isPending ||
+          events.length === 0
+        }
+        className="mt-6 h-12 w-full rounded-xl bg-navy-800 px-5 text-sm font-semibold text-white shadow-gold transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
         {registerMutation.isPending ? "Registering…" : "Register for event"}
       </button>
-      <p className="mt-4 text-center text-xs leading-5 text-navy-500">Your CBS Participant ID and Certificate ID are assigned by the system after successful registration.</p>
+      <p className="mt-4 text-center text-xs leading-5 text-navy-500">
+        Your CBS Participant ID and Certificate ID are assigned by the system
+        after successful registration.
+      </p>
     </form>
   );
 }

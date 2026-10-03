@@ -82,7 +82,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [openMenus, setOpenMenus] = useState<Record<NavigationGroup["key"], boolean>>({
+  const [openMenus, setOpenMenus] = useState<
+    Record<NavigationGroup["key"], boolean>
+  >({
     users: pathname.toLowerCase().startsWith("/admin/users"),
     workshops: pathname.toLowerCase().startsWith("/admin/workshops"),
     organizers: pathname.toLowerCase().startsWith("/admin/organizers"),
@@ -93,7 +95,8 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
 
     sessionStorage.removeItem("admin_pw");
-    const hasSessionMarker = sessionStorage.getItem("admin_session") === "active";
+    const hasSessionMarker =
+      sessionStorage.getItem("admin_session") === "active";
     if (!hasSessionMarker) {
       setReady(true);
       return;
@@ -132,7 +135,8 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       queryClient.removeQueries({ queryKey: ["admin"] });
     };
     window.addEventListener("admin-session-expired", expireSession);
-    return () => window.removeEventListener("admin-session-expired", expireSession);
+    return () =>
+      window.removeEventListener("admin-session-expired", expireSession);
   }, [queryClient]);
 
   async function unlock(event: React.FormEvent) {
@@ -261,7 +265,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   }
 
   const flatNavigation = navigation.flatMap((item): NavigationLink[] =>
-    "children" in item ? item.children : [{ href: item.href, label: item.label, icon: item.icon }],
+    "children" in item
+      ? item.children
+      : [{ href: item.href, label: item.label, icon: item.icon }],
   );
   const currentPage =
     flatNavigation.find(
@@ -273,7 +279,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         ? "Workshop Details"
         : pathname.toLowerCase().startsWith("/admin/organizers/")
           ? "Organizer Details"
-        : "Admin");
+          : "Admin");
 
   return (
     <AdminSessionContext.Provider value={authenticated}>
@@ -290,9 +296,6 @@ export default function AdminShell({ children }: { children: ReactNode }) {
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold tracking-wide">
                   CBS Admin
-                </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  Certificate Portal
                 </p>
               </div>
             </div>
@@ -465,24 +468,110 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </AdminToastContext.Provider>
-      </AdminSessionContext.Provider>
+    </AdminSessionContext.Provider>
   );
 }
 
-function NavigationIcon({ label, small = false }: { label: string; small?: boolean }) {
-  const iconClass = small ? "mr-2 inline-block h-4 w-4 align-[-3px]" : "h-5 w-5";
-  const common = { "aria-hidden": true as const, viewBox: "0 0 24 24", fill: "none", className: iconClass, stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+function NavigationIcon({
+  label,
+  small = false,
+}: {
+  label: string;
+  small?: boolean;
+}) {
+  const iconClass = small
+    ? "mr-2 inline-block h-4 w-4 align-[-3px]"
+    : "h-5 w-5";
+  const common = {
+    "aria-hidden": true as const,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    className: iconClass,
+    stroke: "currentColor",
+    strokeWidth: 1.7,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
 
-  if (label === "Overview") return <svg {...common}><rect x="3" y="3" width="8" height="8" rx="1.5" /><rect x="13" y="3" width="8" height="5" rx="1.5" /><rect x="13" y="10" width="8" height="11" rx="1.5" /><rect x="3" y="13" width="8" height="8" rx="1.5" /></svg>;
-  if (label === "User") return <svg {...common}><circle cx="9" cy="8" r="4" /><path d="M2 20v-1.5a4 4 0 014-4h6a4 4 0 014 4V20M16 5a4 4 0 010 6M20 15a4 4 0 012 3.5V20" /></svg>;
-  if (label === "Organizer") return <svg {...common}><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" /><path d="M9 12l2 2 4-4" /></svg>;
-  if (label.startsWith("Add Users to Workshop")) return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M8 2v4M16 2v4M3 9h18M8 13h3M8 16h3M16 13v5M13.5 15.5h5" /></svg>;
-  if (label.includes("Workshop")) return label.startsWith("Create") ? <svg {...common}><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 9h18M12 12v6M9 15h6" /></svg> : <svg {...common}><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 9h18M8 14h3M8 17h8" /></svg>;
-  if (label === "Add User") return <svg {...common}><path d="M15 19v-1.5a4 4 0 00-4-4H7a4 4 0 00-4 4V19" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6M16 11h6" /></svg>;
-  if (label === "All Users") return <svg {...common}><path d="M16 20v-1.5a4 4 0 00-4-4H7a4 4 0 00-4 4V20" /><circle cx="9.5" cy="7" r="4" /><path d="M17 4.2a4 4 0 010 7.6M20 14.5a4 4 0 011 3V20" /></svg>;
-  if (label === "Add Organizer") return <svg {...common}><path d="M14 19v-1.5a4 4 0 00-4-4H6a4 4 0 00-4 4V19" /><circle cx="8" cy="7" r="4" /><path d="M19 7v6M16 10h6" /></svg>;
-  if (label === "All Organizers") return <svg {...common}><circle cx="9" cy="8" r="4" /><path d="M2 20v-1.5a4 4 0 014-4h6a4 4 0 014 4V20M16 11l2 2 4-4" /></svg>;
-  return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M8 2v4M16 2v4M3 9h18M8 13h3M8 16h8" /></svg>;
+  if (label === "Overview")
+    return (
+      <svg {...common}>
+        <rect x="3" y="3" width="8" height="8" rx="1.5" />
+        <rect x="13" y="3" width="8" height="5" rx="1.5" />
+        <rect x="13" y="10" width="8" height="11" rx="1.5" />
+        <rect x="3" y="13" width="8" height="8" rx="1.5" />
+      </svg>
+    );
+  if (label === "User")
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="8" r="4" />
+        <path d="M2 20v-1.5a4 4 0 014-4h6a4 4 0 014 4V20M16 5a4 4 0 010 6M20 15a4 4 0 012 3.5V20" />
+      </svg>
+    );
+  if (label === "Organizer")
+    return (
+      <svg {...common}>
+        <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    );
+  if (label.startsWith("Add Users to Workshop"))
+    return (
+      <svg {...common}>
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M8 2v4M16 2v4M3 9h18M8 13h3M8 16h3M16 13v5M13.5 15.5h5" />
+      </svg>
+    );
+  if (label.includes("Workshop"))
+    return label.startsWith("Create") ? (
+      <svg {...common}>
+        <rect x="3" y="4" width="18" height="17" rx="2" />
+        <path d="M16 2v4M8 2v4M3 9h18M12 12v6M9 15h6" />
+      </svg>
+    ) : (
+      <svg {...common}>
+        <rect x="3" y="4" width="18" height="17" rx="2" />
+        <path d="M16 2v4M8 2v4M3 9h18M8 14h3M8 17h8" />
+      </svg>
+    );
+  if (label === "Add User")
+    return (
+      <svg {...common}>
+        <path d="M15 19v-1.5a4 4 0 00-4-4H7a4 4 0 00-4 4V19" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M19 8v6M16 11h6" />
+      </svg>
+    );
+  if (label === "All Users")
+    return (
+      <svg {...common}>
+        <path d="M16 20v-1.5a4 4 0 00-4-4H7a4 4 0 00-4 4V20" />
+        <circle cx="9.5" cy="7" r="4" />
+        <path d="M17 4.2a4 4 0 010 7.6M20 14.5a4 4 0 011 3V20" />
+      </svg>
+    );
+  if (label === "Add Organizer")
+    return (
+      <svg {...common}>
+        <path d="M14 19v-1.5a4 4 0 00-4-4H6a4 4 0 00-4 4V19" />
+        <circle cx="8" cy="7" r="4" />
+        <path d="M19 7v6M16 10h6" />
+      </svg>
+    );
+  if (label === "All Organizers")
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="8" r="4" />
+        <path d="M2 20v-1.5a4 4 0 014-4h6a4 4 0 014 4V20M16 11l2 2 4-4" />
+      </svg>
+    );
+  return (
+    <svg {...common}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M8 2v4M16 2v4M3 9h18M8 13h3M8 16h8" />
+    </svg>
+  );
 }
 
 function ThemeButton({

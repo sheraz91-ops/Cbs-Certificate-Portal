@@ -9,6 +9,7 @@ export type EventOption = {
   workshopCode: string;
   eventYear: string;
   eventDate: string;
+  allowOutsiders?: boolean;
 };
 
 export type EventRegistrationInput = z.input<typeof eventRegistrationSchema>;

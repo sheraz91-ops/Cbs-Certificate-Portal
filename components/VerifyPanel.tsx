@@ -51,6 +51,12 @@ export default function VerifyPanel() {
       return;
     }
 
+    if (lookup.status === "attendance-required") {
+      setResult(null);
+      setStatus("attendance-required");
+      return;
+    }
+
     if (lookup.status === "ambiguous") {
       setCandidates(lookup.candidates);
       setResult(null);
@@ -116,7 +122,7 @@ export default function VerifyPanel() {
               name="verifyId"
               type="text"
               autoComplete="off"
-              placeholder="e.g. CBS-LSW-2026-005"
+              placeholder="Enter certificate ID"
               value={inputValue}
               validationSchema={certificateLookupSchema.shape.id}
               onChange={(e) => setInputValue(e.target.value)}
@@ -195,6 +201,13 @@ export default function VerifyPanel() {
           >
             View / download this certificate →
           </a>
+        </div>
+      )}
+
+      {status === "attendance-required" && (
+        <div role="status" className="animate-scale-in rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-card">
+          <p className="font-display text-lg font-semibold text-amber-900">You were not present in this event.</p>
+          <p className="mt-2 text-sm leading-6 text-amber-800">Your certificate is available after the organizer marks your attendance Present.</p>
         </div>
       )}
 
