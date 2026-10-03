@@ -127,7 +127,13 @@ export const organizerAssignmentSchema = z.object({
 export const organizerAttendanceSchema = z.object({
   workshop: workshopKeySchema,
   participantId: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
-  present: z.boolean(),
+  present: z.boolean({ error: "Required" }),
+}).strict();
+export const adminAttendanceSchema = z.object({
+  userId: userIdSchema,
+  workshop: workshopKeySchema,
+  participantId: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
+  present: z.boolean({ error: "Required" }),
 }).strict();
 
 export const userDetailsSchema = z.object({ userId: userIdSchema }).strict();
