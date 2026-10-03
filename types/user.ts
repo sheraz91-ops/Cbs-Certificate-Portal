@@ -17,6 +17,20 @@ export interface UserRecord extends UserProfileInput {
   createdAt: string;
 }
 
+export interface UserEnrollment {
+  workshopKey: string;
+  workshopName: string;
+  eventYear: string;
+  eventDate: string;
+  participantId: string;
+  certificateId: string;
+  attendance: boolean;
+}
+
+export interface UserDetailsRecord extends UserRecord {
+  enrollments: UserEnrollment[];
+}
+
 /** Small user listing returned for the admin users table. */
 export interface UserSummary {
   userId: string;

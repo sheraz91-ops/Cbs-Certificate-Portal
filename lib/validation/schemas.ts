@@ -82,6 +82,34 @@ export const templateFileMetadataSchema = z.object({
 
 export const userIdSchema = z.string().trim().toUpperCase().regex(/^CBSU-\d{6,}$/, "Enter a valid assigned user ID");
 export const workshopKeySchema = z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Enter a valid workshop key");
+export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema });
+export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
+export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
+export const organizerIdSchema = z.string().trim().toUpperCase().regex(/^CBSO-\d{6,}$/, "Enter a valid assigned organizer ID");
+export const createOrganizerBaseSchema = userProfileSchema.extend({
+  password: z.string().min(16, "Organizer password must contain at least 16 characters").max(128),
+  workshops: z.array(workshopKeySchema).min(1, "Assign at least one event").max(100),
+});
+export const createOrganizerSchema = createOrganizerBaseSchema.transform((value) => ({ ...value, workshops: [...new Set(value.workshops)] }));
+export const organizerDetailsSchema = z.object({ organizerId: organizerIdSchema }).strict();
+export const updateOrganizerSchema = userProfileSchema.extend({
+  organizerId: organizerIdSchema,
+  workshops: z.array(workshopKeySchema).max(100),
+  password: z.string().max(128).refine((value) => value.length === 0 || value.length >= 16, "New password must contain at least 16 characters").optional(),
+}).strict().transform((value) => ({ ...value, workshops: [...new Set(value.workshops)], password: value.password || undefined }));
+export const organizerLoginSchema = z.object({
+  email: z.string().trim().email("Enter a valid email").max(254).transform((value) => value.toLowerCase()),
+  password: z.string().min(1, "Password is required").max(128),
+}).strict();
+export const organizerAssignmentSchema = z.object({
+  organizerId: organizerIdSchema,
+  workshops: z.array(workshopKeySchema).max(100),
+}).strict().transform((value) => ({ ...value, workshops: [...new Set(value.workshops)] }));
+export const organizerAttendanceSchema = z.object({
+  workshop: workshopKeySchema,
+  participantId: z.string().trim().min(1).max(32),
+  present: z.boolean(),
+}).strict();
 
 export const userDetailsSchema = z.object({ userId: userIdSchema }).strict();
 export const workshopKeyBodySchema = z.object({ workshop: workshopKeySchema }).strict();

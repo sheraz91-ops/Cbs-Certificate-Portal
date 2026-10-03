@@ -23,6 +23,8 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
     if (!validationSchema) return;
     const value = type === "number"
       ? input.value === "" ? undefined : input.valueAsNumber
+      : type === "checkbox"
+        ? input.checked
       : type === "file"
         ? input.files?.[0]
           ? { type: input.files[0].type, size: input.files[0].size }

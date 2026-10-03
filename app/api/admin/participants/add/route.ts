@@ -6,6 +6,7 @@ import UserModel from "@/models/User";
 import WorkshopModel from "@/models/Workshop";
 import type { ParticipantRecord } from "@/types/participant";
 import { addParticipantsSchema, validationMessage } from "@/lib/validation/schemas";
+import { allocateParticipantIds } from "@/lib/participantSequence";
 
 export const runtime = "nodejs";
 
@@ -21,27 +22,25 @@ export const POST = adminPost(async (body: AdminBody) => {
   if (unknownIds.length) return errorResponse(`User ID(s) not found: ${unknownIds.join(", ")}`, 404);
 
   const existing = await ParticipantModel.find({ workshop }).select("id userId").lean();
-  const usedCertificateIds = new Set(existing.map((participant) => participant.id));
   const enrolledUserIds = new Set(existing.map((participant) => participant.userId).filter(Boolean));
-  let nextId = existing.reduce((max, participant) => Math.max(max, Number.parseInt(participant.id.replace(/\D/g, ""), 10) || 0), 0) + 1;
-  const enrollments: ParticipantRecord[] = [];
   const skipped: string[] = [];
-
-  for (const userId of userIds) {
+  const usersToEnroll = userIds.flatMap((userId) => {
     const user = usersById.get(userId);
-    if (!user) continue;
+    if (!user) return [];
     if (enrolledUserIds.has(userId)) {
       skipped.push(`${user.fullName} (${userId} is already enrolled)`);
-      continue;
+      return [];
     }
-    while (usedCertificateIds.has(String(nextId))) nextId += 1;
-    const id = String(nextId++);
-    usedCertificateIds.add(id);
     enrolledUserIds.add(userId);
-    enrollments.push({ userId, id, normalizedId: normalizeParticipantId(id), name: user.fullName, workshop });
-  }
+    return [user];
+  });
+  if (!usersToEnroll.length) return errorResponse("No new users were added to this workshop", 409);
 
-  if (!enrollments.length) return errorResponse("No new users were added to this workshop", 409);
+  const assignedIds = await allocateParticipantIds(workshop, usersToEnroll.length);
+  const enrollments = usersToEnroll.map((user, index): ParticipantRecord & { enrollmentKey: string } => {
+    const id = assignedIds[index];
+    return { userId: user.userId, id, normalizedId: normalizeParticipantId(id), name: user.fullName, workshop, enrollmentKey: `${workshop}:${user.userId}` };
+  });
   await ParticipantModel.insertMany(enrollments, { ordered: false });
   return successResponse({
     added: enrollments.length,
