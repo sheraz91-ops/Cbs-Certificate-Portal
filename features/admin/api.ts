@@ -1,6 +1,34 @@
 import { getData, postData } from "@/lib/api-client";
 import { adminLoginSchema } from "@/lib/validation/schemas";
 
+export type AdminOverviewStats = {
+  totals: {
+    workshops: number;
+    registeredUsers: number;
+    organizers: number;
+    activeOrganizers: number;
+    registrations: number;
+    enrolledUsers: number;
+    usersWithoutEvents: number;
+    present: number;
+    absent: number;
+  };
+  recentWorkshops: Array<{
+    key: string;
+    workshopName: string;
+    workshopCode: string;
+    eventDate: string;
+    eventYear: string;
+    registrations: number;
+  }>;
+  recentUsers: Array<{ userId: string; fullName: string; emailAddress: string; createdAt: string }>;
+  recentOrganizers: Array<{ organizerId: string; fullName: string; emailAddress: string; isActive: boolean; createdAt: string }>;
+};
+
+export function getAdminOverviewStats(): Promise<AdminOverviewStats> {
+  return postData("/api/admin/overview/stats", {});
+}
+
 export type AdminSessionStatus = { authenticated: true };
 
 export function loginAdmin(password: string): Promise<AdminSessionStatus> {
