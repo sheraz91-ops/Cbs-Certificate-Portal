@@ -22,9 +22,10 @@ import LoadingSpinner from "./LoadingSpinner";
 export default function CertificatePreview() {
   const searchParams = useSearchParams();
   const idParam = searchParams.get("id") ?? "";
+  const workshopParam = searchParams.get("workshop") ?? undefined;
   const lookupQuery = useQuery({
-    queryKey: ["certificate-lookup", idParam],
-    queryFn: () => lookupCertificate(idParam),
+    queryKey: ["certificate-lookup", idParam, workshopParam],
+    queryFn: () => lookupCertificate(idParam, workshopParam),
     enabled: Boolean(idParam),
   });
 
@@ -82,7 +83,7 @@ export default function CertificatePreview() {
         const resolvedPlan = {
           fullName: result.participant.name,
           formattedId: result.formattedId,
-          verifyUrl: buildVerifyUrl(result.formattedId),
+          verifyUrl: buildVerifyUrl(result.formattedId, result.workshop.key),
           workshop: result.workshop,
         };
         const canvas = await renderCertificateCanvas(resolvedPlan);
@@ -269,7 +270,7 @@ export default function CertificatePreview() {
 
         <div className="flex items-center justify-center gap-4 text-xs font-medium">
           <a
-            href={`/verify?id=${encodeURIComponent(plan?.formattedId ?? "")}`}
+            href={plan ? buildVerifyUrl(plan.formattedId, plan.workshop.key) : "/verify"}
             className="text-navy-400 hover:text-gold-600 underline underline-offset-2 transition-colors"
           >
             Verify this certificate

@@ -6,6 +6,9 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import type { WorkshopDefinition } from "@/types/workshop";
 import { getWorkshops } from "@/features/workshops/api";
 import { lookupCertificate } from "@/features/certificates/api";
+import { getOrganizerAssignedEvents, prepareOrganizerCertificate } from "@/features/certificates/organizer-api";
+import { generateCertificatePdf, downloadPdf } from "@/lib/generateCertificate";
+import { buildVerifyUrl } from "@/lib/qrcode";
 import type {
   AlertState,
   CertificateCandidate,
@@ -14,7 +17,7 @@ import type {
 } from "@/types";
 import AlertMessage from "./AlertMessage";
 import LoadingSpinner from "./LoadingSpinner";
-import { certificateLookupSchema, validationMessage } from "@/lib/validation/schemas";
+import { certificateLookupSchema, organizerCertificateIdentitySchema, validationMessage } from "@/lib/validation/schemas";
 import InputField from "@/components/InputField";
 
 type WorkshopOption = Pick<WorkshopDefinition, "key" | "workshopName">;
@@ -22,6 +25,8 @@ type WorkshopOption = Pick<WorkshopDefinition, "key" | "workshopName">;
 export default function CertificateForm() {
   const router = useRouter();
   const [certificateId, setCertificateId] = useState("");
+  const [organizerName, setOrganizerName] = useState("");
+  const [assignedWorkshops, setAssignedWorkshops] = useState<WorkshopDefinition[]>([]);
   const [selectedWorkshop, setSelectedWorkshop] = useState("");
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [alert, setAlert] = useState<AlertState | null>(null);
@@ -30,14 +35,61 @@ export default function CertificateForm() {
   const lookupMutation = useMutation({
     mutationFn: ({ id, workshop }: { id: string; workshop?: string }) => lookupCertificate(id, workshop),
   });
+  const assignedEventsMutation = useMutation({ mutationFn: getOrganizerAssignedEvents });
+  const organizerCertificateMutation = useMutation({ mutationFn: prepareOrganizerCertificate });
   const workshops: WorkshopOption[] = workshopsQuery.data ?? [];
+  const isOrganizer = certificateId.trim().toUpperCase().startsWith("CBSO-");
 
-  const isLoading = status === "loading";
+  const isLoading = status === "loading" || assignedEventsMutation.isPending || organizerCertificateMutation.isPending;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setAlert(null);
     setCandidates([]);
+
+    if (isOrganizer) {
+      const identity = organizerCertificateIdentitySchema.safeParse({ organizerId: certificateId, fullName: organizerName });
+      if (!identity.success) {
+        setStatus("error");
+        setAlert({ type: "error", message: validationMessage(identity.error) });
+        return;
+      }
+
+      setStatus("loading");
+      try {
+        if (!assignedWorkshops.length) {
+          const assigned = await assignedEventsMutation.mutateAsync(identity.data);
+          setAssignedWorkshops(assigned);
+          setSelectedWorkshop(assigned[0]?.key ?? "");
+          setStatus("idle");
+          setAlert(assigned.length
+            ? { type: "success", message: "Select one of your assigned events, then generate your certificate." }
+            : { type: "error", message: "No events are assigned to this organizer." });
+          return;
+        }
+        if (!selectedWorkshop || !assignedWorkshops.some((workshop) => workshop.key === selectedWorkshop)) {
+          setStatus("error");
+          setAlert({ type: "error", message: "Select an assigned event." });
+          return;
+        }
+        const certificate = await organizerCertificateMutation.mutateAsync({ ...identity.data, workshop: selectedWorkshop });
+        const plan = {
+          fullName: certificate.fullName,
+          formattedId: certificate.organizerId,
+          verifyUrl: buildVerifyUrl(certificate.organizerId, certificate.workshop.key),
+          workshop: certificate.workshop,
+        };
+        const bytes = await generateCertificatePdf(plan);
+        const safeName = certificate.fullName.trim().replace(/[^a-z0-9]+/gi, "_");
+        downloadPdf(bytes, `${certificate.organizerId}_${safeName}.pdf`);
+        setStatus("idle");
+        setAlert({ type: "success", message: "Your certificate has been downloaded." });
+      } catch (error) {
+        setStatus("error");
+        setAlert({ type: "error", message: error instanceof Error ? error.message : "Unable to prepare your certificate." });
+      }
+      return;
+    }
 
     const parsedInput = certificateLookupSchema.safeParse({ id: certificateId, workshop: selectedWorkshop || undefined });
     if (!parsedInput.success) {
@@ -96,7 +148,7 @@ export default function CertificateForm() {
             Find Your Certificate
           </h2>
           <p className="text-sm text-navy-500 mt-1">
-            Enter the Certificate ID you were assigned at the workshop.
+            Enter your certificate ID and participation. Organizers can use their CBSO ID and full name to see their assigned events.
           </p>
         </div>
 
@@ -106,7 +158,7 @@ export default function CertificateForm() {
               htmlFor="certificateWorkshop"
               className="text-xs font-semibold uppercase tracking-wide text-navy-600"
             >
-              Participation
+              {isOrganizer ? "Assigned event" : "Participation"}
             </label>
             <select
               id="certificateWorkshop"
@@ -116,17 +168,38 @@ export default function CertificateForm() {
                 if (status !== "idle") setStatus("idle");
                 if (alert) setAlert(null);
               }}
-              disabled={isLoading || workshopsQuery.isLoading}
+              disabled={isLoading || workshopsQuery.isLoading || (isOrganizer && assignedWorkshops.length === 0)}
               className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
             >
-              <option value="">Select your participation</option>
-              {workshops.map((workshop) => (
+              <option value="">{isOrganizer ? (assignedWorkshops.length ? "Select an assigned event" : "Find assigned events first") : "Select your participation"}</option>
+              {(isOrganizer ? assignedWorkshops : workshops).map((workshop) => (
                 <option key={workshop.key} value={workshop.key}>
                   {workshop.workshopName}
                 </option>
               ))}
             </select>
           </div>
+          {isOrganizer && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="organizerFullName" className="text-xs font-semibold uppercase tracking-wide text-navy-600">Full Name</label>
+              <InputField
+                id="organizerFullName"
+                name="organizerFullName"
+                autoComplete="name"
+                placeholder="Enter full name"
+                value={organizerName}
+                validationSchema={organizerCertificateIdentitySchema.shape.fullName}
+                onChange={(e) => {
+                  setOrganizerName(e.target.value);
+                  setAssignedWorkshops([]);
+                  setSelectedWorkshop("");
+                  setAlert(null);
+                }}
+                disabled={isLoading}
+                className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 placeholder:text-navy-300 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
+              />
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="certificateId"
@@ -139,11 +212,13 @@ export default function CertificateForm() {
               name="certificateId"
               type="text"
               autoComplete="off"
-              placeholder="Enter certificate ID"
+              placeholder="Enter certificate ID or CBSO-000001"
               value={certificateId}
               validationSchema={certificateLookupSchema.shape.id}
               onChange={(e) => {
                 setCertificateId(e.target.value);
+                setAssignedWorkshops([]);
+                setSelectedWorkshop("");
                 if (status !== "idle") setStatus("idle");
                 if (alert) setAlert(null);
                 if (candidates.length > 0) setCandidates([]);
@@ -165,7 +240,7 @@ export default function CertificateForm() {
                   : "flex items-center justify-center gap-2"
               }
             >
-              Generate Certificate
+              {isOrganizer && !assignedWorkshops.length ? "Find Assigned Events" : "Generate Certificate"}
               <svg
                 className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
                 fill="none"

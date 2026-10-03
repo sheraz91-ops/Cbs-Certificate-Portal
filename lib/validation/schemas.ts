@@ -107,6 +107,11 @@ export const eventRegistrationSchema = userProfileSchema.extend({ workshop: work
 export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
 export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");
+export const organizerCertificateIdentitySchema = z.object({
+  organizerId: organizerIdSchema,
+  fullName: requiredText("Full name", 160),
+}).strict();
+export const organizerCertificateGenerateSchema = organizerCertificateIdentitySchema.extend({ workshop: workshopKeySchema }).strict();
 export const createOrganizerBaseSchema = campusUserProfileSchema.extend({
   password: z.string({ error: "Required" }).min(1, "Required").min(16, "Password must contain at least 16 characters").max(128),
   workshops: z.array(workshopKeySchema, { error: "Required" }).min(1, "Required").max(100),
