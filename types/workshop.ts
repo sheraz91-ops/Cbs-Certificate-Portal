@@ -43,6 +43,7 @@ export interface WorkshopDefinition {
   isActive: boolean;
   isCompleted?: boolean;
   allowOutsiders?: boolean;
+  confirmationMessage?: string;
   registrationFields?: RegistrationField[];
   organizedBy: string;
   templatePath: string;

@@ -14,6 +14,7 @@ import {
   type WorkshopDetails as WorkshopRecord,
 } from "@/features/workshops/api";
 import InputField from "@/components/InputField";
+import { ConfirmationMessageEditor } from "@/components/ConfirmationMessageEditor";
 import { detectTemplateLayout } from "@/lib/detectTemplateLayout";
 import {
   templateFileMetadataSchema,
@@ -221,6 +222,7 @@ export default function WorkshopDetails({
       isActive: workshop.isActive !== false,
       isCompleted: workshop.isCompleted === true,
       allowOutsiders: workshop.allowOutsiders ?? false,
+      confirmationMessage: workshop.confirmationMessage ?? "",
       registrationFields: (workshop.registrationFields ?? []).map((field) => ({
         ...field,
         type: field.type ?? "text",
@@ -400,6 +402,14 @@ export default function WorkshopDetails({
                     </span>
                   </span>
                 </label>
+                <ConfirmationMessageEditor
+                  value={draft.confirmationMessage ?? ""}
+                  onChange={(confirmationMessage) =>
+                    setDraft((current) =>
+                      current ? { ...current, confirmationMessage } : current,
+                    )
+                  }
+                />
                 <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
                   <label className="block text-sm font-medium text-slate-200" htmlFor="event-certificate-template">Certificate template</label>
                   <p className="mt-1 text-xs text-slate-400">Upload a PNG or JPEG template with visible name and ID areas. The layout will be detected when you save.</p>

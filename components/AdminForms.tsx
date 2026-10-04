@@ -10,6 +10,7 @@ import { useAdminToast } from "@/app/admin/AdminShell";
 import { addWorkshop as createWorkshop } from "@/features/workshops/api";
 import { addParticipants } from "@/features/participants/api";
 import InputField from "@/components/InputField";
+import { ConfirmationMessageEditor } from "@/components/ConfirmationMessageEditor";
 import {
   addParticipantsSchema,
   createWorkshopSchema,
@@ -507,6 +508,7 @@ export function AddWorkshopForm({
   const [eventDate, setEventDate] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [allowOutsiders, setAllowOutsiders] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState("");
   const [registrationFields, setRegistrationFields] = useState<{ key: string; label: string; type: "text" | "yes_no" | "checkbox" | "matrix"; choices: string[]; rows: string[]; selectionMode: "multiple" | "single"; required: boolean }[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -610,6 +612,7 @@ export function AddWorkshopForm({
         eventDate: formatEventDate(eventDate),
         isActive,
         allowOutsiders,
+        confirmationMessage,
         registrationFields,
         imageBase64,
         imageExt,
@@ -637,6 +640,7 @@ export function AddWorkshopForm({
       setEventDate("");
       setIsActive(true);
       setAllowOutsiders(false);
+      setConfirmationMessage("");
       setRegistrationFields([]);
       setFile(null);
     } catch (e: any) {
@@ -810,6 +814,11 @@ export function AddWorkshopForm({
             </div>
           ))}
         </section>
+
+        <ConfirmationMessageEditor
+          value={confirmationMessage}
+          onChange={setConfirmationMessage}
+        />
 
         <div>
           <label className="block text-sm font-medium text-slate-200 mb-2">

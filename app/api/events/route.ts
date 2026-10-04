@@ -9,9 +9,9 @@ export async function GET() {
     await connectToDatabase();
     const events = await WorkshopModel.find({ isActive: { $ne: false }, isCompleted: { $ne: true } })
       .sort({ eventYear: -1, eventDate: 1, workshopName: 1 })
-      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive isCompleted allowOutsiders registrationFields")
+      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive isCompleted allowOutsiders confirmationMessage registrationFields")
       .lean();
-    const content = events.map(({ _id, ...event }) => ({ ...event, isActive: true, isCompleted: event.isCompleted === true, allowOutsiders: event.allowOutsiders ?? false }));
+    const content = events.map(({ _id, ...event }) => ({ ...event, isActive: true, isCompleted: event.isCompleted === true, allowOutsiders: event.allowOutsiders ?? false, confirmationMessage: event.confirmationMessage ?? "" }));
     return successResponse(content, "Successfully retrieved events", content.length);
   } catch (error) {
     console.error("Event list error:", error);

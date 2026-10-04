@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const POST = adminPost(async (body: AdminBody) => {
   const parsed = createWorkshopSchema.safeParse(body);
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
-  const { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, isActive, allowOutsiders, registrationFields, imageExt, imageBase64, layout } = parsed.data;
+  const { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, isActive, allowOutsiders, confirmationMessage, registrationFields, imageExt, imageBase64, layout } = parsed.data;
   if (await WorkshopModel.exists({ key })) return errorResponse(`Event key "${key}" already exists`, 409);
 
   const extension = imageExt ?? "png";
@@ -26,6 +26,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     eventDate,
     isActive,
     allowOutsiders,
+    confirmationMessage,
     registrationFields,
     organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
     templatePath: imageData ? `/api/templates/${key}` : "Not set",

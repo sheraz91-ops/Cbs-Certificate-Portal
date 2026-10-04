@@ -24,6 +24,7 @@ import type { UserProfileFieldKey } from "@/types/registrationForm";
 import { validateUserRegistrationValues } from "@/lib/userRegistrationValidation";
 import { validateMatrixSelection } from "@/lib/matrixRegistration";
 import { RegistrationMatrixField } from "@/components/RegistrationMatrixField";
+import { ConfirmationMessage } from "@/components/ConfirmationMessageEditor";
 import { z } from "zod";
 
 function emptyProfile(): UserProfileInput {
@@ -68,7 +69,9 @@ export default function EventRegistrationForm({
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
-  const [result, setResult] = useState<EventRegistrationResult | null>(null);
+  const [result, setResult] = useState<
+    (EventRegistrationResult & { confirmationMessage?: string }) | null
+  >(null);
   const [closedByServer, setClosedByServer] = useState(false);
   const eventsQuery = useQuery({
     queryKey: ["events"],
@@ -201,7 +204,10 @@ export default function EventRegistrationForm({
     setFieldErrors({});
     try {
       const registration = await registerMutation.mutateAsync(parsed.data);
-      setResult(registration);
+      setResult({
+        ...registration,
+        confirmationMessage: selectedEvent?.confirmationMessage ?? "",
+      });
       setProfile(emptyProfile());
       setProfileCustomFields({});
       setWorkshop("");
@@ -238,6 +244,9 @@ export default function EventRegistrationForm({
           CBS assigned your IDs. Keep them safe to access your certificate after
           the event.
         </p>
+        {result.confirmationMessage && (
+          <ConfirmationMessage value={result.confirmationMessage} />
+        )}
         <dl className="mt-6 grid gap-3 rounded-2xl bg-navy-50 p-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">

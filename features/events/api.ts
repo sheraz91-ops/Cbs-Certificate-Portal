@@ -13,6 +13,7 @@ export type EventOption = {
   isActive: boolean;
   isCompleted?: boolean;
   allowOutsiders?: boolean;
+  confirmationMessage?: string;
   registrationFields?: { key: string; label: string; type?: RegistrationFieldType; choices?: string[]; rows?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
 };
 
