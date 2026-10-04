@@ -10,11 +10,11 @@ export const POST = adminPost(async (body: AdminBody) => {
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
   const { key, imageBase64, imageExt, layout, ...changes } = parsed.data;
   const updateFields: Record<string, unknown> = { ...changes };
+  if (layout) updateFields.layout = layout;
   if (imageBase64 && imageExt && layout) {
     const mimeType = imageExt === "jpg" || imageExt === "jpeg" ? "image/jpeg" : "image/png";
     updateFields.templateData = `data:${mimeType};base64,${imageBase64}`;
     updateFields.templatePath = `/api/templates/${key}`;
-    updateFields.layout = layout;
   }
   const workshop = await WorkshopModel.findOneAndUpdate(
     { key },

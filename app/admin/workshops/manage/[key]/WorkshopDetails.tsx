@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import Image from "next/image";
+import NextImage from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import {
   type WorkshopDetails as WorkshopRecord,
 } from "@/features/workshops/api";
 import InputField from "@/components/InputField";
+import CertificateTemplateLayoutEditor from "@/components/CertificateTemplateLayoutEditor";
 import { ConfirmationMessageEditor } from "@/components/ConfirmationMessageEditor";
 import { detectTemplateLayout } from "@/lib/detectTemplateLayout";
 import {
@@ -21,6 +22,7 @@ import {
   updateWorkshopSchema,
   validationMessage,
 } from "@/lib/validation/schemas";
+import type { LayoutConfig } from "@/types/workshop";
 import { useAdminSession, useAdminToast } from "../../../AdminShell";
 
 function formatCustomAnswer(
@@ -78,6 +80,14 @@ export default function WorkshopDetails({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<UpdateWorkshopInput | null>(null);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [templateLayout, setTemplateLayout] = useState<LayoutConfig | null>(
+    null,
+  );
+  const [templateDetectionMessage, setTemplateDetectionMessage] = useState("");
+  const [templateDetecting, setTemplateDetecting] = useState(false);
   const [formError, setFormError] = useState("");
   const queryKey = ["admin", "workshop-details"];
   const workshopsQuery = useQuery({
@@ -88,6 +98,47 @@ export default function WorkshopDetails({
   const workshop = workshopsQuery.data?.find(
     (item) => item.key === workshopKey,
   );
+
+  useEffect(() => {
+    if (!templateFile) {
+      setTemplateDetectionMessage("");
+      setTemplateDetecting(false);
+      return;
+    }
+    let cancelled = false;
+    setTemplateDetecting(true);
+    setTemplateDetectionMessage("");
+    detectTemplateLayout(templateFile)
+      .then((layout) => {
+        if (!cancelled) setTemplateLayout(layout);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setTemplateDetectionMessage(
+            error instanceof Error
+              ? error.message
+              : "Automatic detection could not locate valid name and ID areas. Adjust them manually below.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setTemplateDetecting(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [templateFile]);
+
+  useEffect(() => {
+    if (!templateFile) {
+      setTemplatePreviewUrl(null);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(templateFile);
+    setTemplatePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [templateFile]);
+
   const updateMutation = useMutation({
     mutationFn: updateWorkshop,
     onSuccess: async (updated) => {
@@ -105,6 +156,7 @@ export default function WorkshopDetails({
       ]);
       setEditing(false);
       setTemplateFile(null);
+      setTemplateLayout(null);
       setFormError("");
       toast({
         title: "Event updated",
@@ -212,6 +264,9 @@ export default function WorkshopDetails({
 
   function beginEditing() {
     if (!workshop) return;
+    setTemplateLayout(workshop.layout);
+    setTemplateFile(null);
+    setTemplateDetectionMessage("");
     setDraft({
       key: workshop.key,
       workshopName: workshop.workshopName,
@@ -237,8 +292,11 @@ export default function WorkshopDetails({
 
   async function submitUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!draft) return;
-    const parsed = updateWorkshopSchema.safeParse(draft);
+    if (!draft || !workshop) return;
+    const parsed = updateWorkshopSchema.safeParse({
+      ...draft,
+      layout: templateLayout ?? workshop.layout,
+    });
     if (!parsed.success) {
       setFormError(validationMessage(parsed.error));
       return;
@@ -249,12 +307,11 @@ export default function WorkshopDetails({
         updateMutation.mutate(parsed.data);
         return;
       }
-      const layout = await detectTemplateLayout(templateFile);
       updateMutation.mutate({
         ...parsed.data,
         imageBase64: await fileToBase64(templateFile),
         imageExt: templateFile.name.split(".").pop()?.toLowerCase(),
-        layout,
+        layout: templateLayout ?? workshop.layout,
       });
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Could not prepare the template image.");
@@ -412,7 +469,7 @@ export default function WorkshopDetails({
                 />
                 <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
                   <label className="block text-sm font-medium text-slate-200" htmlFor="event-certificate-template">Certificate template</label>
-                  <p className="mt-1 text-xs text-slate-400">Upload a PNG or JPEG template with visible name and ID areas. The layout will be detected when you save.</p>
+                  <p className="mt-1 text-xs text-slate-400">Upload a PNG or JPEG template. The image preview updates here before you save.</p>
                   <input
                     id="event-certificate-template"
                     type="file"
@@ -428,12 +485,34 @@ export default function WorkshopDetails({
                         return;
                       }
                       setFormError("");
+                      setTemplateLayout(workshop.layout);
                       setTemplateFile(selected);
                     }}
                     className="mt-3 block min-h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-500/10 file:px-3 file:py-1.5 file:font-semibold file:text-indigo-200"
                   />
                   {templateFile && <p className="mt-2 break-all text-xs text-indigo-300">Selected: {templateFile.name}</p>}
                   {!templateFile && <p className="mt-2 text-xs text-slate-500">Current template: {workshop.templatePath === "Not set" ? "Not configured" : "Saved"}</p>}
+                  {templateDetectionMessage && (
+                    <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                      {templateDetectionMessage} Set the name and ID areas
+                      manually on the preview.
+                    </p>
+                  )}
+                  {templateDetecting && (
+                    <p role="status" className="mt-3 text-xs text-indigo-300">
+                      Detecting name and ID areas…
+                    </p>
+                  )}
+                  {(templatePreviewUrl || workshop.templatePath !== "Not set") &&
+                    templateLayout && (
+                      <div className="mt-4">
+                        <CertificateTemplateLayoutEditor
+                          imageUrl={templatePreviewUrl ?? workshop.templatePath}
+                          layout={templateLayout}
+                          onChange={setTemplateLayout}
+                        />
+                      </div>
+                    )}
                 </section>
                 <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
                   <InputField
@@ -771,6 +850,8 @@ export default function WorkshopDetails({
                     onClick={() => {
                       setEditing(false);
                       setDraft(null);
+                      setTemplateFile(null);
+                      setTemplateLayout(null);
                       setFormError("");
                     }}
                     className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-900"
@@ -821,7 +902,7 @@ export default function WorkshopDetails({
                   rel="noreferrer"
                   className="block w-fit overflow-hidden rounded-xl border border-slate-700 hover:border-indigo-400"
                 >
-                  <Image
+                  <NextImage
                     src={workshop.templatePath}
                     alt={`${workshop.workshopName} certificate template`}
                     width={1000}
