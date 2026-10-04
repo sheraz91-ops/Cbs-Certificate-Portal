@@ -8,6 +8,7 @@ import UserProfileField from "@/components/UserProfileField";
 import {
   getEvents,
   registerForEvent,
+  type EventOption,
   type EventRegistrationResult,
 } from "@/features/events/api";
 import {
@@ -46,20 +47,42 @@ function emptyProfile(): UserProfileInput {
 
 export default function EventRegistrationForm({
   setActiveEvent,
+  eventCode,
+  pinnedEvent,
+  pinnedEventStatus = "idle",
 }: {
   setActiveEvent: (isActive: boolean | null) => void;
+  eventCode?: string;
+  pinnedEvent?: EventOption;
+  pinnedEventStatus?: "idle" | "loading" | "ready" | "error";
 }) {
   const [profile, setProfile] = useState<UserProfileInput>(emptyProfile());
   const [workshop, setWorkshop] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [result, setResult] = useState<EventRegistrationResult | null>(null);
-  const eventsQuery = useQuery({ queryKey: ["events"], queryFn: getEvents });
+  const [closedByServer, setClosedByServer] = useState(false);
+  const eventsQuery = useQuery({
+    queryKey: ["events"],
+    queryFn: getEvents,
+    enabled: !eventCode,
+  });
   const registerMutation = useMutation({ mutationFn: registerForEvent });
   const events = eventsQuery.data ?? [];
-  const selectedEvent = events.find((item) => item.key === workshop);
+  const selectedEvent =
+    pinnedEvent ?? events.find((item) => item.key === workshop);
 
   useEffect(() => {
+    if (eventCode && pinnedEvent) setWorkshop(pinnedEvent.key);
+  }, [eventCode, pinnedEvent]);
+
+  useEffect(() => {
+    if (eventCode) {
+      setActiveEvent(
+        pinnedEventStatus === "loading" ? null : Boolean(pinnedEvent?.isActive),
+      );
+      return;
+    }
     if (eventsQuery.isPending) setActiveEvent(null);
     else if (eventsQuery.isSuccess) setActiveEvent(events.length > 0);
     else if (eventsQuery.isError) setActiveEvent(true);
@@ -68,6 +91,9 @@ export default function EventRegistrationForm({
     eventsQuery.isError,
     eventsQuery.isPending,
     eventsQuery.isSuccess,
+    eventCode,
+    pinnedEvent,
+    pinnedEventStatus,
     setActiveEvent,
   ]);
 
@@ -75,6 +101,7 @@ export default function EventRegistrationForm({
     event.preventDefault();
     setFormError("");
     setResult(null);
+    setClosedByServer(false);
     const parsed = eventRegistrationSchema.safeParse({ ...profile, workshop });
     if (!parsed.success) {
       const errors: Record<string, string> = {};
@@ -112,11 +139,15 @@ export default function EventRegistrationForm({
       setProfile(emptyProfile());
       setWorkshop("");
     } catch (error) {
-      setFormError(
+      const message =
         error instanceof Error
           ? error.message
-          : "Unable to complete registration",
-      );
+          : "Unable to complete registration";
+      if (eventCode && /registration.*closed|event.*closed/i.test(message)) {
+        setClosedByServer(true);
+        return;
+      }
+      setFormError(message);
     }
   }
 
@@ -157,18 +188,93 @@ export default function EventRegistrationForm({
             </dd>
           </div>
         </dl>
-        <button
-          type="button"
-          onClick={() => setResult(null)}
-          className="mt-6 text-sm font-semibold text-navy-700 underline underline-offset-4 hover:text-gold-700"
-        >
-          Register for another event
-        </button>
+        {eventCode && (
+          <Link
+            href={`/verify?id=${encodeURIComponent(result.certificateId)}&workshop=${encodeURIComponent(pinnedEvent?.key ?? workshop)}`}
+            className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-navy-800 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-navy-700"
+          >
+            View certificate status
+          </Link>
+        )}
+        {!eventCode && (
+          <button
+            type="button"
+            onClick={() => setResult(null)}
+            className="mt-6 text-sm font-semibold text-navy-700 underline underline-offset-4 hover:text-gold-700"
+          >
+            Register for another event
+          </button>
+        )}
       </div>
     );
   }
 
-  if (eventsQuery.isPending) {
+  if (eventCode && pinnedEventStatus === "loading") {
+    return (
+      <section
+        role="status"
+        aria-live="polite"
+        className="flex min-h-32 w-full items-center justify-center rounded-3xl border border-white/60 bg-white p-5 shadow-card sm:p-8"
+      >
+        <LoadingSpinner label="Loading event details..." />
+      </section>
+    );
+  }
+
+  if (eventCode && (pinnedEventStatus === "error" || !pinnedEvent)) {
+    return (
+      <section
+        role="status"
+        className="rounded-3xl border border-white/60 bg-white p-5 shadow-card sm:p-8"
+      >
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-rose-700">
+          Registration unavailable
+        </p>
+        <h2 className="mt-3 font-display text-2xl font-semibold text-navy-900">
+          Event not found
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-navy-600">
+          We couldn&apos;t find an event matching this link. Check the event
+          code or return to the registration page.
+        </p>
+        <Link
+          href="/register"
+          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-navy-800 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-700"
+        >
+          Browse open events
+        </Link>
+      </section>
+    );
+  }
+
+  if (eventCode && (pinnedEvent?.isActive === false || closedByServer)) {
+    return (
+      <section
+        role="status"
+        className="rounded-3xl border border-amber-200 bg-white p-5 shadow-card sm:p-8"
+      >
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">
+          Registration closed
+        </p>
+        <h2 className="mt-3 font-display text-2xl font-semibold text-navy-900">
+          This event is closed
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-navy-600">
+          Registration for {pinnedEvent?.workshopName ?? "this event"} has
+          ended. You can still review the event details or browse other open
+          events.
+        </p>
+        <Link
+          href="/register"
+          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-navy-800 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-700"
+        >
+          Browse open events
+        </Link>
+      </section>
+    );
+  }
+
+  if (!eventCode && eventsQuery.isPending) {
     return (
       <section
         role="status"
@@ -180,7 +286,7 @@ export default function EventRegistrationForm({
     );
   }
 
-  if (eventsQuery.isSuccess && events.length === 0) {
+  if (!eventCode && eventsQuery.isSuccess && events.length === 0) {
     return (
       <section
         role="status"
@@ -240,7 +346,9 @@ export default function EventRegistrationForm({
           id="registration-event"
           required
           value={workshop}
-          disabled={eventsQuery.isPending || events.length === 0}
+          disabled={
+            Boolean(eventCode) || eventsQuery.isPending || events.length === 0
+          }
           aria-invalid={Boolean(fieldErrors.workshop)}
           aria-describedby={
             fieldErrors.workshop ? "registration-event-error" : undefined
@@ -258,7 +366,7 @@ export default function EventRegistrationForm({
           <option value="">
             {eventsQuery.isPending ? "Loading events…" : "Choose an event"}
           </option>
-          {events.map((item) => (
+          {(eventCode && pinnedEvent ? [pinnedEvent] : events).map((item) => (
             <option key={item.key} value={item.key}>
               {item.workshopName} · {item.eventYear} · {item.eventDate} ·{" "}
               {item.allowOutsiders ? "Outsiders allowed" : "Campus only"}
@@ -333,8 +441,9 @@ export default function EventRegistrationForm({
         type="submit"
         disabled={
           registerMutation.isPending ||
-          eventsQuery.isPending ||
-          events.length === 0
+          (eventCode
+            ? !pinnedEvent || pinnedEventStatus !== "ready" || !workshop
+            : eventsQuery.isPending || events.length === 0)
         }
         className="mt-6 h-12 w-full rounded-xl bg-navy-800 px-5 text-sm font-semibold text-white shadow-gold transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-50"
       >

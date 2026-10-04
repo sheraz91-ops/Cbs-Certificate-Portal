@@ -24,6 +24,10 @@ export function getEvents(): Promise<EventOption[]> {
   return getData<EventOption[]>("/api/events");
 }
 
+export function getEventByCode(eventCode: string): Promise<EventOption> {
+  return getData<EventOption>(`/api/events/${encodeURIComponent(eventCode)}`);
+}
+
 export function registerForEvent(input: EventRegistrationInput): Promise<EventRegistrationResult> {
   const data = eventRegistrationSchema.parse(input);
   return postData<EventRegistrationResult, typeof data>("/api/events/register", data);

@@ -39,7 +39,9 @@ export default function Header() {
 
           <button
             type="button"
-            aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-label={
+              menuOpen ? "Close navigation menu" : "Open navigation menu"
+            }
             aria-expanded={menuOpen}
             aria-controls="public-navigation"
             onClick={() => setMenuOpen((open) => !open)}
@@ -80,7 +82,7 @@ export default function Header() {
             <Link
               href="/register"
               onClick={() => setMenuOpen(false)}
-              className="mt-1 inline-flex min-h-11 items-center justify-center rounded-xl bg-gold-400 px-4 py-2 text-sm font-semibold text-navy-950 transition hover:bg-gold-300 lg:mt-0 lg:min-h-0 lg:rounded-full"
+              className="mt-1 inline-flex min-h-11 items-center justify-center rounded-xl bg-gold-400 px-4 py-2 text-sm font-semibold text-navy-950 transition  lg:mt-0 lg:min-h-0 lg:rounded-full"
             >
               Register for an event
             </Link>
