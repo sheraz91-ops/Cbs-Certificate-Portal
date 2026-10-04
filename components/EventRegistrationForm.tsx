@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import Link from "next/link";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import UserProfileField from "@/components/UserProfileField";
 import {
   getEvents,
@@ -44,11 +42,7 @@ function emptyProfile(): UserProfileInput {
   };
 }
 
-export default function EventRegistrationForm({
-  setActiveEvent,
-}: {
-  setActiveEvent: (isActive: boolean | null) => void;
-}) {
+export default function EventRegistrationForm() {
   const [profile, setProfile] = useState<UserProfileInput>(emptyProfile());
   const [workshop, setWorkshop] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -58,18 +52,6 @@ export default function EventRegistrationForm({
   const registerMutation = useMutation({ mutationFn: registerForEvent });
   const events = eventsQuery.data ?? [];
   const selectedEvent = events.find((item) => item.key === workshop);
-
-  useEffect(() => {
-    if (eventsQuery.isPending) setActiveEvent(null);
-    else if (eventsQuery.isSuccess) setActiveEvent(events.length > 0);
-    else if (eventsQuery.isError) setActiveEvent(true);
-  }, [
-    events.length,
-    eventsQuery.isError,
-    eventsQuery.isPending,
-    eventsQuery.isSuccess,
-    setActiveEvent,
-  ]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -165,50 +147,6 @@ export default function EventRegistrationForm({
           Register for another event
         </button>
       </div>
-    );
-  }
-
-  if (eventsQuery.isPending) {
-    return (
-      <section
-        role="status"
-        aria-live="polite"
-        className="flex min-h-20 items-center justify-center rounded-3xl border border-white/60 bg-white p-7 shadow-card sm:p-9"
-      >
-        <LoadingSpinner label="Checking for active events..." />
-      </section>
-    );
-  }
-
-  if (eventsQuery.isSuccess && events.length === 0) {
-    return (
-      <section
-        role="status"
-        className="rounded-3xl border border-white/60 bg-white p-7 shadow-card sm:p-9"
-      >
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
-          Registration status
-        </p>
-        <h2 className="mt-3 font-display text-2xl font-semibold text-navy-900">
-          No active event found
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-navy-600">
-          There are no events open for registration right now. Please check back
-          soon. New events will appear here when registration opens.
-        </p>
-        <div className="mt-6 rounded-2xl bg-navy-50 p-4">
-          <p className="text-sm font-semibold text-navy-800">What you can do</p>
-          <p className="mt-1 text-sm leading-6 text-navy-600">
-            Return later to enroll in upcoming events.
-          </p>
-        </div>
-        <Link
-          href="/"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-navy-800 px-5 text-sm font-semibold text-white transition hover:bg-navy-700"
-        >
-          Go to home page
-        </Link>
-      </section>
     );
   }
 

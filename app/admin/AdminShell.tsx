@@ -202,26 +202,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         className={`admin-shell ${theme === "light" ? "admin-theme-light" : ""} flex min-h-screen items-center justify-center px-4 py-10`}
       >
         <div className="w-full max-w-md">
-          <div className="mb-6 flex items-center justify-between">
-            <Link
-              href="/"
-              aria-label="Back to home"
-              title="Back to home"
-              className="admin-utility-button inline-flex h-10 w-10 items-center justify-center rounded-xl border transition hover:bg-white/5"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-5 w-5"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 12H5m7 7-7-7 7-7" />
-              </svg>
-            </Link>
+          <div className="mb-6 flex justify-end">
             <ThemeButton theme={theme} onToggle={toggleTheme} />
           </div>
           <form
@@ -307,7 +288,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           data-admin-theme={theme}
           className={`admin-shell ${theme === "light" ? "admin-theme-light" : ""} min-h-screen md:flex`}
         >
-          <aside className="admin-sidebar flex shrink-0 flex-col border-b md:sticky md:top-0 md:h-screen md:w-[260px] md:self-start md:overflow-y-auto md:border-b-0 md:border-r">
+          <aside className="admin-sidebar flex shrink-0 flex-col border-b md:min-h-screen md:w-[260px] md:border-b-0 md:border-r">
             <div className="flex items-center gap-3 px-5 py-5 md:px-6 md:pt-7">
               <div className="admin-brand-mark flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black">
                 C

@@ -10,39 +10,9 @@ import { useAdminToast } from "@/app/admin/AdminShell";
 import { addWorkshop as createWorkshop } from "@/features/workshops/api";
 import { addParticipants } from "@/features/participants/api";
 import InputField from "@/components/InputField";
-import {
-  addParticipantsSchema,
-  createWorkshopSchema,
-  layoutPercentSchema,
-  templateFileMetadataSchema,
-  validationMessage,
-  workshopKeySchema,
-  userIdSchema,
-} from "@/lib/validation/schemas";
+import { addParticipantsSchema, createWorkshopSchema, layoutPercentSchema, templateFileMetadataSchema, validationMessage, workshopKeySchema, userIdSchema } from "@/lib/validation/schemas";
 
 type WorkshopSummary = { key: string; workshopName: string };
-
-function formatEventDate(value: string): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return value;
-
-  const [, year, month, day] = match;
-  const monthName = [
-    "JAN",
-    "FEB",
-    "MAR",
-    "APR",
-    "MAY",
-    "JUN",
-    "JUL",
-    "AUG",
-    "SEP",
-    "OCT",
-    "NOV",
-    "DEC",
-  ][Number(month) - 1];
-  return monthName ? `${day} ${monthName} ${year}` : value;
-}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -486,13 +456,10 @@ export function AddWorkshopForm({
   const toast = useAdminToast();
   const queryClient = useQueryClient();
   const addMutation = useMutation({
-    mutationFn: (input: Parameters<typeof createWorkshop>[0]) =>
-      createWorkshop(input),
+    mutationFn: (input: Parameters<typeof createWorkshop>[0]) => createWorkshop(input),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["admin", "workshop-details"],
-        }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
         queryClient.invalidateQueries({ queryKey: ["workshops", "public"] }),
         queryClient.invalidateQueries({ queryKey: ["events"] }),
         queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
@@ -505,7 +472,6 @@ export function AddWorkshopForm({
   const [workshopCode, setWorkshopCode] = useState("");
   const [eventYear, setEventYear] = useState(String(new Date().getFullYear()));
   const [eventDate, setEventDate] = useState("");
-  const [isActive, setIsActive] = useState(true);
   const [allowOutsiders, setAllowOutsiders] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -601,17 +567,8 @@ export function AddWorkshopForm({
       const layout =
         draftLayout ?? (file ? await detectTemplateLayout(file) : undefined);
       const parsed = createWorkshopSchema.safeParse({
-        key,
-        workshopName,
-        workshopFullTitle,
-        workshopCode,
-        eventYear,
-        eventDate: formatEventDate(eventDate),
-        isActive,
-        allowOutsiders,
-        imageBase64,
-        imageExt,
-        layout,
+        key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, allowOutsiders,
+        imageBase64, imageExt, layout,
       });
       if (!parsed.success) throw new Error(validationMessage(parsed.error));
       const data = await addMutation.mutateAsync(parsed.data);
@@ -633,7 +590,6 @@ export function AddWorkshopForm({
       setWorkshopFullTitle("");
       setWorkshopCode("");
       setEventDate("");
-      setIsActive(true);
       setAllowOutsiders(false);
       setFile(null);
     } catch (e: any) {
@@ -736,17 +692,13 @@ export function AddWorkshopForm({
         </div>
 
         <div>
-          <label
-            htmlFor="workshop-event-date"
-            className="block text-sm font-medium text-slate-200 mb-2"
-          >
+          <label className="block text-sm font-medium text-slate-200 mb-2">
             Event Date
           </label>
 
           <InputField
-            id="workshop-event-date"
-            type="date"
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
+            placeholder="Enter event date"
             validationSchema={createWorkshopSchema.shape.eventDate}
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
@@ -754,38 +706,8 @@ export function AddWorkshopForm({
         </div>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
-          <InputField
-            type="checkbox"
-            checked={isActive}
-            validationSchema={createWorkshopSchema.shape.isActive}
-            onChange={(event) => setIsActive(event.target.checked)}
-            className="mt-0.5 accent-indigo-500"
-          />
-          <span>
-            <span className="block font-medium">Active event</span>
-            <span className="mt-1 block text-xs leading-5 text-slate-400">
-              Active events appear in public registration and accept new registrations.
-            </span>
-          </span>
-        </label>
-
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
-          <InputField
-            type="checkbox"
-            checked={allowOutsiders}
-            validationSchema={createWorkshopSchema.shape.allowOutsiders}
-            onChange={(event) => setAllowOutsiders(event.target.checked)}
-            className="mt-0.5 accent-indigo-500"
-          />
-          <span>
-            <span className="block font-medium">
-              Allow outside participants
-            </span>
-            <span className="mt-1 block text-xs leading-5 text-slate-400">
-              When enabled, people without an MNSUAM registration number may
-              register for this event.
-            </span>
-          </span>
+          <InputField type="checkbox" checked={allowOutsiders} validationSchema={createWorkshopSchema.shape.allowOutsiders} onChange={(event) => setAllowOutsiders(event.target.checked)} className="mt-0.5 accent-indigo-500" />
+          <span><span className="block font-medium">Allow outside participants</span><span className="mt-1 block text-xs leading-5 text-slate-400">When enabled, people without an MNSUAM registration number may register for this event.</span></span>
         </label>
 
         <div>
@@ -825,12 +747,7 @@ export function AddWorkshopForm({
               validationSchema={templateFileMetadataSchema}
               onChange={(e) => {
                 const selected = e.target.files?.[0] || null;
-                const parsedFile = selected
-                  ? templateFileMetadataSchema.safeParse({
-                      type: selected.type,
-                      size: selected.size,
-                    })
-                  : null;
+                const parsedFile = selected ? templateFileMetadataSchema.safeParse({ type: selected.type, size: selected.size }) : null;
                 if (parsedFile && !parsedFile.success) {
                   setFile(null);
                   setError(validationMessage(parsedFile.error));
@@ -1001,9 +918,7 @@ export function AddParticipantsForm({
       addParticipants(input.workshop, input.userIds),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["admin", "workshop-details"],
-        }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
         queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
       ]);
     },
@@ -1019,10 +934,7 @@ export function AddParticipantsForm({
       setError("Select a workshop first.");
       return;
     }
-    const parsed = addParticipantsSchema.safeParse({
-      workshop,
-      userIds: entries,
-    });
+    const parsed = addParticipantsSchema.safeParse({ workshop, userIds: entries });
     if (!parsed.success) {
       setError(validationMessage(parsed.error));
       return;
@@ -1063,13 +975,9 @@ export function AddParticipantsForm({
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-white">
-          Add Users to Workshop
-        </h2>
+        <h2 className="text-lg font-semibold text-white">Add Users to Workshop</h2>
 
-        <p className="mt-1 text-sm text-slate-400">
-          Add registered users to this workshop using their assigned user IDs.
-        </p>
+        <p className="mt-1 text-sm text-slate-400">Add registered users to this workshop using their assigned user IDs.</p>
       </div>
 
       <div className="space-y-5">
@@ -1108,31 +1016,13 @@ export function AddParticipantsForm({
                   aria-label={`Assigned user ID ${index + 1}`}
                   value={entry}
                   validationSchema={userIdSchema}
-                  onChange={(event) =>
-                    setEntries((current) =>
-                      current.map((item, row) =>
-                        row === index ? event.target.value : item,
-                      ),
-                    )
-                  }
+                  onChange={(event) => setEntries((current) => current.map((item, row) => row === index ? event.target.value : item))}
                   placeholder="Enter assigned user ID"
                   autoComplete="off"
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500"
                 />
               </label>
-              <button
-                type="button"
-                aria-label={`Remove user ID row ${index + 1}`}
-                disabled={entries.length === 1}
-                onClick={() =>
-                  setEntries((current) =>
-                    current.filter((_, row) => row !== index),
-                  )
-                }
-                className="mt-5 h-11 rounded-lg border border-slate-700 px-3 text-slate-400 hover:border-red-500/50 hover:text-red-300 disabled:opacity-30"
-              >
-                ×
-              </button>
+              <button type="button" aria-label={`Remove user ID row ${index + 1}`} disabled={entries.length === 1} onClick={() => setEntries((current) => current.filter((_, row) => row !== index))} className="mt-5 h-11 rounded-lg border border-slate-700 px-3 text-slate-400 hover:border-red-500/50 hover:text-red-300 disabled:opacity-30">×</button>
             </div>
           ))}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -1143,9 +1033,7 @@ export function AddParticipantsForm({
             >
               + Add another user ID
             </button>
-            <p className="text-xs text-slate-500">
-              Find assigned IDs on the Users page.
-            </p>
+            <p className="text-xs text-slate-500">Find assigned IDs on the Users page.</p>
           </div>
         </div>
 
@@ -1204,7 +1092,9 @@ export function AddParticipantsForm({
         )}
 
         <button
-          disabled={busy || !workshop}
+          disabled={
+            busy || !workshop
+          }
           onClick={submit}
           className="h-12 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-950/20 transition-all hover:bg-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
         >

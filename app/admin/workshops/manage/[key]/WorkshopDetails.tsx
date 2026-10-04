@@ -95,7 +95,6 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
       workshopCode: workshop.workshopCode,
       eventYear: workshop.eventYear,
       eventDate: workshop.eventDate,
-      isActive: workshop.isActive !== false,
       allowOutsiders: workshop.allowOutsiders ?? false,
     });
     setFormError("");
@@ -151,10 +150,6 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
                   </label>)}
                 </div>
                 <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
-                  <InputField type="checkbox" checked={draft.isActive} validationSchema={updateWorkshopSchema.shape.isActive} onChange={(event) => setDraft((current) => current ? { ...current, isActive: event.target.checked } : current)} className="mt-0.5 accent-indigo-500" />
-                  <span><span className="block font-medium">Active event</span><span className="mt-1 block text-xs text-slate-400">Active events appear in public registration and accept new registrations.</span></span>
-                </label>
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200">
                   <InputField type="checkbox" checked={draft.allowOutsiders} validationSchema={updateWorkshopSchema.shape.allowOutsiders} onChange={(event) => setDraft((current) => current ? { ...current, allowOutsiders: event.target.checked } : current)} className="mt-0.5 accent-indigo-500" />
                   <span><span className="block font-medium">Allow outside participants</span><span className="mt-1 block text-xs text-slate-400">Outside participants can register with any registration number format.</span></span>
                 </label>
@@ -172,7 +167,6 @@ export default function WorkshopDetails({ workshopKey }: { workshopKey: string }
                 <Info label="Workshop Code" value={workshop.workshopCode} />
                 <Info label="Event Year" value={workshop.eventYear} />
                 <Info label="Event Date" value={workshop.eventDate} />
-                <Info label="Event Status" value={workshop.isActive !== false ? "Active" : "Inactive"} />
                 <Info label="Outside Participants" value={workshop.allowOutsiders ? "Allowed" : "Not allowed"} />
                 <Info label="Organized By" value={workshop.organizedBy} />
                 <Info label="Certificate Template Path" value={workshop.templatePath} />

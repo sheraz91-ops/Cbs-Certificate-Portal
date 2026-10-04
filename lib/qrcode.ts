@@ -6,14 +6,12 @@ import QRCode from "qrcode";
  * on localhost while developing, on a Vercel preview URL, or on a
  * custom production domain — with zero configuration.
  */
-export function buildVerifyUrl(formattedId: string, workshop?: string): string {
+export function buildVerifyUrl(formattedId: string): string {
   const origin =
     typeof window !== "undefined" && window.location?.origin
       ? window.location.origin
       : "";
-  const query = new URLSearchParams({ id: formattedId });
-  if (workshop) query.set("workshop", workshop);
-  return `${origin}/verify?${query.toString()}`;
+  return `${origin}/verify?id=${encodeURIComponent(formattedId)}`;
 }
 
 /**

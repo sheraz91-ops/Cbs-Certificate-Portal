@@ -4,7 +4,6 @@ import { formatCertificateId } from "@/lib/formatId";
 import { normalizeParticipantId } from "@/lib/participantId";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import ParticipantModel from "@/models/Participant";
-import OrganizerModel from "@/models/Organizer";
 import WorkshopModel from "@/models/Workshop";
 import type { CertificateCandidate, DatabaseLookupResult, Participant } from "@/types";
 import type { WorkshopDefinition } from "@/types/workshop";
@@ -54,20 +53,6 @@ export async function POST(request: NextRequest) {
 
 async function lookup(rawId: string, selectedKey: string | undefined, workshops: WorkshopDefinition[]): Promise<DatabaseLookupResult> {
   const trimmed = rawId.trim();
-  const organizerId = trimmed.toUpperCase();
-  if (/^CBSO-\d{6,}$/.test(organizerId)) {
-    if (!selectedKey) return { status: "not-found" };
-    const workshop = workshops.find((entry) => entry.key === selectedKey);
-    if (!workshop) return { status: "not-found" };
-    const organizer = await OrganizerModel.findOne({ organizerId, isActive: true, workshops: selectedKey }).select("organizerId fullName").lean();
-    if (!organizer) return { status: "not-found" };
-    return {
-      status: "found",
-      participant: { id: organizer.organizerId, name: organizer.fullName, workshop: selectedKey },
-      formattedId: organizer.organizerId,
-      workshop,
-    };
-  }
   const numericMatches = trimmed.match(/\d+/g);
   if (!numericMatches) return { status: "not-found" };
   const isBareNumber = /^\d+$/.test(trimmed);

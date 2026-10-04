@@ -36,8 +36,21 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ["Poppins", "sans-serif"],
-        sans: ["Poppins", "sans-serif"],
+        // Premium system-font stacks — no external font fetching required.
+        display: [
+          "Georgia",
+          "'Times New Roman'",
+          "ui-serif",
+          "serif",
+        ],
+        sans: [
+          "'Segoe UI'",
+          "system-ui",
+          "-apple-system",
+          "Inter",
+          "Roboto",
+          "sans-serif",
+        ],
       },
       // NOTE: the hero background is defined as a single merged rule in
       // globals.css (`.hero-bg`) rather than here, specifically to avoid

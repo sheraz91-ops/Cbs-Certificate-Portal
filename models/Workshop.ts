@@ -8,7 +8,6 @@ const workshopSchema = new Schema({
   workshopCode: { type: String, required: true, trim: true, uppercase: true },
   eventYear: { type: String, required: true, trim: true },
   eventDate: { type: String, required: true, trim: true },
-  isActive: { type: Boolean, required: true, default: true },
   allowOutsiders: { type: Boolean, required: true, default: false },
   organizedBy: { type: String, required: true, trim: true },
   templatePath: { type: String, required: true },
@@ -17,12 +16,5 @@ const workshopSchema = new Schema({
 }, { timestamps: true, versionKey: false });
 
 export type WorkshopDocument = InferSchemaType<typeof workshopSchema> & { layout: LayoutConfig };
-
-// In development, Next.js can retain the previously compiled Mongoose model
-// after a schema change. Recompile it when the cached model lacks this field.
-if (models.Workshop && !models.Workshop.schema.path("isActive")) {
-  delete models.Workshop;
-}
-
 const WorkshopModel = models.Workshop || model("Workshop", workshopSchema);
 export default WorkshopModel;

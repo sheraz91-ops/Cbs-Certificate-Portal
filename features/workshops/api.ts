@@ -24,7 +24,6 @@ export type AddWorkshopInput = {
   workshopCode: string;
   eventYear: string;
   eventDate: string;
-  isActive: boolean;
   allowOutsiders: boolean;
   imageBase64?: string;
   imageExt?: string;
@@ -43,7 +42,6 @@ export type UpdateWorkshopInput = {
   workshopCode: string;
   eventYear: string;
   eventDate: string;
-  isActive: boolean;
   allowOutsiders: boolean;
 };
 

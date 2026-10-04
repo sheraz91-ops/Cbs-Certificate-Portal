@@ -6,21 +6,15 @@ import { useMutation } from "@tanstack/react-query";
 import type { WorkshopDefinition } from "@/types/workshop";
 import type { CertificateCandidate, DatabaseLookupResult, Participant, VerifyStatus } from "@/types";
 import { lookupCertificate } from "@/features/certificates/api";
-import { getOrganizerAssignedEvents } from "@/features/certificates/organizer-api";
 import LoadingSpinner from "./LoadingSpinner";
-import { certificateLookupSchema, organizerCertificateIdentitySchema, validationMessage } from "@/lib/validation/schemas";
+import { certificateLookupSchema } from "@/lib/validation/schemas";
 import InputField from "@/components/InputField";
 
 export default function VerifyPanel() {
   const searchParams = useSearchParams();
   const idFromUrl = searchParams.get("id") ?? "";
-  const workshopFromUrl = searchParams.get("workshop") ?? undefined;
 
   const [inputValue, setInputValue] = useState(idFromUrl);
-  const [organizerName, setOrganizerName] = useState("");
-  const [assignedWorkshops, setAssignedWorkshops] = useState<WorkshopDefinition[]>([]);
-  const [selectedWorkshop, setSelectedWorkshop] = useState("");
-  const [organizerMessage, setOrganizerMessage] = useState("");
   const [status, setStatus] = useState<VerifyStatus>("idle");
   const [result, setResult] = useState<{
     participant: Participant;
@@ -28,10 +22,9 @@ export default function VerifyPanel() {
     workshop: WorkshopDefinition;
   } | null>(null);
   const [candidates, setCandidates] = useState<CertificateCandidate[]>([]);
-  const lookupMutation = useMutation({ mutationFn: ({ id, workshop }: { id: string; workshop?: string }) => lookupCertificate(id, workshop) });
-  const assignedEventsMutation = useMutation({ mutationFn: getOrganizerAssignedEvents });
+  const lookupMutation = useMutation({ mutationFn: (id: string) => lookupCertificate(id) });
 
-  async function verify(id: string, workshop?: string) {
+  async function verify(id: string) {
     const trimmed = id.trim();
     if (!certificateLookupSchema.safeParse({ id: trimmed }).success) {
       setResult(null);
@@ -45,7 +38,7 @@ export default function VerifyPanel() {
 
     let lookup: DatabaseLookupResult;
     try {
-      lookup = await lookupMutation.mutateAsync({ id: trimmed, workshop });
+      lookup = await lookupMutation.mutateAsync(trimmed);
     } catch {
       setResult(null);
       setStatus("not-found");
@@ -82,46 +75,14 @@ export default function VerifyPanel() {
   // Auto-verify when arriving via a QR code / shared link with ?id=...
   useEffect(() => {
     if (idFromUrl) {
-      verify(idFromUrl, workshopFromUrl);
+      verify(idFromUrl);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idFromUrl, workshopFromUrl]);
+  }, [idFromUrl]);
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setOrganizerMessage("");
-    const organizerId = inputValue.trim().toUpperCase();
-    const isOrganizer = organizerId.startsWith("CBSO-");
-    const directQrLookup = Boolean(workshopFromUrl && organizerId === idFromUrl.trim().toUpperCase());
-    if (isOrganizer && !directQrLookup) {
-      setStatus("idle");
-      setResult(null);
-      setCandidates([]);
-      const identity = organizerCertificateIdentitySchema.safeParse({ organizerId, fullName: organizerName });
-      if (!identity.success) {
-        setOrganizerMessage(validationMessage(identity.error));
-        setStatus("idle");
-        return;
-      }
-      if (!assignedWorkshops.length) {
-        try {
-          const assigned = await assignedEventsMutation.mutateAsync(identity.data);
-          setAssignedWorkshops(assigned);
-          setSelectedWorkshop(assigned[0]?.key ?? "");
-          setOrganizerMessage(assigned.length ? "Select one of your assigned events, then verify your certificate." : "No events are assigned to this organizer.");
-        } catch (error) {
-          setOrganizerMessage(error instanceof Error ? error.message : "Organizer details not found.");
-        }
-        return;
-      }
-      if (!selectedWorkshop || !assignedWorkshops.some((event) => event.key === selectedWorkshop)) {
-        setOrganizerMessage("Select an assigned event.");
-        return;
-      }
-      await verify(organizerId, selectedWorkshop);
-      return;
-    }
-    await verify(inputValue, directQrLookup ? workshopFromUrl : undefined);
+    verify(inputValue);
   }
 
   function pickCandidate(formattedId: string) {
@@ -129,9 +90,7 @@ export default function VerifyPanel() {
     verify(formattedId);
   }
 
-  const isOrganizerInput = inputValue.trim().toUpperCase().startsWith("CBSO-");
-  const directQrLookup = Boolean(workshopFromUrl && inputValue.trim().toUpperCase() === idFromUrl.trim().toUpperCase());
-  const isChecking = status === "checking" || assignedEventsMutation.isPending;
+  const isChecking = status === "checking";
 
   return (
     <div className="w-full max-w-md animate-scale-in flex flex-col gap-5">
@@ -166,61 +125,18 @@ export default function VerifyPanel() {
               placeholder="Enter certificate ID"
               value={inputValue}
               validationSchema={certificateLookupSchema.shape.id}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                setAssignedWorkshops([]);
-                setSelectedWorkshop("");
-                setOrganizerMessage("");
-                setResult(null);
-                setCandidates([]);
-                setStatus("idle");
-              }}
+              onChange={(e) => setInputValue(e.target.value)}
               disabled={isChecking}
               className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 placeholder:text-navy-300 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
             />
           </div>
-          {isOrganizerInput && !directQrLookup && (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="verifyOrganizerName" className="text-xs font-semibold uppercase tracking-wide text-navy-600">Full Name</label>
-                <InputField
-                  id="verifyOrganizerName"
-                  name="organizerName"
-                  autoComplete="name"
-                  placeholder="Enter full name"
-                  value={organizerName}
-                  validationSchema={organizerCertificateIdentitySchema.shape.fullName}
-                  onChange={(e) => {
-                    setOrganizerName(e.target.value);
-                    setAssignedWorkshops([]);
-                    setSelectedWorkshop("");
-                    setOrganizerMessage("");
-                    setResult(null);
-                    setCandidates([]);
-                    setStatus("idle");
-                  }}
-                  disabled={isChecking}
-                  className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 placeholder:text-navy-300 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
-                />
-              </div>
-              {assignedWorkshops.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="verifyOrganizerEvent" className="text-xs font-semibold uppercase tracking-wide text-navy-600">Assigned event</label>
-                  <select id="verifyOrganizerEvent" value={selectedWorkshop} onChange={(e) => setSelectedWorkshop(e.target.value)} disabled={isChecking} className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60">
-                    {assignedWorkshops.map((event) => <option key={event.key} value={event.key}>{event.workshopName} · {event.eventYear}</option>)}
-                  </select>
-                </div>
-              )}
-              {organizerMessage && <p role="alert" className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{organizerMessage}</p>}
-            </>
-          )}
 
           <button
             type="submit"
             disabled={isChecking}
             className="relative w-full overflow-hidden rounded-xl bg-navy-800 px-5 py-3.5 text-sm font-semibold text-white shadow-gold transition-all hover:bg-navy-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            <span className={isChecking ? "invisible" : ""}>{isOrganizerInput && !directQrLookup && !assignedWorkshops.length ? "Find Assigned Events" : "Verify Certificate"}</span>
+            <span className={isChecking ? "invisible" : ""}>Verify Certificate</span>
             {isChecking && (
               <span className="absolute inset-0 flex items-center justify-center">
                 <LoadingSpinner label="Checking..." variant="light" />
@@ -280,7 +196,7 @@ export default function VerifyPanel() {
           </dl>
 
           <a
-            href={`/certificate?id=${encodeURIComponent(result.formattedId)}&workshop=${encodeURIComponent(result.workshop.key)}`}
+            href={`/certificate?id=${encodeURIComponent(result.formattedId)}`}
             className="mt-5 inline-block text-xs font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-900"
           >
             View / download this certificate →

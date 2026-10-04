@@ -6,11 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { buildVerifyUrl } from "@/lib/qrcode";
 import { lookupCertificate } from "@/features/certificates/api";
-import {
-  generateCertificatePdf,
-  downloadPdf,
-  downloadBytes,
-} from "@/lib/generateCertificate";
+import { generateCertificatePdf, downloadPdf, downloadBytes } from "@/lib/generateCertificate";
 import {
   canvasToDataUrl,
   canvasToPngBytes,
@@ -22,10 +18,9 @@ import LoadingSpinner from "./LoadingSpinner";
 export default function CertificatePreview() {
   const searchParams = useSearchParams();
   const idParam = searchParams.get("id") ?? "";
-  const workshopParam = searchParams.get("workshop") ?? undefined;
   const lookupQuery = useQuery({
-    queryKey: ["certificate-lookup", idParam, workshopParam],
-    queryFn: () => lookupCertificate(idParam, workshopParam),
+    queryKey: ["certificate-lookup", idParam],
+    queryFn: () => lookupCertificate(idParam),
     enabled: Boolean(idParam),
   });
 
@@ -33,7 +28,7 @@ export default function CertificatePreview() {
   const [plan, setPlan] = useState<CertificatePlan | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState<"pdf" | "png" | null>(
-    null,
+    null
   );
   const [candidates, setCandidates] = useState<
     { formattedId: string; name: string }[]
@@ -73,7 +68,7 @@ export default function CertificatePreview() {
           result.candidates.map((c) => ({
             formattedId: c.formattedId,
             name: c.participant.name,
-          })),
+          }))
         );
         setStatus("ambiguous");
         return;
@@ -83,7 +78,7 @@ export default function CertificatePreview() {
         const resolvedPlan = {
           fullName: result.participant.name,
           formattedId: result.formattedId,
-          verifyUrl: buildVerifyUrl(result.formattedId, result.workshop.key),
+          verifyUrl: buildVerifyUrl(result.formattedId),
           workshop: result.workshop,
         };
         const canvas = await renderCertificateCanvas(resolvedPlan);
@@ -126,7 +121,7 @@ export default function CertificatePreview() {
       downloadBytes(
         bytes,
         `${plan.formattedId}_${slug(plan.fullName)}.png`,
-        "image/png",
+        "image/png"
       );
     } catch (err) {
       console.error(err);
@@ -153,8 +148,8 @@ export default function CertificatePreview() {
           Multiple certificates found
         </h2>
         <p className="text-sm text-navy-500">
-          That number matches participants in more than one workshop. Select
-          yours below:
+          That number matches participants in more than one workshop.
+          Select yours below:
         </p>
         <div className="w-full flex flex-col gap-2">
           {candidates.map((c) => (
@@ -182,11 +177,7 @@ export default function CertificatePreview() {
     );
   }
 
-  if (
-    status === "not-found" ||
-    status === "attendance-required" ||
-    status === "error"
-  ) {
+  if (status === "not-found" || status === "attendance-required" || status === "error") {
     return (
       <div className="w-full max-w-md animate-scale-in rounded-3xl bg-white/95 p-8 shadow-card ring-1 ring-black/5 text-center flex flex-col items-center gap-4">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 text-xl font-bold">
@@ -196,15 +187,15 @@ export default function CertificatePreview() {
           {status === "attendance-required"
             ? "You were not present in this event."
             : status === "not-found"
-              ? "Certificate ID not found."
-              : "Something went wrong."}
+            ? "Certificate ID not found."
+            : "Something went wrong."}
         </h2>
         <p className="text-sm text-navy-500">
           {status === "attendance-required"
             ? "Your certificate is available after the organizer marks your attendance Present."
             : status === "not-found"
-              ? "Please double-check your Certificate ID and try again."
-              : "We couldn't render your certificate. Please try again."}
+            ? "Please double-check your Certificate ID and try again."
+            : "We couldn't render your certificate. Please try again."}
         </p>
         <Link
           href="/"
@@ -270,14 +261,14 @@ export default function CertificatePreview() {
 
         <div className="flex items-center justify-center gap-4 text-xs font-medium">
           <a
-            href={plan ? buildVerifyUrl(plan.formattedId, plan.workshop.key) : "/verify"}
+            href={`/verify?id=${encodeURIComponent(plan?.formattedId ?? "")}`}
             className="text-navy-400 hover:text-gold-600 underline underline-offset-2 transition-colors"
           >
             Verify this certificate
           </a>
           <span className="text-navy-200">•</span>
           <Link
-            href="/#download"
+            href="/"
             className="text-navy-400 hover:text-gold-600 underline underline-offset-2 transition-colors"
           >
             Search another ID

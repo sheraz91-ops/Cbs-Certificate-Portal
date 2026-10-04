@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import RegisterPageContent from "@/app/register/RegisterPageContent";
+import EventRegistrationForm from "@/components/EventRegistrationForm";
 import PageShell from "@/components/PageShell";
 
 export const metadata: Metadata = {
@@ -10,7 +10,22 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <PageShell>
-      <RegisterPageContent />
+      <section className="mx-auto grid w-full max-w-6xl gap-10 py-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start lg:py-16">
+        <div className="pt-2 text-white">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-gold-300">Join us</p>
+          <h1 className="mt-4 font-display text-4xl font-semibold leading-tight sm:text-5xl">Take part in a CBS event.</h1>
+          <p className="mt-5 max-w-lg text-base leading-7 text-navy-100/80">Choose an event and share your details to register. CBS creates your participant ID and event certificate ID automatically.</p>
+          <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
+            <h2 className="text-sm font-semibold text-gold-200">What happens next?</h2>
+            <ol className="mt-3 space-y-2 text-sm leading-6 text-navy-100/75">
+              <li>1. Choose an event from the list.</li>
+              <li>2. Enter your participant details.</li>
+              <li>3. Save the IDs shown after registration.</li>
+            </ol>
+          </div>
+        </div>
+        <EventRegistrationForm />
+      </section>
     </PageShell>
   );
 }
