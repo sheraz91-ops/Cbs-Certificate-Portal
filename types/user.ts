@@ -15,6 +15,7 @@ export interface UserProfileInput {
 export interface UserRecord extends UserProfileInput {
   userId: string;
   createdAt: string;
+  isActive: boolean;
 }
 
 export interface UserEnrollment {
@@ -38,4 +39,5 @@ export interface UserSummary {
   emailAddress: string;
   registrationNumber: string;
   department: string;
+  isActive: boolean;
 }

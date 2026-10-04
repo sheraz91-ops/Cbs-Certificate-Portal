@@ -1,6 +1,6 @@
 import { postData } from "@/lib/api-client";
 import type { UserDetailsRecord, UserProfileInput, UserRecord, UserSummary } from "@/types/user";
-import { adminAttendanceSchema, adminUpdateUserSchema, assignUserEventSchema, campusUserProfileSchema, userDetailsSchema } from "@/lib/validation/schemas";
+import { adminAttendanceSchema, adminUpdateUserSchema, assignUserEventSchema, campusUserProfileSchema, userDeleteSchema, userDetailsSchema, userStatusSchema } from "@/lib/validation/schemas";
 
 export function getUsers(): Promise<UserSummary[]> {
   return postData<UserSummary[], Record<string, never>>("/api/admin/users/list", {});
@@ -16,6 +16,14 @@ export function getUserById(userId: string): Promise<UserDetailsRecord> {
 
 export function updateUser(userId: string, profile: UserProfileInput): Promise<UserRecord> {
   return postData<UserRecord, UserProfileInput & { userId: string }>("/api/admin/users/update", adminUpdateUserSchema.parse({ ...profile, userId }));
+}
+
+export function setUserActive(userId: string, isActive: boolean): Promise<{ userId: string; isActive: boolean }> {
+  return postData("/api/admin/users/status", userStatusSchema.parse({ userId, isActive }));
+}
+
+export function deleteUser(userId: string, password: string): Promise<{ deletedEnrollments: number }> {
+  return postData("/api/admin/users/delete", userDeleteSchema.parse({ userId, password }));
 }
 
 export function enrollUserInEvent(userId: string, workshop: string): Promise<{ workshopKey: string; workshopName: string; certificateId: string; attendance: false }> {

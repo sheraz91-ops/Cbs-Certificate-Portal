@@ -2,14 +2,18 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import UserProfileField from "@/components/UserProfileField";
+import PasswordField from "@/components/PasswordField";
 import { useAdminSession, useAdminToast } from "../../AdminShell";
 import {
   enrollUserInEvent,
   getUserById,
   updateUser,
   updateUserAttendance,
+  setUserActive,
+  deleteUser,
 } from "@/features/users/api";
 import { getAdminWorkshops } from "@/features/workshops/api";
 import {
@@ -48,12 +52,14 @@ function toProfile(user: UserProfileInput): UserProfileInput {
 export default function UserDetails({ userId }: { userId: string }) {
   const authenticated = useAdminSession();
   const toast = useAdminToast();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<UserProfileInput | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [selectedWorkshop, setSelectedWorkshop] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const userQuery = useQuery({
     queryKey: ["admin", "users", userId],
     queryFn: () => getUserById(userId),
@@ -126,6 +132,30 @@ export default function UserDetails({ userId }: { userId: string }) {
         tone: "error",
       }),
   });
+  const statusMutation = useMutation({
+    mutationFn: (isActive: boolean) => setUserActive(userId, isActive),
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "users", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "overview"] }),
+      ]);
+      toast({ title: result.isActive ? "User activated" : "User deactivated", description: result.isActive ? "This account can register for events again." : "This account cannot register for events while inactive.", tone: "success" });
+    },
+    onError: (error) => toast({ title: "Could not update user status", description: error.message, tone: "error" }),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (password: string) => deleteUser(userId, password),
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "overview"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workshop-details"] }),
+      ]);
+      toast({ title: "User deleted", description: `${result.deletedEnrollments} event enrollment(s) were removed.`, tone: "success" });
+      router.replace("/admin/users/all");
+    },
+  });
 
   function submitProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -190,15 +220,11 @@ export default function UserDetails({ userId }: { userId: string }) {
                   event{user.enrollments.length === 1 ? "" : "s"}
                 </p>
               </div>
-              {!editing && (
-                <button
-                  type="button"
-                  onClick={() => setEditing(true)}
-                  className="rounded-xl border border-indigo-400/30 px-4 py-2 text-sm font-semibold text-indigo-200 hover:bg-indigo-500/10"
-                >
-                  Edit details
-                </button>
-              )}
+              {!editing && <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${user.isActive ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{user.isActive ? "Active" : "Inactive"}</span>
+                <button type="button" disabled={statusMutation.isPending} onClick={() => statusMutation.mutate(!user.isActive)} className="rounded-xl border border-amber-400/30 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10 disabled:opacity-50">{user.isActive ? "Deactivate" : "Activate"}</button>
+                <button type="button" onClick={() => setEditing(true)} className="rounded-xl border border-indigo-400/30 px-4 py-2 text-sm font-semibold text-indigo-200 hover:bg-indigo-500/10">Edit details</button>
+              </div>}
             </div>
 
             {editing ? (
@@ -291,6 +317,18 @@ export default function UserDetails({ userId }: { userId: string }) {
             )}
           </section>
 
+          <section className="rounded-2xl border border-red-500/20 bg-slate-950 p-4 sm:p-6">
+            <h3 className="font-semibold text-red-200">Delete user</h3>
+            <p className="mt-1 text-sm text-slate-400">This permanently removes the user and all event enrollment records. Enter the admin password to confirm.</p>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+              <label className="block min-w-0 flex-1 text-xs font-medium text-slate-300">Admin password
+                <PasswordField autoComplete="current-password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-red-400" />
+              </label>
+              <button type="button" disabled={!deletePassword || deleteMutation.isPending} onClick={() => deleteMutation.mutate(deletePassword)} className="min-h-11 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-50">{deleteMutation.isPending ? "Deleting…" : "Delete user"}</button>
+            </div>
+            {deleteMutation.isError && <p role="alert" className="mt-3 text-sm text-red-300">{deleteMutation.error.message}</p>}
+          </section>
+
           <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -311,6 +349,7 @@ export default function UserDetails({ userId }: { userId: string }) {
                       onChange={(event) =>
                         setSelectedWorkshop(event.target.value)
                       }
+                      disabled={!user.isActive}
                       className="mt-1 block h-10 w-full min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white sm:min-w-56"
                     >
                       <option value="">Select event</option>
@@ -323,7 +362,7 @@ export default function UserDetails({ userId }: { userId: string }) {
                   </label>
                   <button
                     type="button"
-                    disabled={!selectedWorkshop || enrollMutation.isPending}
+                    disabled={!user.isActive || !selectedWorkshop || enrollMutation.isPending}
                     onClick={() => enrollMutation.mutate(selectedWorkshop)}
                     className="h-10 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40 sm:w-auto self-end"
                   >
@@ -332,6 +371,7 @@ export default function UserDetails({ userId }: { userId: string }) {
                 </div>
               )}
             </div>
+            {!user.isActive && <p className="mt-3 text-xs text-amber-300">This user is inactive and cannot be added to events until activated.</p>}
             {enrollMutation.isError && (
               <p role="alert" className="mt-4 text-sm text-red-300">
                 {enrollMutation.error.message}

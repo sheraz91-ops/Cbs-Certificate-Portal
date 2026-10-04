@@ -88,6 +88,7 @@ export default function AllUsersPage() {
                   <p className="mt-1 break-words font-semibold text-slate-100">
                     {user.fullName}
                   </p>
+                  <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${user.isActive ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{user.isActive ? "Active" : "Inactive"}</span>
                   <dl className="mt-3 space-y-2 border-t border-slate-800 pt-3 text-xs">
                     <div>
                       <dt className="text-slate-500">Assigned ID</dt>
@@ -134,6 +135,7 @@ export default function AllUsersPage() {
                       "Email Address",
                       "Registration Number",
                       "Department",
+                      "Status",
                     ].map((label) => (
                       <th key={label} scope="col" className="px-4 py-3">
                         {label}
@@ -164,6 +166,7 @@ export default function AllUsersPage() {
                       <td className="px-4 py-3 text-slate-300">
                         {user.department}
                       </td>
+                      <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${user.isActive ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{user.isActive ? "Active" : "Inactive"}</span></td>
                     </tr>
                   ))}
                 </tbody>

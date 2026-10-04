@@ -149,6 +149,10 @@ export const adminAttendanceSchema = z.object({
 }).strict();
 
 export const userDetailsSchema = z.object({ userId: userIdSchema }).strict();
+export const userStatusSchema = z.object({ userId: userIdSchema, isActive: z.boolean() }).strict();
+export const userDeleteSchema = z.object({ userId: userIdSchema, password: z.string().min(1).max(1024) }).strict();
+export const organizerStatusSchema = z.object({ organizerId: organizerIdSchema, isActive: z.boolean() }).strict();
+export const organizerDeleteSchema = z.object({ organizerId: organizerIdSchema, password: z.string().min(1).max(1024) }).strict();
 export const workshopKeyBodySchema = z.object({ workshop: workshopKeySchema }).strict();
 export const participantDeleteSchema = z.object({
   workshop: workshopKeySchema,

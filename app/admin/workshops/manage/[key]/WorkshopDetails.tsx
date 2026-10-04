@@ -428,6 +428,20 @@ export default function WorkshopDetails({
             <h3 className="text-lg font-semibold text-white">
               Participants ({workshop.participants.length})
             </h3>
+            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h4 className="text-sm font-semibold text-slate-200">Organizers assigned to this event</h4>
+                <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-200">{workshop.organizers.length}</span>
+              </div>
+              {workshop.organizers.length === 0 ? <p className="mt-3 text-sm text-slate-500">No organizers are assigned to this event.</p> : (
+                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {workshop.organizers.map((organizer) => <li key={organizer.organizerId} className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+                    <div className="min-w-0"><Link href={`/admin/organizers/${encodeURIComponent(organizer.organizerId)}`} className="block truncate text-sm font-semibold text-indigo-200 hover:underline">{organizer.fullName}</Link><p className="mt-1 break-all text-xs text-slate-500">{organizer.organizerId} · {organizer.emailAddress}</p></div>
+                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold ${organizer.isActive ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{organizer.isActive ? "Active" : "Inactive"}</span>
+                  </li>)}
+                </ul>
+              )}
+            </div>
             {workshop.participants.length === 0 ? (
               <p className="mt-4 text-sm text-slate-400">
                 No users are enrolled in this event.

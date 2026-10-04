@@ -20,6 +20,8 @@ export const POST = adminPost(async (body: AdminBody) => {
   const usersById = new Map(users.map((user) => [user.userId, user]));
   const unknownIds = userIds.filter((userId) => !usersById.has(userId));
   if (unknownIds.length) return errorResponse(`User ID(s) not found: ${unknownIds.join(", ")}`, 404);
+  const inactiveIds = users.filter((user) => user.isActive === false).map((user) => user.userId);
+  if (inactiveIds.length) return errorResponse(`Inactive user account(s) cannot be enrolled: ${inactiveIds.join(", ")}`, 403);
 
   const existing = await ParticipantModel.find({ workshop }).select("id userId").lean();
   const enrolledUserIds = new Set(existing.map((participant) => participant.userId).filter(Boolean));

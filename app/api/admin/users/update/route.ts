@@ -20,5 +20,5 @@ export const POST = adminPost(async (body: AdminBody) => {
   const user = await UserModel.findOneAndUpdate({ userId }, { $set: profile }, { new: true, runValidators: true }).lean();
   if (!user) return errorResponse("User was not found", 404);
   if (profile.fullName) await ParticipantModel.updateMany({ userId }, { $set: { name: profile.fullName } });
-  return successResponse({ ...profile, userId: user.userId, createdAt: user.createdAt.toISOString() }, "Successfully updated user", 1);
+  return successResponse({ ...profile, userId: user.userId, isActive: user.isActive !== false, createdAt: user.createdAt.toISOString() }, "Successfully updated user", 1);
 }, "Admin user update");

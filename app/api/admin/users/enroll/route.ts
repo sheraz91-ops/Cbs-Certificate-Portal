@@ -21,6 +21,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     ParticipantModel.findOne({ userId, workshop: workshopKey }).select("_id").lean(),
   ]);
   if (!user) return errorResponse("User was not found", 404);
+  if (user.isActive === false) return errorResponse("This user account is deactivated", 403);
   if (!workshop) return errorResponse("Event was not found", 404);
   if (existing) return errorResponse("User is already enrolled in this event", 409);
 

@@ -3,7 +3,7 @@ import type { WorkshopDefinition } from "@/types/workshop";
 import { createWorkshopSchema, updateWorkshopSchema, workshopKeyBodySchema } from "@/lib/validation/schemas";
 
 export type WorkshopSummary = Pick<WorkshopDefinition, "key" | "workshopName">;
-export type WorkshopDetails = WorkshopDefinition & { participants: { id: string; name: string; workshop: string; userId?: string; customFields?: Record<string, string> }[] };
+export type WorkshopDetails = WorkshopDefinition & { participants: { id: string; name: string; workshop: string; userId?: string; customFields?: Record<string, string> }[]; organizers: { organizerId: string; fullName: string; emailAddress: string; isActive: boolean }[] };
 
 export function getWorkshops(): Promise<WorkshopSummary[]> {
   return getData<WorkshopSummary[]>("/api/workshops");

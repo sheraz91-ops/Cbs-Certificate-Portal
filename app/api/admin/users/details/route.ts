@@ -33,6 +33,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     institute: user.institute,
     whatsappNumber: user.whatsappNumber,
     cnic: user.cnic,
+    isActive: user.isActive !== false,
     createdAt: user.createdAt.toISOString(),
     enrollments: participants.flatMap((participant) => {
       const workshop = workshopsByKey.get(participant.workshop);

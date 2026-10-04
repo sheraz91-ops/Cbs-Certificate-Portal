@@ -33,6 +33,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     institute: user.institute,
     whatsappNumber: user.whatsappNumber,
     cnic: user.cnic,
+    isActive: true,
     createdAt: user.createdAt.toISOString(),
   };
   return successResponse(result, "Successfully created user", 1, 201);

@@ -29,7 +29,7 @@ export const POST = adminPost(async () => {
     ParticipantModel.countDocuments({ attendance: true }),
     ParticipantModel.distinct("userId"),
     WorkshopModel.find().sort({ createdAt: -1 }).limit(5).select("key workshopName workshopCode eventDate eventYear createdAt").lean(),
-    UserModel.find().sort({ createdAt: -1 }).limit(5).select("userId fullName emailAddress createdAt").lean(),
+    UserModel.find({ isActive: { $ne: false } }).sort({ createdAt: -1 }).limit(5).select("userId fullName emailAddress createdAt").lean(),
     OrganizerModel.find().sort({ createdAt: -1 }).limit(5).select("organizerId fullName emailAddress isActive createdAt").lean(),
     ParticipantModel.aggregate<{ _id: string; count: number }>([
       { $group: { _id: "$workshop", count: { $sum: 1 } } },

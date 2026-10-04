@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     let user = matchingUsers[0];
+    if (user?.isActive === false) return errorResponse("This user account is deactivated. Contact CBS for assistance.", 403);
     let createdUserId: string | null = null;
     if (user) {
       const existingProfile: UserProfileInput = {

@@ -1,5 +1,5 @@
 import { getData, postData } from "@/lib/api-client";
-import { createOrganizerSchema, organizerDetailsSchema, organizerLoginSchema, updateOrganizerSchema } from "@/lib/validation/schemas";
+import { createOrganizerSchema, organizerDeleteSchema, organizerDetailsSchema, organizerLoginSchema, organizerStatusSchema, organizerAssignmentSchema, updateOrganizerSchema } from "@/lib/validation/schemas";
 import type { EventOption } from "@/features/events/api";
 import type { UserProfileInput } from "@/types/user";
 
@@ -61,6 +61,18 @@ export function getOrganizerById(organizerId: string): Promise<OrganizerDetails>
 
 export function updateOrganizer(input: UpdateOrganizerInput): Promise<OrganizerDetails> {
   return postData("/api/admin/organizers/update", updateOrganizerSchema.parse(input));
+}
+
+export function setOrganizerActive(organizerId: string, isActive: boolean): Promise<{ organizerId: string; isActive: boolean }> {
+  return postData("/api/admin/organizers/status", organizerStatusSchema.parse({ organizerId, isActive }));
+}
+
+export function deleteOrganizer(organizerId: string, password: string): Promise<null> {
+  return postData("/api/admin/organizers/delete", organizerDeleteSchema.parse({ organizerId, password }));
+}
+
+export function assignOrganizerEvents(organizerId: string, workshops: string[]): Promise<{ organizerId: string; workshops: string[] }> {
+  return postData("/api/admin/organizers/assign", organizerAssignmentSchema.parse({ organizerId, workshops }));
 }
 
 export type OrganizerLoginInput = { email: string; password: string };
