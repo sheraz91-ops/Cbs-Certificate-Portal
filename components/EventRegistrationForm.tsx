@@ -22,6 +22,8 @@ import { getPublicUserRegistrationForm } from "@/features/users/registrationForm
 import { DEFAULT_USER_REGISTRATION_FORM, USER_PROFILE_FIELD_KEYS } from "@/types/registrationForm";
 import type { UserProfileFieldKey } from "@/types/registrationForm";
 import { validateUserRegistrationValues } from "@/lib/userRegistrationValidation";
+import { validateMatrixSelection } from "@/lib/matrixRegistration";
+import { RegistrationMatrixField } from "@/components/RegistrationMatrixField";
 import { z } from "zod";
 
 function emptyProfile(): UserProfileInput {
@@ -121,6 +123,7 @@ export default function EventRegistrationForm({
     setClosedByServer(false);
     const submittedCustomFields = { ...customFields };
     for (const field of selectedEvent?.registrationFields ?? []) {
+      if (field.type === "matrix" && submittedCustomFields[field.key] === undefined) submittedCustomFields[field.key] = "{}";
       if (
         field.type === "checkbox" &&
         submittedCustomFields[field.key] === undefined
@@ -130,18 +133,19 @@ export default function EventRegistrationForm({
           : "false";
       }
     }
-    const requiredCustomField = selectedEvent?.registrationFields?.find(
-      (field) =>
-        field.required &&
-        (field.type === "checkbox"
-          ? field.choices?.length
-            ? selectedChoices(submittedCustomFields[field.key] ?? "[]")
-                .length === 0
-            : submittedCustomFields[field.key] !== "true"
-          : !submittedCustomFields[field.key]?.trim()),
-    );
+    const requiredCustomField = selectedEvent?.registrationFields?.find((field) => {
+      const value = submittedCustomFields[field.key] ?? "";
+      if (field.type === "matrix") return Boolean(validateMatrixSelection(field, value));
+      return field.required && (field.type === "checkbox"
+        ? field.choices?.length
+          ? selectedChoices(value || "[]").length === 0
+          : value !== "true"
+        : !value.trim());
+    });
     if (requiredCustomField) {
-      const message = `${requiredCustomField.label} is required`;
+      const message = requiredCustomField.type === "matrix"
+        ? validateMatrixSelection(requiredCustomField, submittedCustomFields[requiredCustomField.key] ?? "{}") ?? `${requiredCustomField.label} is invalid`
+        : `${requiredCustomField.label} is required`;
       setFieldErrors((current) => ({
         ...current,
         [requiredCustomField.key]: message,
@@ -528,16 +532,18 @@ export default function EventRegistrationForm({
       {registrationForm.fields.some((field) => field.key.startsWith("custom-")) && (
         <div className="mt-5 grid gap-4 border-t border-navy-100 pt-5 sm:grid-cols-2">
           {registrationForm.fields.filter((field) => field.key.startsWith("custom-")).map((field) => {
-            const value = profileCustomFields[field.key] ?? (field.type === "checkbox" && field.choices?.length ? "[]" : "");
+            const value = profileCustomFields[field.key] ?? (field.type === "matrix" ? "{}" : field.type === "checkbox" && field.choices?.length ? "[]" : "");
             const chosen = field.type === "checkbox" && field.choices?.length ? selectedChoices(value) : [];
             const updateValue = (nextValue: string) => {
               setProfileCustomFields((current) => ({ ...current, [field.key]: nextValue }));
               setFieldErrors((current) => ({ ...current, [field.key]: "" }));
             };
             return (
-              <div key={field.key} className="min-w-0 text-sm font-semibold text-navy-800">
-                <p>{field.label} {field.required ? <span className="text-red-600">*</span> : <span className="text-xs font-normal text-navy-500">(optional)</span>}</p>
-                {field.type === "yes_no" ? (
+              <div key={field.key} className={`min-w-0 text-sm font-semibold text-navy-800 ${field.type === "matrix" ? "col-span-full" : ""}`}>
+                {field.type !== "matrix" && <p>{field.label} {field.required ? <span className="text-red-600">*</span> : <span className="text-xs font-normal text-navy-500">(optional)</span>}</p>}
+                {field.type === "matrix" ? (
+                  <RegistrationMatrixField fieldKey={field.key} label={field.label} rows={field.rows ?? []} columns={field.choices ?? []} selectionMode={field.selectionMode ?? "single"} value={value} required={field.required} onChange={updateValue} />
+                ) : field.type === "yes_no" ? (
                   <select value={value} onChange={(event) => updateValue(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none focus:border-gold-500">
                     <option value="">Choose an answer</option><option value="yes">Yes</option><option value="no">No</option>
                   </select>
@@ -568,7 +574,7 @@ export default function EventRegistrationForm({
           {selectedEvent.registrationFields.map((field) => {
             const value =
               customFields[field.key] ??
-              (field.type === "checkbox" && field.choices?.length ? "[]" : "");
+              (field.type === "matrix" ? "{}" : field.type === "checkbox" && field.choices?.length ? "[]" : "");
             const chosen =
               field.type === "checkbox" && field.choices?.length
                 ? selectedChoices(value)
@@ -588,7 +594,12 @@ export default function EventRegistrationForm({
                 key={field.key}
                 className="text-sm font-semibold text-navy-800"
               >
-                {field.type === "checkbox" && field.choices?.length ? (
+                {field.type === "matrix" ? (
+                  <>
+                  <RegistrationMatrixField fieldKey={field.key} label={field.label} rows={field.rows ?? []} columns={field.choices ?? []} selectionMode={field.selectionMode ?? "single"} value={value} required={field.required} onChange={updateValue} />
+                    {fieldErrors[field.key] && <p role="alert" className="mt-1 text-xs text-red-600">{fieldErrors[field.key]}</p>}
+                  </>
+                ) : field.type === "checkbox" && field.choices?.length ? (
                   <fieldset className="space-y-2">
                     <legend className="text-sm font-semibold text-navy-800">
                       {field.label}

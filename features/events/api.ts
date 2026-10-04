@@ -13,7 +13,7 @@ export type EventOption = {
   isActive: boolean;
   isCompleted?: boolean;
   allowOutsiders?: boolean;
-  registrationFields?: { key: string; label: string; type?: RegistrationFieldType; choices?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
+  registrationFields?: { key: string; label: string; type?: RegistrationFieldType; choices?: string[]; rows?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
 };
 
 export type EventRegistrationInput = z.input<typeof eventRegistrationSchema>;

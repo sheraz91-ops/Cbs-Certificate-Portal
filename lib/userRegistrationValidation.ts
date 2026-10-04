@@ -2,6 +2,7 @@ import { z } from "zod";
 import { campusRegistrationNumberSchema } from "@/lib/validation/schemas";
 import type { UserProfileFieldKey, UserRegistrationFormConfig } from "@/types/registrationForm";
 import type { UserProfileInput } from "@/types/user";
+import { validateMatrixSelection } from "@/lib/matrixRegistration";
 
 const profileKeys: UserProfileFieldKey[] = ["emailAddress", "fullName", "registrationNumber", "department", "semester", "section", "institute", "whatsappNumber"];
 const semesterValues = ["1", "2", "3", "4", "5", "6", "7", "8", "Graduated"] as const;
@@ -43,6 +44,7 @@ function fieldError(fieldKey: string, label: string, value: string, required: bo
 }
 
 function validateCustomField(field: UserRegistrationFormConfig["fields"][number], value: string): string | undefined {
+  if (field.type === "matrix") return validateMatrixSelection(field, value);
   if (field.type === "yes_no") {
     if (value && value !== "yes" && value !== "no") return `${field.label} must be answered Yes or No`;
     if (field.required && !value) return `${field.label} is required`;
@@ -89,7 +91,7 @@ export function validateUserRegistrationValues(
         profile[key] = key === "emailAddress" || (key === "registrationNumber" && !allowOutsiders) ? value.trim().toLowerCase() : value.trim();
       }
     } else {
-      const value = values.customFields[field.key] ?? (field.type === "checkbox" && field.choices?.length ? "[]" : "");
+      const value = values.customFields[field.key] ?? (field.type === "matrix" ? "{}" : field.type === "checkbox" && field.choices?.length ? "[]" : "");
       const message = validateCustomField(field, value);
       if (message) errors[field.key] = message;
       else customFields[field.key] = value;

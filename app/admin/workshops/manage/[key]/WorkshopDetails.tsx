@@ -23,9 +23,19 @@ import {
 import { useAdminSession, useAdminToast } from "../../../AdminShell";
 
 function formatCustomAnswer(
-  field: { type?: string; choices?: string[] } | undefined,
+  field: { type?: string; choices?: string[]; rows?: string[] } | undefined,
   value: string,
 ) {
+  if (field?.type === "matrix") {
+    try {
+      const selected: unknown = JSON.parse(value);
+      if (selected && typeof selected === "object" && !Array.isArray(selected)) {
+        return (field.rows ?? []).map((row) => `${row}: ${Array.isArray((selected as Record<string, unknown>)[row]) ? ((selected as Record<string, string[]>)[row] ?? []).join(", ") || "No selection" : "No selection"}`).join("; ");
+      }
+    } catch {
+      return value;
+    }
+  }
   if (field?.type === "checkbox" && field.choices?.length) {
     try {
       const selected: unknown = JSON.parse(value);
@@ -215,6 +225,7 @@ export default function WorkshopDetails({
         ...field,
         type: field.type ?? "text",
         choices: field.choices ?? [],
+        rows: field.rows ?? [],
         selectionMode: field.selectionMode ?? "multiple",
       })),
     });
@@ -463,6 +474,7 @@ export default function WorkshopDetails({
                                     label: "",
                                     type: "text",
                                     choices: [],
+                                    rows: [],
                                     selectionMode: "multiple",
                                     required: false,
                                   },
@@ -516,14 +528,17 @@ export default function WorkshopDetails({
                                         const type = event.target.value as
                                           | "text"
                                           | "yes_no"
-                                          | "checkbox";
+                                          | "checkbox"
+                                          | "matrix";
                                         return {
                                           ...item,
                                           type,
                                           choices:
-                                            type === "checkbox"
+                                            type === "checkbox" || type === "matrix"
                                               ? item.choices
                                               : [],
+                                          rows: type === "matrix" ? item.rows ?? [] : [],
+                                          selectionMode: type === "matrix" ? "single" : type === "checkbox" ? "multiple" : item.selectionMode,
                                         };
                                       },
                                     ),
@@ -536,16 +551,17 @@ export default function WorkshopDetails({
                         <option value="text">Text</option>
                         <option value="yes_no">Yes / No</option>
                         <option value="checkbox">Checkbox</option>
+                        <option value="matrix">Matrix (rows and columns)</option>
                       </select>
-                      {field.type === "checkbox" && (
+                      {(field.type === "checkbox" || field.type === "matrix") && (
                         <div className="space-y-2 sm:col-span-4">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <span className="text-xs font-medium text-slate-300">
-                              Choices (leave empty for a single checkbox)
+                              {field.type === "matrix" ? "Columns" : "Choices (leave empty for a single checkbox)"}
                             </span>
                             <select
                               aria-label={`Selection mode for ${field.label || `custom field ${index + 1}`}`}
-                              value={field.selectionMode ?? "multiple"}
+                              value={field.selectionMode ?? (field.type === "matrix" ? "single" : "multiple")}
                               onChange={(event) =>
                                 setDraft((current) =>
                                   current
@@ -570,10 +586,7 @@ export default function WorkshopDetails({
                               }
                               className="h-9 rounded-lg border border-slate-700 bg-slate-900 px-2 text-xs text-white"
                             >
-                              <option value="multiple">
-                                Allow multiple selections
-                              </option>
-                              <option value="single">Only one selection</option>
+                              {field.type === "matrix" ? <><option value="single">One answer per row (radio)</option><option value="multiple">Multiple answers per row (checkboxes)</option></> : <><option value="multiple">Allow multiple selections</option><option value="single">Only one selection</option></>}
                             </select>
                           </div>
                           <div className="grid gap-2 sm:grid-cols-2">
@@ -581,7 +594,7 @@ export default function WorkshopDetails({
                               (choice, choiceIndex) => (
                                 <div key={choiceIndex} className="flex gap-2">
                                   <InputField
-                                    aria-label={`Choice ${choiceIndex + 1}`}
+                                    aria-label={`${field.type === "matrix" ? "Column" : "Choice"} ${choiceIndex + 1}`}
                                     value={choice}
                                     onChange={(event) =>
                                       setDraft((current) =>
@@ -609,7 +622,7 @@ export default function WorkshopDetails({
                                           : current,
                                       )
                                     }
-                                    placeholder={`Choice ${choiceIndex + 1}`}
+                                    placeholder={`${field.type === "matrix" ? "Column" : "Choice"} ${choiceIndex + 1}`}
                                     className="h-9 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white"
                                   />
                                   <button
@@ -673,8 +686,9 @@ export default function WorkshopDetails({
                             }
                             className="text-xs font-semibold text-indigo-300 disabled:opacity-50"
                           >
-                            Add choice
+                            Add {field.type === "matrix" ? "column" : "choice"}
                           </button>
+                          {field.type === "matrix" && <div className="space-y-2 border-t border-slate-800 pt-3"><span className="text-xs font-medium text-slate-300">Rows</span><div className="grid gap-2 sm:grid-cols-2">{(field.rows ?? []).map((row, rowIndex) => <div key={rowIndex} className="flex gap-2"><InputField aria-label={`Row ${rowIndex + 1}`} value={row} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, rows: (item.rows ?? []).map((value, j) => j === rowIndex ? event.target.value : value) } : item) } : current)} placeholder={`Row ${rowIndex + 1}`} className="h-9 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white" /><button type="button" onClick={() => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, rows: (item.rows ?? []).filter((_, j) => j !== rowIndex) } : item) } : current)} className="px-2 text-xs text-rose-300">Remove</button></div>)}</div><button type="button" disabled={(field.rows?.length ?? 0) >= 30} onClick={() => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, rows: [...(item.rows ?? []), ""] } : item) } : current)} className="text-xs font-semibold text-indigo-300 disabled:opacity-50">Add row</button></div>}
                         </div>
                       )}
                       <label className="flex items-center gap-2 text-xs text-slate-300">

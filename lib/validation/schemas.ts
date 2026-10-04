@@ -44,20 +44,24 @@ const userRegistrationFieldSchema = z.object({
   key: z.string().trim().min(1).max(80).regex(/^(?:emailAddress|fullName|registrationNumber|department|semester|section|institute|whatsappNumber|custom-[a-z0-9]+(?:-[a-z0-9]+)*)$/),
   label: requiredText("Field label", 100),
   required: z.boolean(),
-  type: z.enum(["text", "yes_no", "checkbox"]).default("text"),
+  type: z.enum(["text", "yes_no", "checkbox", "matrix"]).default("text"),
   choices: z.array(requiredText("Choice", 100)).max(30).default([]),
+  rows: z.array(requiredText("Row", 120)).max(30).default([]),
   selectionMode: z.enum(["multiple", "single"]).default("multiple"),
 }).strict().superRefine((field, context) => {
   const isCustom = field.key.startsWith("custom-");
-  if (!isCustom && (field.type !== "text" || field.choices.length)) {
+  if (!isCustom && (field.type !== "text" || field.choices.length || field.rows.length)) {
     context.addIssue({ code: "custom", message: "Built-in fields cannot have custom options", path: ["type"] });
   }
-  if (field.type !== "checkbox" && field.choices.length) {
+  if (field.type !== "checkbox" && field.type !== "matrix" && field.choices.length) {
     context.addIssue({ code: "custom", message: "Choices are only available for checkbox fields", path: ["choices"] });
   }
-  if (field.type === "checkbox" && field.choices.length && new Set(field.choices.map((choice) => choice.toLowerCase())).size !== field.choices.length) {
+  if ((field.type === "checkbox" || field.type === "matrix") && field.choices.length && new Set(field.choices.map((choice) => choice.toLowerCase())).size !== field.choices.length) {
     context.addIssue({ code: "custom", message: "Choices must be unique", path: ["choices"] });
   }
+  if (field.type === "matrix" && (!field.rows.length || !field.choices.length)) context.addIssue({ code: "custom", message: "Matrix questions need at least one row and one column", path: ["rows"] });
+  if (field.type === "matrix" && new Set(field.rows.map((row) => row.toLowerCase())).size !== field.rows.length) context.addIssue({ code: "custom", message: "Rows must be unique", path: ["rows"] });
+  if (field.type !== "matrix" && field.rows.length) context.addIssue({ code: "custom", message: "Rows are only available for matrix fields", path: ["rows"] });
 });
 
 export const userRegistrationFormConfigSchema = z.object({
@@ -117,17 +121,22 @@ const registrationFieldSchema = z.object({
   _id: z.string().optional(),
   key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   label: requiredText("Field label", 100),
-  type: z.enum(["text", "yes_no", "checkbox"]).default("text"),
+  type: z.enum(["text", "yes_no", "checkbox", "matrix"]).default("text"),
   choices: z.array(requiredText("Choice", 100)).max(30).default([]),
+  rows: z.array(requiredText("Row", 120)).max(30).default([]),
   selectionMode: z.enum(["multiple", "single"]).default("multiple"),
   required: z.boolean(),
 }).strict().transform(({ _id: _databaseId, ...field }) => field).superRefine((field, context) => {
   if (new Set(field.choices.map((choice) => choice.toLowerCase())).size !== field.choices.length) {
     context.addIssue({ code: "custom", message: "Choices must be unique", path: ["choices"] });
   }
-  if (field.type !== "checkbox" && field.choices.length > 0) {
+  if (field.type !== "checkbox" && field.type !== "matrix" && field.choices.length > 0) {
     context.addIssue({ code: "custom", message: "Choices are only available for checkbox fields", path: ["choices"] });
   }
+  if (field.type === "matrix" && (!field.rows.length || !field.choices.length)) context.addIssue({ code: "custom", message: "Matrix questions need at least one row and one column", path: ["rows"] });
+  if (field.type === "matrix" && new Set(field.rows.map((row) => row.toLowerCase())).size !== field.rows.length) context.addIssue({ code: "custom", message: "Rows must be unique", path: ["rows"] });
+  if (field.type === "matrix" && new Set(field.choices.map((choice) => choice.toLowerCase())).size !== field.choices.length) context.addIssue({ code: "custom", message: "Columns must be unique", path: ["choices"] });
+  if (field.type !== "matrix" && field.rows.length) context.addIssue({ code: "custom", message: "Rows are only available for matrix fields", path: ["rows"] });
 });
 
 export const createWorkshopSchema = z.object({

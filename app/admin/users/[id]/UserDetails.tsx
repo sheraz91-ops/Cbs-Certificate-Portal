@@ -60,6 +60,16 @@ function displayCustomAnswer(value: string) {
       return value;
     }
   }
+  if (value.startsWith("{")) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return Object.entries(parsed).map(([row, selected]) => `${row}: ${Array.isArray(selected) ? selected.join(", ") || "No selection" : "No selection"}`).join("; ");
+      }
+    } catch {
+      return value;
+    }
+  }
   return value;
 }
 

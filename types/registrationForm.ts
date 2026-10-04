@@ -19,6 +19,7 @@ export type UserRegistrationField = {
   required: boolean;
   type?: RegistrationFieldType;
   choices?: string[];
+  rows?: string[];
   selectionMode?: "multiple" | "single";
 };
 

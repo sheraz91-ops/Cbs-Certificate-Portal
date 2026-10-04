@@ -54,8 +54,9 @@ export interface RegistrationField {
   label: string;
   type?: RegistrationFieldType;
   choices?: string[];
+  rows?: string[];
   selectionMode?: "multiple" | "single";
   required: boolean;
 }
 
-export type RegistrationFieldType = "text" | "yes_no" | "checkbox";
+export type RegistrationFieldType = "text" | "yes_no" | "checkbox" | "matrix";

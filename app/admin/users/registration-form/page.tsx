@@ -38,6 +38,7 @@ export default function RegistrationFormSettingsPage() {
   const [label, setLabel] = useState("");
   const [fieldType, setFieldType] = useState<UserRegistrationField["type"]>("text");
   const [choices, setChoices] = useState("");
+  const [rows, setRows] = useState("");
   const [selectionMode, setSelectionMode] = useState<"multiple" | "single">("multiple");
   const [formError, setFormError] = useState("");
 
@@ -82,13 +83,14 @@ export default function RegistrationFormSettingsPage() {
       setFormError("Enter a label for the new field.");
       return;
     }
-    const fieldChoices = fieldType === "checkbox" ? choices.split(",").map((choice) => choice.trim()).filter(Boolean) : [];
+    const fieldChoices = fieldType === "checkbox" || fieldType === "matrix" ? choices.split(",").map((choice) => choice.trim()).filter(Boolean) : [];
     const field: UserRegistrationField = {
       key: newFieldKey(trimmed, draft.fields),
       label: trimmed,
       type: fieldType ?? "text",
       required: false,
       choices: fieldChoices,
+      rows: fieldType === "matrix" ? rows.split(",").map((row) => row.trim()).filter(Boolean) : [],
       selectionMode,
     };
     const next = { fields: [...draft.fields, field] };
@@ -100,6 +102,7 @@ export default function RegistrationFormSettingsPage() {
     setDraft(parsed.data);
     setLabel("");
     setChoices("");
+    setRows("");
     setFormError("");
   }
 
@@ -158,7 +161,7 @@ export default function RegistrationFormSettingsPage() {
       <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl sm:p-6">
         <div>
           <h3 className="text-lg font-semibold text-white">Custom questions</h3>
-          <p className="mt-1 text-sm text-slate-400">Add text questions, Yes/No questions, or checkboxes with optional choices.</p>
+          <p className="mt-1 text-sm text-slate-400">Add text, Yes/No, checkbox, or matrix questions. Matrix questions support multiple rows and columns.</p>
         </div>
         {customFields.length > 0 && <div className="space-y-3">
           {customFields.map((field) => (
@@ -167,15 +170,21 @@ export default function RegistrationFormSettingsPage() {
               <label className="flex items-center gap-2 text-sm text-slate-300"><InputField type="checkbox" checked={field.required} onChange={(event) => updateField(field.key, { required: event.target.checked })} className="accent-indigo-500" />Required</label>
               <button type="button" onClick={() => setDraft((current) => ({ fields: current.fields.filter((item) => item.key !== field.key) }))} className="min-h-10 rounded-lg border border-rose-500/30 px-3 text-sm font-semibold text-rose-200 hover:bg-rose-500/10">Remove</button>
               {field.type === "checkbox" && field.choices?.length ? <p className="text-xs text-slate-500 sm:col-span-3">Choices: {field.choices.join(", ")} · {field.selectionMode === "single" ? "choose one" : "choose any"}</p> : null}
+              {field.type === "matrix" && <div className="grid gap-3 sm:col-span-3 sm:grid-cols-2">
+                <label className="text-xs text-slate-400">Column labels, separated by commas<InputField value={(field.choices ?? []).join(", ")} onChange={(event) => updateField(field.key, { choices: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} className={inputClass} /></label>
+                <label className="text-xs text-slate-400">Row labels, separated by commas<InputField value={(field.rows ?? []).join(", ")} onChange={(event) => updateField(field.key, { rows: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} className={inputClass} /></label>
+                <label className="text-xs text-slate-400 sm:col-span-2">Selection mode<select value={field.selectionMode ?? "single"} onChange={(event) => updateField(field.key, { selectionMode: event.target.value as "multiple" | "single" })} className={inputClass}><option value="single">One answer in each row (radio buttons)</option><option value="multiple">Multiple answers in each row (checkboxes)</option></select></label>
+              </div>}
             </div>
           ))}
         </div>}
         <div className="grid gap-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 sm:grid-cols-2 sm:p-4">
           <label className="text-xs text-slate-300">New question label<InputField value={label} onChange={(event) => setLabel(event.target.value)} maxLength={100} className={inputClass} placeholder="For example: Dietary requirements" /></label>
-          <label className="text-xs text-slate-300">Answer type<select value={fieldType} onChange={(event) => setFieldType(event.target.value as UserRegistrationField["type"])} className={inputClass}><option value="text">Text</option><option value="yes_no">Yes / No</option><option value="checkbox">Checkbox</option></select></label>
-          {fieldType === "checkbox" && <>
-            <label className="text-xs text-slate-300">Choices, separated by commas<InputField value={choices} onChange={(event) => setChoices(event.target.value)} maxLength={1000} className={inputClass} placeholder="Vegetarian, Vegan, No preference" /></label>
-            <label className="text-xs text-slate-300">Selection mode<select value={selectionMode} onChange={(event) => setSelectionMode(event.target.value as "multiple" | "single")} className={inputClass}><option value="multiple">Choose any</option><option value="single">Choose one</option></select></label>
+          <label className="text-xs text-slate-300">Answer type<select value={fieldType} onChange={(event) => { const nextType = event.target.value as UserRegistrationField["type"]; setFieldType(nextType); if (nextType === "matrix") setSelectionMode("single"); }} className={inputClass}><option value="text">Text</option><option value="yes_no">Yes / No</option><option value="checkbox">Checkbox</option><option value="matrix">Matrix (rows and columns)</option></select></label>
+          {(fieldType === "checkbox" || fieldType === "matrix") && <>
+            <label className="text-xs text-slate-300">{fieldType === "matrix" ? "Column labels" : "Choices"}, separated by commas<InputField value={choices} onChange={(event) => setChoices(event.target.value)} maxLength={1000} className={inputClass} placeholder={fieldType === "matrix" ? "Very poor, Poor, Average, Good, Excellent" : "Vegetarian, Vegan, No preference"} /></label>
+            {fieldType === "matrix" ? <label className="text-xs text-slate-300">Row labels, separated by commas<InputField value={rows} onChange={(event) => setRows(event.target.value)} maxLength={1000} className={inputClass} placeholder="Preparation, Execution, Support" /></label> : null}
+            <label className="text-xs text-slate-300">Selection mode<select value={selectionMode} onChange={(event) => setSelectionMode(event.target.value as "multiple" | "single")} className={inputClass}>{fieldType === "matrix" ? <><option value="single">One answer in each row (radio buttons)</option><option value="multiple">Multiple answers in each row (checkboxes)</option></> : <><option value="multiple">Choose any</option><option value="single">Choose one</option></>}</select></label>
           </>}
           <button type="button" onClick={addField} className="min-h-10 self-end rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-4 text-sm font-semibold text-indigo-100 hover:bg-indigo-500/20">Add question</button>
         </div>

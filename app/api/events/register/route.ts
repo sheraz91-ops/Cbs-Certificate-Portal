@@ -12,6 +12,7 @@ import WorkshopModel from "@/models/Workshop";
 import UserRegistrationFormModel from "@/models/UserRegistrationForm";
 import { DEFAULT_USER_REGISTRATION_FORM } from "@/types/registrationForm";
 import { validateUserRegistrationValues } from "@/lib/userRegistrationValidation";
+import { validateMatrixSelection, parseMatrixSelection } from "@/lib/matrixRegistration";
 import type { WorkshopDefinition } from "@/types/workshop";
 import type { UserProfileInput } from "@/types/user";
 
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
     for (const field of configuredFields) {
       const value = customFields[field.key];
       const fieldType = field.type ?? "text";
+      if (fieldType === "matrix") {
+        const matrixValue = value ?? "{}";
+        const matrixError = validateMatrixSelection(field, matrixValue);
+        if (matrixError) return errorResponse(matrixError, 400);
+        validatedCustomFields[field.key] = JSON.stringify(parseMatrixSelection(matrixValue));
+        continue;
+      }
       if (value !== undefined && fieldType === "yes_no" && value !== "yes" && value !== "no") {
         return errorResponse(`${field.label} must be answered Yes or No`, 400);
       }
