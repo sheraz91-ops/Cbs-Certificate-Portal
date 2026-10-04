@@ -287,12 +287,11 @@ export default function EventRegistrationForm({
           Registration closed
         </p>
         <h2 className="mt-3 font-display text-2xl font-semibold text-navy-900">
-          This event is closed
+          {pinnedEvent?.isCompleted ? "This event is completed" : "This event is closed"}
         </h2>
         <p className="mt-2 text-sm leading-6 text-navy-600">
           Registration for {pinnedEvent?.workshopName ?? "this event"} has
-          ended. You can still review the event details or browse other open
-          events.
+          ended{pinnedEvent?.isCompleted ? " because the event has been marked completed" : ""}. You can still review the event details or browse other open events.
         </p>
         <Link
           href="/register"

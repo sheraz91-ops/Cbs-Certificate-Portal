@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const workshop = await WorkshopModel.findOne({ key: workshopKey }).lean() as unknown as WorkshopDefinition | null;
     if (!workshop) return errorResponse("The selected event was not found", 404);
-    if (workshop.isActive === false) return errorResponse("Registration for this event is closed", 403);
+    if (workshop.isActive === false || workshop.isCompleted === true) return errorResponse("Registration for this event is closed", 403);
     const configuredFields = workshop.registrationFields ?? [];
     const allowedKeys = new Set(configuredFields.map((field) => field.key));
     if (Object.keys(customFields).some((key) => !allowedKeys.has(key))) return errorResponse("Registration includes an unknown event field", 400);

@@ -11,6 +11,7 @@ export type EventOption = {
   eventYear: string;
   eventDate: string;
   isActive: boolean;
+  isCompleted?: boolean;
   allowOutsiders?: boolean;
   registrationFields?: { key: string; label: string; type?: RegistrationFieldType; choices?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
 };

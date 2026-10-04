@@ -64,6 +64,12 @@ export default function VerifyPanel() {
       return;
     }
 
+    if (lookup.status === "event-not-completed") {
+      setResult(null);
+      setStatus("event-not-completed");
+      return;
+    }
+
     if (lookup.status === "ambiguous") {
       setCandidates(lookup.candidates);
       setResult(null);
@@ -108,7 +114,7 @@ export default function VerifyPanel() {
           const assigned = await assignedEventsMutation.mutateAsync(identity.data);
           setAssignedWorkshops(assigned);
           setSelectedWorkshop(assigned[0]?.key ?? "");
-          setOrganizerMessage(assigned.length ? "Select one of your assigned events, then verify your certificate." : "No events are assigned to this organizer.");
+          setOrganizerMessage(assigned.length ? "Select one of your completed assigned events, then verify your certificate." : "No completed events are available for this organizer yet.");
         } catch (error) {
           setOrganizerMessage(error instanceof Error ? error.message : "Organizer details not found.");
         }
@@ -292,6 +298,13 @@ export default function VerifyPanel() {
         <div role="status" className="animate-scale-in rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-card min-[380px]:p-6">
           <p className="font-display text-lg font-semibold text-amber-900">You were not present in this event.</p>
           <p className="mt-2 text-sm leading-6 text-amber-800">Your certificate is available after the organizer marks your attendance Present.</p>
+        </div>
+      )}
+
+      {status === "event-not-completed" && (
+        <div role="status" className="animate-scale-in rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-card min-[380px]:p-6">
+          <p className="font-display text-lg font-semibold text-amber-900">This event is not completed yet.</p>
+          <p className="mt-2 text-sm leading-6 text-amber-800">CBS will make certificates available after an admin marks the event completed.</p>
         </div>
       )}
 

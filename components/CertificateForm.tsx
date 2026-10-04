@@ -27,7 +27,7 @@ import {
 } from "@/lib/validation/schemas";
 import InputField from "@/components/InputField";
 
-type WorkshopOption = Pick<WorkshopDefinition, "key" | "workshopName">;
+type WorkshopOption = Pick<WorkshopDefinition, "key" | "workshopName" | "isCompleted">;
 
 export default function CertificateForm() {
   const router = useRouter();
@@ -92,11 +92,11 @@ export default function CertificateForm() {
               ? {
                   type: "success",
                   message:
-                    "Select one of your assigned events, then generate your certificate.",
+                    "Select one of your completed assigned events, then generate your certificate.",
                 }
               : {
                   type: "error",
-                  message: "No events are assigned to this organizer.",
+                  message: "No completed events are available for this organizer yet.",
                 },
           );
           return;
@@ -109,6 +109,11 @@ export default function CertificateForm() {
         ) {
           setStatus("error");
           setAlert({ type: "error", message: "Select an assigned event." });
+          return;
+        }
+        if (assignedWorkshops.find((workshop) => workshop.key === selectedWorkshop)?.isCompleted !== true) {
+          setStatus("error");
+          setAlert({ type: "error", message: "This event has not been marked completed yet. Certificates are not available." });
           return;
         }
         const certificate = await organizerCertificateMutation.mutateAsync({
@@ -191,6 +196,12 @@ export default function CertificateForm() {
         message:
           "You were not present in this event. Your certificate is available after the organizer marks your attendance Present.",
       });
+      return;
+    }
+
+    if (result.status === "event-not-completed") {
+      setStatus("error");
+      setAlert({ type: "error", message: "This event has not happened yet or has not been marked completed by CBS. Certificates will be available after completion." });
       return;
     }
 
@@ -303,9 +314,13 @@ export default function CertificateForm() {
               value={certificateId}
               validationSchema={certificateLookupSchema.shape.id}
               onChange={(e) => {
-                setCertificateId(e.target.value);
-                setAssignedWorkshops([]);
-                setSelectedWorkshop("");
+                const nextId = e.target.value;
+                const nextIsOrganizer = nextId.trim().toUpperCase().startsWith("CBSO-");
+                setCertificateId(nextId);
+                if (isOrganizer || nextIsOrganizer) {
+                  setAssignedWorkshops([]);
+                  setSelectedWorkshop("");
+                }
                 if (status !== "idle") setStatus("idle");
                 if (alert) setAlert(null);
                 if (candidates.length > 0) setCandidates([]);

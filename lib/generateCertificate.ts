@@ -58,9 +58,12 @@ export async function generateCertificatePdf(
 ): Promise<Uint8Array> {
   const { fullName, formattedId, verifyUrl, workshop } = plan;
   const layout = workshop.layout;
+  const templatePath = workshop.templatePath && workshop.templatePath !== "Not set"
+    ? workshop.templatePath
+    : `/api/templates/${encodeURIComponent(workshop.key)}`;
 
   const [templateBytes, qrDataUrl] = await Promise.all([
-    loadAssetBytes(workshop.templatePath),
+    loadAssetBytes(templatePath),
     generateQrDataUrl(verifyUrl, 400),
   ]);
   const qrBytes = dataUrlToBytes(qrDataUrl);
@@ -69,7 +72,11 @@ export async function generateCertificatePdf(
   const page = pdfDoc.addPage([PAGE_WIDTH_PT, PAGE_HEIGHT_PT]);
 
   // --- Background artwork ---------------------------------------------------
-  const templateImage = await pdfDoc.embedPng(templateBytes);
+  const signature = new Uint8Array(templateBytes, 0, 3);
+  const isJpeg = signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff;
+  const templateImage = isJpeg
+    ? await pdfDoc.embedJpg(templateBytes)
+    : await pdfDoc.embedPng(templateBytes);
   page.drawImage(templateImage, {
     x: 0,
     y: 0,

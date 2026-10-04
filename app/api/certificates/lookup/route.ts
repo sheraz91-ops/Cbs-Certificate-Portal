@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
         ? "Multiple certificates found"
         : result.status === "attendance-required"
           ? "Certificate is unavailable until attendance is marked present"
+          : result.status === "event-not-completed"
+            ? "This event has not been marked completed yet"
         : "Certificate not found";
     const count = result.status === "ambiguous" ? result.candidates.length : result.status === "found" ? 1 : 0;
     return successResponse(result, message, count);
@@ -54,6 +56,9 @@ export async function POST(request: NextRequest) {
 
 async function lookup(rawId: string, selectedKey: string | undefined, workshops: WorkshopDefinition[]): Promise<DatabaseLookupResult> {
   const trimmed = rawId.trim();
+  const selectedWorkshop = selectedKey ? workshops.find((entry) => entry.key === selectedKey) : undefined;
+  if (selectedKey && !selectedWorkshop) return { status: "not-found" };
+  if (selectedWorkshop && selectedWorkshop.isCompleted !== true) return { status: "event-not-completed" };
   const organizerId = trimmed.toUpperCase();
   if (/^CBSO-\d{6,}$/.test(organizerId)) {
     if (!selectedKey) return { status: "not-found" };
@@ -85,8 +90,10 @@ async function lookup(rawId: string, selectedKey: string | undefined, workshops:
       { id: { $regex: `^0*${number}$` } },
     ],
   }).lean();
-  const attendedMatches = matches.filter((record) => record.attendance === true);
-  if (attendedMatches.length === 0 && matches.length > 0) return { status: "attendance-required" };
+  const completedMatches = matches.filter((record) => workshops.find((event) => event.key === record.workshop)?.isCompleted === true);
+  if (completedMatches.length === 0 && matches.length > 0) return { status: "event-not-completed" };
+  const attendedMatches = completedMatches.filter((record) => record.attendance === true);
+  if (attendedMatches.length === 0 && completedMatches.length > 0) return { status: "attendance-required" };
   const found: CertificateCandidate[] = attendedMatches.flatMap((record) => {
     const workshop = workshops.find((entry) => entry.key === record.workshop);
     if (!workshop) return [];

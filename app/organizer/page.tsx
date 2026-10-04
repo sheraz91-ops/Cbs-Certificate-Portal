@@ -59,8 +59,9 @@ export default function OrganizerDashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!workshop && eventsQuery.data?.length)
-      setWorkshop(eventsQuery.data[0].key);
+    const availableEvents = eventsQuery.data ?? [];
+    if (!availableEvents.some((event) => event.key === workshop))
+      setWorkshop(availableEvents[0]?.key ?? "");
   }, [eventsQuery.data, workshop]);
 
   async function signOut() {
@@ -172,7 +173,7 @@ export default function OrganizerDashboardPage() {
             </p>
           ) : events.length === 0 ? (
             <p className="py-12 text-center text-sm text-slate-500">
-              No events have been assigned to this organizer.
+              No open events are assigned. Events are removed from organizer access after completion.
             </p>
           ) : participants.length === 0 ? (
             <p className="py-12 text-center text-sm text-slate-500">

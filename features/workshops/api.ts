@@ -2,7 +2,7 @@ import { getData, postData } from "@/lib/api-client";
 import type { WorkshopDefinition } from "@/types/workshop";
 import { createWorkshopSchema, updateWorkshopSchema, workshopKeyBodySchema } from "@/lib/validation/schemas";
 
-export type WorkshopSummary = Pick<WorkshopDefinition, "key" | "workshopName">;
+export type WorkshopSummary = Pick<WorkshopDefinition, "key" | "workshopName" | "isCompleted">;
 export type WorkshopDetails = WorkshopDefinition & { participants: { id: string; name: string; workshop: string; userId?: string; customFields?: Record<string, string> }[]; organizers: { organizerId: string; fullName: string; emailAddress: string; isActive: boolean }[] };
 
 export function getWorkshops(): Promise<WorkshopSummary[]> {
@@ -25,6 +25,7 @@ export type AddWorkshopInput = {
   eventYear: string;
   eventDate: string;
   isActive: boolean;
+  isCompleted?: boolean;
   allowOutsiders: boolean;
   registrationFields: { key: string; label: string; type?: "text" | "yes_no" | "checkbox"; choices?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
   imageBase64?: string;
@@ -45,8 +46,12 @@ export type UpdateWorkshopInput = {
   eventYear: string;
   eventDate: string;
   isActive: boolean;
+  isCompleted: boolean;
   allowOutsiders: boolean;
   registrationFields: { key: string; label: string; type?: "text" | "yes_no" | "checkbox"; choices?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
+  imageBase64?: string;
+  imageExt?: string;
+  layout?: unknown;
 };
 
 export function updateWorkshop(input: UpdateWorkshopInput): Promise<WorkshopDefinition> {

@@ -30,6 +30,7 @@ export default function CertificatePreview() {
   });
 
   const [status, setStatus] = useState<PreviewStatus>("loading");
+  const [renderError, setRenderError] = useState("");
   const [plan, setPlan] = useState<CertificatePlan | null>(null);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState<"pdf" | "png" | null>(
@@ -44,6 +45,7 @@ export default function CertificatePreview() {
     let cancelled = false;
 
     async function run() {
+      setRenderError("");
       if (!idParam) {
         setStatus("not-found");
         return;
@@ -53,6 +55,11 @@ export default function CertificatePreview() {
         return;
       }
       if (lookupQuery.isError || !lookupQuery.data) {
+        setRenderError(
+          lookupQuery.error instanceof Error
+            ? lookupQuery.error.message
+            : "Certificate lookup failed.",
+        );
         setStatus("error");
         return;
       }
@@ -65,6 +72,11 @@ export default function CertificatePreview() {
 
       if (result.status === "attendance-required") {
         setStatus("attendance-required");
+        return;
+      }
+
+      if (result.status === "event-not-completed") {
+        setStatus("event-not-completed");
         return;
       }
 
@@ -95,7 +107,18 @@ export default function CertificatePreview() {
         setStatus("ready");
       } catch (err) {
         console.error(err);
-        if (!cancelled) setStatus("error");
+        if (!cancelled) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : "The certificate template could not be rendered.";
+          setRenderError(
+            message.includes("/api/templates/")
+              ? `The certificate template for ${result.workshop.workshopName} is missing or unavailable. Ask an admin to upload or restore it in the event details.`
+              : message,
+          );
+          setStatus("error");
+        }
       }
     }
 
@@ -153,8 +176,8 @@ export default function CertificatePreview() {
           Multiple certificates found
         </h2>
         <p className="text-sm text-navy-500">
-          That number matches participants in more than one event. Select
-          yours below:
+          That number matches participants in more than one event. Select yours
+          below:
         </p>
         <div className="w-full flex flex-col gap-2">
           {candidates.map((c) => (
@@ -185,6 +208,7 @@ export default function CertificatePreview() {
   if (
     status === "not-found" ||
     status === "attendance-required" ||
+    status === "event-not-completed" ||
     status === "error"
   ) {
     return (
@@ -195,16 +219,21 @@ export default function CertificatePreview() {
         <h2 className="font-display text-xl font-semibold text-navy-900">
           {status === "attendance-required"
             ? "You were not present in this event."
-            : status === "not-found"
-              ? "Certificate ID not found."
-              : "Something went wrong."}
+            : status === "event-not-completed"
+              ? "This event is not completed yet."
+              : status === "not-found"
+                ? "Certificate ID not found."
+                : "Something went wrong."}
         </h2>
         <p className="text-sm text-navy-500">
           {status === "attendance-required"
             ? "Your certificate is available after the organizer marks your attendance Present."
-            : status === "not-found"
-              ? "Please double-check your Certificate ID and try again."
-              : "We couldn't render your certificate. Please try again."}
+            : status === "event-not-completed"
+              ? "CBS will make certificates available after the event is completed."
+              : status === "not-found"
+                ? "Please double-check your Certificate ID and try again."
+                : renderError ||
+                  "We couldn't render your certificate. Please try again."}
         </p>
         <Link
           href="/"
@@ -270,7 +299,11 @@ export default function CertificatePreview() {
 
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-xs font-medium sm:gap-4">
           <a
-            href={plan ? buildVerifyUrl(plan.formattedId, plan.workshop.key) : "/verify"}
+            href={
+              plan
+                ? buildVerifyUrl(plan.formattedId, plan.workshop.key)
+                : "/verify"
+            }
             className="text-navy-400 hover:text-gold-600 underline underline-offset-2 transition-colors"
           >
             Verify this certificate

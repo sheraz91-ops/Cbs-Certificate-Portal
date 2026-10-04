@@ -7,11 +7,11 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     await connectToDatabase();
-    const events = await WorkshopModel.find({ isActive: { $ne: false } })
+    const events = await WorkshopModel.find({ isActive: { $ne: false }, isCompleted: { $ne: true } })
       .sort({ eventYear: -1, eventDate: 1, workshopName: 1 })
-      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive allowOutsiders registrationFields")
+      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive isCompleted allowOutsiders registrationFields")
       .lean();
-    const content = events.map(({ _id, ...event }) => ({ ...event, isActive: true, allowOutsiders: event.allowOutsiders ?? false }));
+    const content = events.map(({ _id, ...event }) => ({ ...event, isActive: true, isCompleted: event.isCompleted === true, allowOutsiders: event.allowOutsiders ?? false }));
     return successResponse(content, "Successfully retrieved events", content.length);
   } catch (error) {
     console.error("Event list error:", error);

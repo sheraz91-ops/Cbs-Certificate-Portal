@@ -31,6 +31,7 @@ export type LookupResult =
    *  one workshop — the caller needs to disambiguate. */
   | { status: "ambiguous"; candidates: CertificateCandidate[] }
   | { status: "attendance-required" }
+  | { status: "event-not-completed" }
   | { status: "not-found" };
 
 /** Public API result containing the workshop resolved from MongoDB. */
@@ -38,6 +39,7 @@ export type DatabaseLookupResult =
   | { status: "found"; participant: Participant; formattedId: string; workshop: WorkshopDefinition }
   | { status: "ambiguous"; candidates: CertificateCandidate[] }
   | { status: "attendance-required" }
+  | { status: "event-not-completed" }
   | { status: "not-found" };
 
 /** A fully-resolved certificate ready to render (PDF/PNG/verify) */
@@ -56,6 +58,7 @@ export type PreviewStatus =
   | "loading"
   | "ready"
   | "attendance-required"
+  | "event-not-completed"
   | "not-found"
   | "ambiguous"
   | "error";
@@ -66,6 +69,7 @@ export type VerifyStatus =
   | "checking"
   | "verified"
   | "attendance-required"
+  | "event-not-completed"
   | "ambiguous"
   | "not-found";
 

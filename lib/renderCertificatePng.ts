@@ -64,8 +64,12 @@ export async function renderCertificateCanvas(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context unavailable");
 
+  const templatePath = plan.workshop.templatePath && plan.workshop.templatePath !== "Not set"
+    ? plan.workshop.templatePath
+    : `/api/templates/${encodeURIComponent(plan.workshop.key)}`;
+
   const [templateImg, qrDataUrl] = await Promise.all([
-    loadImageElement(plan.workshop.templatePath),
+    loadImageElement(templatePath),
     generateQrDataUrl(plan.verifyUrl, 800),
   ]);
   const qrImg = await loadImageElement(qrDataUrl);

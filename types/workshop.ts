@@ -41,6 +41,7 @@ export interface WorkshopDefinition {
   eventYear: string;
   eventDate: string;
   isActive: boolean;
+  isCompleted?: boolean;
   allowOutsiders?: boolean;
   registrationFields?: RegistrationField[];
   organizedBy: string;

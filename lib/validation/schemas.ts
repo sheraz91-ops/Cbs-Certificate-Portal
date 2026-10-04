@@ -94,6 +94,7 @@ export const createWorkshopSchema = z.object({
   eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
   eventDate: requiredText("Event date", 100),
   isActive: z.boolean({ error: "Required" }).default(true),
+  isCompleted: z.boolean().default(false),
   allowOutsiders: z.boolean().default(false),
   registrationFields: z.array(registrationFieldSchema).max(30).default([]),
   imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
@@ -122,9 +123,13 @@ export const updateWorkshopSchema = z.object({
   eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
   eventDate: requiredText("Event date", 100),
   isActive: z.boolean({ error: "Required" }),
+  isCompleted: z.boolean({ error: "Required" }),
   allowOutsiders: z.boolean({ error: "Required" }),
   registrationFields: z.array(registrationFieldSchema).max(30).default([]),
-}).strict().refine((value) => new Set(value.registrationFields.map((field) => field.key)).size === value.registrationFields.length, { message: "Custom registration fields must have unique identifiers", path: ["registrationFields"] });
+  imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
+  imageExt: z.string().trim().toLowerCase().pipe(z.enum(["png", "jpg", "jpeg"], { error: "Invalid format" })).optional(),
+  layout: layoutConfigSchema.optional(),
+}).strict().refine((value) => new Set(value.registrationFields.map((field) => field.key)).size === value.registrationFields.length, { message: "Custom registration fields must have unique identifiers", path: ["registrationFields"] }).refine((value) => !value.imageBase64 || (value.imageExt && value.layout), { message: "A template image type and layout are required", path: ["imageExt"] });
 export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema, customFields: z.record(z.string(), z.string().max(4000)).default({}) });
 export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();

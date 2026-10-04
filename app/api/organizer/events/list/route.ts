@@ -5,9 +5,9 @@ import WorkshopModel from "@/models/Workshop";
 export const runtime = "nodejs";
 
 export const POST = organizerPost(async (_body, organizer) => {
-  const events = await WorkshopModel.find({ key: { $in: organizer.workshops } })
+  const events = await WorkshopModel.find({ key: { $in: organizer.workshops }, isCompleted: { $ne: true } })
     .sort({ eventYear: -1, workshopName: 1 })
-    .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive allowOutsiders")
+    .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive isCompleted allowOutsiders")
     .lean();
-  return successResponse(events.map(({ _id, ...event }) => ({ ...event, isActive: event.isActive !== false, allowOutsiders: event.allowOutsiders ?? false })), "Successfully retrieved assigned events", events.length);
+  return successResponse(events.map(({ _id, ...event }) => ({ ...event, isActive: event.isActive !== false, isCompleted: event.isCompleted === true, allowOutsiders: event.allowOutsiders ?? false })), "Successfully retrieved assigned events", events.length);
 }, "Organizer event list");

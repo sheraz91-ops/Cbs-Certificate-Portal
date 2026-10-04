@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
 
     const workshop = await WorkshopModel.findOne({ key }).select("-templateData").lean() as unknown as WorkshopDefinition | null;
     if (!workshop) return errorResponse("Assigned event not found", 404);
+    if (workshop.isCompleted !== true) return errorResponse("This event has not been marked completed yet. Certificates are not available.", 403);
     return successResponse({ fullName: organizer.fullName, organizerId: organizer.organizerId, workshop }, "Organizer certificate is ready");
   } catch (error) {
     console.error("Organizer certificate generation error:", error);

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       .lean();
     if (!organizer) return errorResponse("Organizer details not found", 404);
 
-    const workshops = await WorkshopModel.find({ key: { $in: organizer.workshops } })
+    const workshops = await WorkshopModel.find({ key: { $in: organizer.workshops }, isCompleted: true })
       .select("-templateData")
       .sort({ eventYear: -1, workshopName: 1 })
       .lean() as unknown as WorkshopDefinition[];

@@ -9,7 +9,7 @@ export async function GET() {
     await connectToDatabase();
     const workshops = await WorkshopModel.find()
       .sort({ eventYear: -1, workshopName: 1 })
-      .select("key workshopName")
+      .select("key workshopName isCompleted")
       .lean();
     const content = workshops.map(({ _id, ...workshop }) => workshop);
     return successResponse(content, "Successfully retrieved events", content.length);
