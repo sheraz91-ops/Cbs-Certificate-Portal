@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const workshop = await WorkshopModel.findOne({ key: workshopKey }).lean() as unknown as WorkshopDefinition | null;
     if (!workshop) return errorResponse("The selected event was not found", 404);
+    if (workshop.isActive === false) return errorResponse("Registration for this event is closed", 403);
     if (!workshop.allowOutsiders) {
       const registrationNumber = campusRegistrationNumberSchema.safeParse(profile.registrationNumber);
       if (!registrationNumber.success) return errorResponse(validationMessage(registrationNumber.error), 400);

@@ -1,6 +1,6 @@
 import { postData } from "@/lib/api-client";
 import type { UserDetailsRecord, UserProfileInput, UserRecord, UserSummary } from "@/types/user";
-import { adminUpdateUserSchema, assignUserEventSchema, campusUserProfileSchema, userDetailsSchema } from "@/lib/validation/schemas";
+import { adminAttendanceSchema, adminUpdateUserSchema, assignUserEventSchema, campusUserProfileSchema, userDetailsSchema } from "@/lib/validation/schemas";
 
 export function getUsers(): Promise<UserSummary[]> {
   return postData<UserSummary[], Record<string, never>>("/api/admin/users/list", {});
@@ -20,4 +20,8 @@ export function updateUser(userId: string, profile: UserProfileInput): Promise<U
 
 export function enrollUserInEvent(userId: string, workshop: string): Promise<{ workshopKey: string; workshopName: string; certificateId: string; attendance: false }> {
   return postData("/api/admin/users/enroll", assignUserEventSchema.parse({ userId, workshop }));
+}
+
+export function updateUserAttendance(input: { userId: string; workshop: string; participantId: string; present: boolean }): Promise<{ userId: string; workshop: string; participantId: string; attendance: boolean }> {
+  return postData("/api/admin/attendance/update", adminAttendanceSchema.parse(input));
 }

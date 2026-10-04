@@ -76,6 +76,7 @@ export const createWorkshopSchema = z.object({
   workshopCode: requiredText("Workshop code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
   eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
   eventDate: requiredText("Event date", 100),
+  isActive: z.boolean({ error: "Required" }).default(true),
   allowOutsiders: z.boolean().default(false),
   imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
   imageExt: z.string().trim().toLowerCase().pipe(z.enum(["png", "jpg", "jpeg"], { error: "Invalid format" })).optional(),
@@ -99,12 +100,18 @@ export const updateWorkshopSchema = z.object({
   workshopCode: requiredText("Workshop code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
   eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
   eventDate: requiredText("Event date", 100),
+  isActive: z.boolean({ error: "Required" }),
   allowOutsiders: z.boolean({ error: "Required" }),
 }).strict();
 export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema });
 export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
 export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");
+export const organizerCertificateIdentitySchema = z.object({
+  organizerId: organizerIdSchema,
+  fullName: requiredText("Full name", 160),
+}).strict();
+export const organizerCertificateGenerateSchema = organizerCertificateIdentitySchema.extend({ workshop: workshopKeySchema }).strict();
 export const createOrganizerBaseSchema = campusUserProfileSchema.extend({
   password: z.string({ error: "Required" }).min(1, "Required").min(16, "Password must contain at least 16 characters").max(128),
   workshops: z.array(workshopKeySchema, { error: "Required" }).min(1, "Required").max(100),
@@ -127,7 +134,13 @@ export const organizerAssignmentSchema = z.object({
 export const organizerAttendanceSchema = z.object({
   workshop: workshopKeySchema,
   participantId: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
-  present: z.boolean(),
+  present: z.boolean({ error: "Required" }),
+}).strict();
+export const adminAttendanceSchema = z.object({
+  userId: userIdSchema,
+  workshop: workshopKeySchema,
+  participantId: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
+  present: z.boolean({ error: "Required" }),
 }).strict();
 
 export const userDetailsSchema = z.object({ userId: userIdSchema }).strict();
