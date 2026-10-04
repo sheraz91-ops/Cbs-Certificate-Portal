@@ -134,8 +134,8 @@ export default function VerifyPanel() {
   const isChecking = status === "checking" || assignedEventsMutation.isPending;
 
   return (
-    <div className="w-full max-w-md animate-scale-in flex flex-col gap-5">
-      <div className="relative rounded-3xl bg-white/95 backdrop-blur shadow-card ring-1 ring-black/5 p-6 sm:p-8">
+    <div className="flex w-full min-w-0 max-w-md animate-scale-in flex-col gap-4 sm:gap-5">
+      <div className="relative rounded-3xl bg-white/95 p-5 shadow-card ring-1 ring-black/5 backdrop-blur min-[380px]:p-6 sm:p-8">
         <span className="pointer-events-none absolute top-3 left-3 h-6 w-6 border-t-2 border-l-2 border-gold-400 rounded-tl-lg" />
         <span className="pointer-events-none absolute top-3 right-3 h-6 w-6 border-t-2 border-r-2 border-gold-400 rounded-tr-lg" />
         <span className="pointer-events-none absolute bottom-3 left-3 h-6 w-6 border-b-2 border-l-2 border-gold-400 rounded-bl-lg" />
@@ -231,7 +231,7 @@ export default function VerifyPanel() {
       </div>
 
       {status === "verified" && result && (
-        <div className="animate-scale-in rounded-3xl bg-emerald-50 border border-emerald-200 p-6 shadow-card">
+        <div className="animate-scale-in rounded-3xl border border-emerald-200 bg-emerald-50 p-4 shadow-card min-[380px]:p-6">
           <div className="flex items-center gap-3 mb-4">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white font-bold">
               ✓
@@ -289,14 +289,14 @@ export default function VerifyPanel() {
       )}
 
       {status === "attendance-required" && (
-        <div role="status" className="animate-scale-in rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-card">
+        <div role="status" className="animate-scale-in rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-card min-[380px]:p-6">
           <p className="font-display text-lg font-semibold text-amber-900">You were not present in this event.</p>
           <p className="mt-2 text-sm leading-6 text-amber-800">Your certificate is available after the organizer marks your attendance Present.</p>
         </div>
       )}
 
       {status === "ambiguous" && (
-        <div className="animate-scale-in rounded-3xl bg-gold-50 border border-gold-200 p-6 shadow-card">
+        <div className="animate-scale-in rounded-3xl border border-gold-200 bg-gold-50 p-4 shadow-card min-[380px]:p-6">
           <div className="flex items-center gap-3 mb-4">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-500 text-white font-bold">
               ?
@@ -332,7 +332,7 @@ export default function VerifyPanel() {
       )}
 
       {status === "not-found" && (
-        <div className="animate-scale-in rounded-3xl bg-rose-50 border border-rose-200 p-6 shadow-card text-center">
+        <div className="animate-scale-in rounded-3xl border border-rose-200 bg-rose-50 p-4 text-center shadow-card min-[380px]:p-6">
           <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-rose-500 text-white font-bold mb-3">
             !
           </span>

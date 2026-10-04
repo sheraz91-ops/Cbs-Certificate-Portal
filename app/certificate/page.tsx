@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function CertificatePage() {
   return (
     <PageShell>
-      <section className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+      <section className="mx-auto w-full min-w-0 max-w-5xl px-3 py-8 min-[380px]:px-4 sm:px-6 sm:py-12 lg:py-14">
         <div className="mb-7 text-center text-white">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold-300">
             CBS certificates

@@ -8,14 +8,14 @@ export default function RegisterPageContent() {
 
   return (
     <section
-      className={`mx-auto w-full max-w-6xl px-3 py-7 min-[380px]:px-4 sm:px-6 sm:py-10 lg:gap-10 lg:py-16 ${isActiveEvent === true ? "grid lg:grid-cols-[0.8fr_1.2fr] lg:items-start" : ""}`}
+      className={`mx-auto grid w-full min-w-0 max-w-6xl grid-cols-1 gap-6 px-3 py-6 min-[380px]:px-4 sm:gap-8 sm:px-6 sm:py-10 lg:gap-10 lg:py-16 ${isActiveEvent === true ? "lg:grid-cols-[0.8fr_1.2fr] lg:items-start" : ""}`}
     >
       {isActiveEvent === true && (
         <div className="pt-2 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-gold-300">
             Join us
           </p>
-          <h1 className="mt-4 font-display text-4xl font-semibold leading-tight sm:text-5xl">
+          <h1 className="mt-4 font-display text-3xl font-semibold leading-tight min-[380px]:text-4xl sm:text-5xl">
             Take part in a CBS event.
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-navy-100/80">
@@ -34,7 +34,7 @@ export default function RegisterPageContent() {
           </div>
         </div>
       )}
-      <div className="w-full flex items-center justify-center">
+      <div className="flex w-full min-w-0 items-center justify-center">
         <EventRegistrationForm setActiveEvent={setIsActiveEvent} />
       </div>
     </section>

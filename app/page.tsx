@@ -24,21 +24,21 @@ const pillars = [
 export default function HomePage() {
   return (
     <PageShell>
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="grid min-h-0 items-center gap-10 py-12 sm:min-h-[590px] sm:gap-12 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:py-24">
-          <div className="max-w-2xl text-white">
+      <div className="mx-auto w-full min-w-0 max-w-7xl px-3 min-[380px]:px-4 sm:px-6 lg:px-8">
+        <section className="grid min-h-0 min-w-0 items-center gap-9 py-9 min-[380px]:py-12 sm:min-h-0 sm:gap-12 sm:py-16 lg:grid-cols-[1.1fr_0.9fr] lg:py-20 2xl:min-h-[590px] 2xl:py-24">
+          <div className="min-w-0 max-w-2xl text-white">
             <p className="inline-flex items-center gap-2 rounded-full border border-gold-300/25 bg-gold-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-200">
               {ORG_CONFIG.institutionAbbreviation} · Student community
             </p>
-            <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.08] tracking-tight min-[380px]:text-5xl sm:mt-6 sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 max-w-full font-display text-4xl font-semibold leading-[1.08] tracking-tight min-[380px]:text-5xl sm:mt-6 sm:text-6xl lg:text-6xl 2xl:text-7xl">
               Character grows <span className="text-gold-300">together.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-navy-100/75 sm:text-lg sm:leading-8">
               {ORG_CONFIG.organizationName} at {ORG_CONFIG.institutionName} brings students together to learn, lead, and make a positive difference in campus life.
             </p>
-            <div className="mt-8 flex flex-col gap-3 min-[440px]:flex-row min-[440px]:flex-wrap">
-              <Link href="/register" className="rounded-xl bg-gold-400 px-5 py-3 text-sm font-bold text-navy-950 shadow-gold transition hover:bg-gold-300">Register for an event</Link>
-              <Link href="/#download" className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:border-gold-300/50 hover:bg-white/10">Download a certificate</Link>
+            <div className="mt-7 flex w-full flex-col gap-3 min-[440px]:flex-row min-[440px]:flex-wrap sm:mt-8">
+              <Link href="/register" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-gold-400 px-4 py-3 text-center text-sm font-bold text-navy-950 shadow-gold transition hover:bg-gold-300 min-[440px]:w-auto min-[440px]:px-5">Register for an event</Link>
+              <Link href="/#download" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white transition hover:border-gold-300/50 hover:bg-white/10 min-[440px]:w-auto min-[440px]:px-5">Download a certificate</Link>
             </div>
             <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-navy-100/55">
               <span>Explore CBS events</span><span className="h-1 w-1 rounded-full bg-gold-300" />
@@ -46,7 +46,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <aside className="relative mx-auto w-full max-w-md">
+          <aside className="relative mx-auto w-full min-w-0 max-w-md">
             <div aria-hidden className="absolute -inset-5 rounded-[2rem] bg-gradient-to-br from-gold-300/20 via-transparent to-blue-400/10 blur-2xl" />
             <div className="relative overflow-hidden rounded-[1.5rem] border border-white/15 bg-gradient-to-br from-white/10 to-white/[0.03] p-5 shadow-2xl backdrop-blur min-[380px]:p-7 sm:rounded-[1.75rem] sm:p-9">
               <div className="flex items-center justify-between">
@@ -67,15 +67,15 @@ export default function HomePage() {
           </aside>
         </section>
 
-        <section aria-labelledby="society-heading" className="border-t border-white/10 py-16 sm:py-20">
-          <div className="max-w-2xl">
+        <section aria-labelledby="society-heading" className="min-w-0 border-t border-white/10 py-12 sm:py-16 lg:py-20">
+          <div className="min-w-0 max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold-300">What we believe</p>
             <h2 id="society-heading" className="mt-3 font-display text-3xl font-semibold text-white sm:text-4xl">Character is built through action.</h2>
             <p className="mt-4 text-sm leading-7 text-navy-100/65 sm:text-base">The society creates room for students to connect, take part, and grow through meaningful campus experiences.</p>
           </div>
-          <div className="mt-9 grid gap-4 md:grid-cols-3">
+          <div className="mt-7 grid gap-3 sm:mt-9 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pillars.map((pillar) => (
-              <article key={pillar.number} className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 transition hover:border-gold-300/25 hover:bg-white/[0.06]">
+              <article key={pillar.number} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-gold-300/25 hover:bg-white/[0.06] sm:p-6">
                 <span className="font-mono text-xs text-gold-300">{pillar.number}</span>
                 <h3 className="mt-4 font-display text-xl font-semibold text-white">{pillar.title}</h3>
                 <p className="mt-3 text-sm leading-6 text-navy-100/60">{pillar.description}</p>
@@ -84,8 +84,8 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="download" aria-labelledby="download-heading" className="scroll-mt-8 border-t border-white/10 py-16 sm:py-20">
-          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+        <section id="download" aria-labelledby="download-heading" className="scroll-mt-8 border-t border-white/10 py-12 sm:py-16 lg:py-20">
+          <div className="mx-auto grid min-w-0 max-w-5xl gap-6 sm:gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div className="text-white">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold-300">CBS certificates</p>
               <h2 id="download-heading" className="mt-3 font-display text-3xl font-semibold sm:text-4xl">Find your certificate.</h2>
