@@ -10,7 +10,11 @@ import UserProfileField from "@/components/UserProfileField";
 import { getEvents } from "@/features/events/api";
 import { assignOrganizerEvents, deleteOrganizer, getOrganizerById, setOrganizerActive, updateOrganizer, type OrganizerDetails as OrganizerRecord } from "@/features/organizers/api";
 import { useAdminSession, useAdminToast } from "../../AdminShell";
-import { updateOrganizerSchema, validationMessage } from "@/lib/validation/schemas";
+import {
+  adminCampusUserProfileSchema,
+  updateOrganizerSchema,
+  validationMessage,
+} from "@/lib/validation/schemas";
 import type { UserProfileInput } from "@/types/user";
 
 const fields = [
@@ -160,7 +164,7 @@ export default function OrganizerDetails({ organizerId }: { organizerId: string 
               <div className="grid gap-4 sm:grid-cols-2">
                 {fields.map(([key, label]) => (
                     <label key={key} className="block text-xs font-medium text-slate-300">{label} {requiredFields.has(key) ? <span className="text-red-300">*</span> : <span className="text-slate-500">(optional)</span>}
-                    <UserProfileField name={key} required={requiredFields.has(key)} validationSchema={updateOrganizerSchema.shape[key]} registrationMode="campus" value={profile[key]} onValueChange={(value) => setProfile((current) => current ? { ...current, [key]: value } : current)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
+                    <UserProfileField name={key} required={requiredFields.has(key)} validationSchema={adminCampusUserProfileSchema.shape[key]} registrationMode="campus" value={profile[key]} onValueChange={(value) => setProfile((current) => current ? { ...current, [key]: value } : current)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
                   </label>
                 ))}
                 <label className="block text-xs font-medium text-slate-300 sm:col-span-2">Set a new password (optional)
