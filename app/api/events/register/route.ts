@@ -4,13 +4,16 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { normalizeParticipantId } from "@/lib/participantId";
 import { formatCertificateId } from "@/lib/formatId";
 import { allocateParticipantIds } from "@/lib/participantSequence";
-import { campusRegistrationNumberSchema, eventRegistrationSchema, validationMessage } from "@/lib/validation/schemas";
+import { eventRegistrationSchema, validationMessage } from "@/lib/validation/schemas";
 import ParticipantModel from "@/models/Participant";
 import UserModel from "@/models/User";
 import UserSequenceModel from "@/models/UserSequence";
 import WorkshopModel from "@/models/Workshop";
-import type { UserProfileInput } from "@/types/user";
+import UserRegistrationFormModel from "@/models/UserRegistrationForm";
+import { DEFAULT_USER_REGISTRATION_FORM } from "@/types/registrationForm";
+import { validateUserRegistrationValues } from "@/lib/userRegistrationValidation";
 import type { WorkshopDefinition } from "@/types/workshop";
+import type { UserProfileInput } from "@/types/user";
 
 export const runtime = "nodejs";
 
@@ -24,13 +27,33 @@ export async function POST(request: NextRequest) {
 
   const parsed = eventRegistrationSchema.safeParse(body);
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
-  const { workshop: workshopKey, customFields, ...profile } = parsed.data;
+  const { workshop: workshopKey, profileCustomFields, customFields } = parsed.data;
 
   try {
     await connectToDatabase();
-    const workshop = await WorkshopModel.findOne({ key: workshopKey }).lean() as unknown as WorkshopDefinition | null;
+    const [workshop, savedForm] = await Promise.all([
+      WorkshopModel.findOne({ key: workshopKey }).lean() as unknown as Promise<WorkshopDefinition | null>,
+      UserRegistrationFormModel.findById("user-registration-form").lean(),
+    ]);
     if (!workshop) return errorResponse("The selected event was not found", 404);
     if (workshop.isActive === false || workshop.isCompleted === true) return errorResponse("Registration for this event is closed", 403);
+    const savedConfig = savedForm?.fields?.length ? { fields: savedForm.fields } : DEFAULT_USER_REGISTRATION_FORM;
+    const formConfig = workshop.allowOutsiders !== true && !savedConfig.fields.some((field) => field.key === "registrationNumber")
+      ? { fields: [...savedConfig.fields, DEFAULT_USER_REGISTRATION_FORM.fields.find((field) => field.key === "registrationNumber")!] }
+      : savedConfig;
+    const shownProfileKeys = new Set(formConfig.fields.filter((field) => !field.key.startsWith("custom-")).map((field) => field.key));
+    if (Object.entries(parsed.data).some(([key, value]) => ["emailAddress", "fullName", "registrationNumber", "department", "semester", "section", "institute", "whatsappNumber"].includes(key) && typeof value === "string" && value.trim() && !shownProfileKeys.has(key))) {
+      return errorResponse("Registration includes a profile field that is not enabled", 400);
+    }
+    const customProfileKeys = new Set(formConfig.fields.filter((field) => field.key.startsWith("custom-")).map((field) => field.key));
+    if (Object.keys(profileCustomFields).some((key) => !customProfileKeys.has(key))) return errorResponse("Registration includes an unknown profile field", 400);
+    const validatedRegistration = validateUserRegistrationValues(formConfig, { profile: parsed.data, customFields: profileCustomFields }, workshop.allowOutsiders === true);
+    if (Object.keys(validatedRegistration.errors).length) {
+      const message = Object.values(validatedRegistration.errors)[0];
+      return errorResponse(message, 400);
+    }
+    const profile = validatedRegistration.profile;
+    const validatedProfileFields = validatedRegistration.customFields;
     const configuredFields = workshop.registrationFields ?? [];
     const allowedKeys = new Set(configuredFields.map((field) => field.key));
     if (Object.keys(customFields).some((key) => !allowedKeys.has(key))) return errorResponse("Registration includes an unknown event field", 400);
@@ -65,15 +88,10 @@ export async function POST(request: NextRequest) {
         return errorResponse(`${field.label} is required`, 400);
       }
     }
-    if (!workshop.allowOutsiders) {
-      const registrationNumber = campusRegistrationNumberSchema.safeParse(profile.registrationNumber);
-      if (!registrationNumber.success) return errorResponse(validationMessage(registrationNumber.error), 400);
-      profile.registrationNumber = registrationNumber.data;
-    }
-
-    const matchingUsers = await UserModel.find({
-      $or: [{ emailAddress: profile.emailAddress }, { registrationNumber: profile.registrationNumber }],
-    }).limit(2).lean();
+    const identityConditions: Array<{ emailAddress: string } | { registrationNumber: string }> = [];
+    if (profile.emailAddress) identityConditions.push({ emailAddress: profile.emailAddress });
+    if (profile.registrationNumber) identityConditions.push({ registrationNumber: profile.registrationNumber });
+    const matchingUsers = identityConditions.length ? await UserModel.find({ $or: identityConditions }).limit(2).lean() : [];
     if (matchingUsers.length > 1) {
       return errorResponse("These details match more than one CBS account. Please contact the CBS team.", 409);
     }
@@ -82,20 +100,21 @@ export async function POST(request: NextRequest) {
     if (user?.isActive === false) return errorResponse("This user account is deactivated. Contact CBS for assistance.", 403);
     let createdUserId: string | null = null;
     if (user) {
-      const existingProfile: UserProfileInput = {
-        emailAddress: user.emailAddress,
+      const existingProfile = {
+        emailAddress: user.emailAddress ?? "",
         fullName: user.fullName,
-        registrationNumber: user.registrationNumber,
-        department: user.department,
-        semester: user.semester,
-        section: user.section,
-        institute: user.institute,
-        whatsappNumber: user.whatsappNumber,
+        registrationNumber: user.registrationNumber ?? "",
+        department: user.department ?? "",
+        semester: user.semester ?? "",
+        section: user.section ?? "",
+        institute: user.institute ?? "",
+        whatsappNumber: user.whatsappNumber ?? "",
       };
-      const detailsMatch = Object.keys(profile).every((key) => {
-        const field = key as keyof UserProfileInput;
-        const existingValue = existingProfile[field];
-        return !existingValue || existingValue === profile[field];
+      const detailsMatch = formConfig.fields.filter((field) => shownProfileKeys.has(field.key)).every((field) => {
+        const key = field.key as keyof typeof existingProfile;
+        const existingValue = existingProfile[key];
+        const submittedValue = profile[key];
+        return !submittedValue || !existingValue || existingValue === submittedValue;
       });
       if (!detailsMatch) {
         return errorResponse("These details do not match the existing CBS account. Please contact the CBS team.", 409);
@@ -108,7 +127,11 @@ export async function POST(request: NextRequest) {
       );
       if (!sequence) return errorResponse("Unable to assign a user ID", 500);
       const userId = `CBSU-${String(sequence.sequence).padStart(6, "0")}`;
-      user = await UserModel.create({ userId, ...(profile satisfies UserProfileInput) });
+      const storedProfile: Partial<UserProfileInput> & Pick<UserProfileInput, "fullName"> = { ...profile };
+      for (const key of ["emailAddress", "registrationNumber", "department", "semester", "section", "institute", "whatsappNumber"] as const) {
+        if (!storedProfile[key]) delete storedProfile[key];
+      }
+      user = await UserModel.create({ userId, ...storedProfile, profileCustomFields: validatedProfileFields });
       createdUserId = user.userId;
     }
 
@@ -129,6 +152,17 @@ export async function POST(request: NextRequest) {
         enrollmentKey: `${workshopKey}:${user.userId}`,
         customFields: validatedCustomFields,
       });
+      if (!createdUserId) {
+        const backfilledProfile: Record<string, string> = {};
+        for (const field of formConfig.fields) {
+          if (shownProfileKeys.has(field.key)) {
+            const key = field.key as keyof typeof profile;
+            const value = profile[key];
+            if (value && !user[key]) backfilledProfile[key] = value;
+          }
+        }
+        await UserModel.updateOne({ userId: user.userId }, { $set: { ...backfilledProfile, profileCustomFields: { ...(user.profileCustomFields ?? {}), ...validatedProfileFields } } });
+      }
       return successResponse({
         userId: user.userId,
         certificateId: formatCertificateId(id, workshop),

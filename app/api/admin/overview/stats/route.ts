@@ -62,13 +62,13 @@ export const POST = adminPost(async () => {
     recentUsers: recentUsers.map((user) => ({
       userId: user.userId,
       fullName: user.fullName,
-      emailAddress: user.emailAddress,
+      emailAddress: user.emailAddress ?? "",
       createdAt: user.createdAt.toISOString(),
     })),
     recentOrganizers: recentOrganizers.map((organizer) => ({
       organizerId: organizer.organizerId,
       fullName: organizer.fullName,
-      emailAddress: organizer.emailAddress,
+      emailAddress: organizer.emailAddress ?? "",
       isActive: organizer.isActive,
       createdAt: organizer.createdAt.toISOString(),
     })),

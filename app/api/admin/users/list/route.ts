@@ -11,7 +11,7 @@ export const POST = adminPost(async () => {
     userId: user.userId,
     fullName: user.fullName,
     emailAddress: user.emailAddress ?? "",
-    registrationNumber: user.registrationNumber,
+    registrationNumber: user.registrationNumber ?? "",
     department: user.department ?? "",
     isActive: user.isActive !== false,
   }));

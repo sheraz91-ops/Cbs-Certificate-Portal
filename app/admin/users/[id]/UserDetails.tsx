@@ -49,6 +49,20 @@ function toProfile(user: UserProfileInput): UserProfileInput {
   };
 }
 
+function displayCustomAnswer(value: string) {
+  if (value === "true") return "Yes";
+  if (value === "false") return "No";
+  if (value.startsWith("[")) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) return parsed.join(", ");
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
 export default function UserDetails({ userId }: { userId: string }) {
   const authenticated = useAdminSession();
   const toast = useAdminToast();
@@ -318,6 +332,20 @@ export default function UserDetails({ userId }: { userId: string }) {
               </dl>
             )}
           </section>
+
+          {Object.keys(user.profileCustomFields ?? {}).length > 0 && (
+            <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
+              <h3 className="text-lg font-semibold text-white">Custom registration answers</h3>
+              <dl className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                {Object.entries(user.profileCustomFields ?? {}).map(([key, value]) => (
+                  <div key={key} className="min-w-0">
+                    <dt className="break-words text-xs font-medium uppercase tracking-wide text-slate-500">{key.replace(/^custom-/, "").replace(/-/g, " ")}</dt>
+                    <dd className="mt-1 break-words text-sm font-medium text-slate-100">{displayCustomAnswer(value)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
 
           <section className="rounded-2xl border border-red-500/20 bg-slate-950 p-4 sm:p-6">
             <h3 className="font-semibold text-red-200">Delete user</h3>

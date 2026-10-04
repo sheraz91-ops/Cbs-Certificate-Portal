@@ -18,17 +18,11 @@ import {
   workshopKeySchema,
 } from "@/lib/validation/schemas";
 import type { UserProfileInput } from "@/types/user";
-
-const fields = [
-  ["emailAddress", "Email Address"],
-  ["fullName", "Full Name"],
-  ["registrationNumber", "Registration Number"],
-  ["department", "Department"],
-  ["semester", "Semester"],
-  ["section", "Section"],
-  ["institute", "Institute"],
-  ["whatsappNumber", "WhatsApp Number"],
-] as const;
+import { getPublicUserRegistrationForm } from "@/features/users/registrationFormApi";
+import { DEFAULT_USER_REGISTRATION_FORM, USER_PROFILE_FIELD_KEYS } from "@/types/registrationForm";
+import type { UserProfileFieldKey } from "@/types/registrationForm";
+import { validateUserRegistrationValues } from "@/lib/userRegistrationValidation";
+import { z } from "zod";
 
 function emptyProfile(): UserProfileInput {
   return {
@@ -67,6 +61,7 @@ export default function EventRegistrationForm({
   pinnedEventStatus?: "idle" | "loading" | "ready" | "error";
 }) {
   const [profile, setProfile] = useState<UserProfileInput>(emptyProfile());
+  const [profileCustomFields, setProfileCustomFields] = useState<Record<string, string>>({});
   const [workshop, setWorkshop] = useState("");
   const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -78,10 +73,21 @@ export default function EventRegistrationForm({
     queryFn: getEvents,
     enabled: !eventCode,
   });
+  const registrationFormQuery = useQuery({
+    queryKey: ["user-registration-form"],
+    queryFn: getPublicUserRegistrationForm,
+  });
   const registerMutation = useMutation({ mutationFn: registerForEvent });
   const events = eventsQuery.data ?? [];
   const selectedEvent =
     pinnedEvent ?? events.find((item) => item.key === workshop);
+  const registrationForm = registrationFormQuery.data ?? DEFAULT_USER_REGISTRATION_FORM;
+  const visibleRegistrationFields = registrationForm.fields.filter((field) => USER_PROFILE_FIELD_KEYS.includes(field.key as UserProfileFieldKey));
+  const campusRegistrationField = selectedEvent && selectedEvent.allowOutsiders !== true && !visibleRegistrationFields.some((field) => field.key === "registrationNumber")
+    ? DEFAULT_USER_REGISTRATION_FORM.fields.find((field) => field.key === "registrationNumber")
+    : undefined;
+  const displayedProfileFields = campusRegistrationField ? [...visibleRegistrationFields, campusRegistrationField] : visibleRegistrationFields;
+  const effectiveRegistrationForm = campusRegistrationField ? { fields: [...registrationForm.fields, campusRegistrationField] } : registrationForm;
 
   useEffect(() => {
     if (eventCode && pinnedEvent) setWorkshop(pinnedEvent.key);
@@ -143,9 +149,20 @@ export default function EventRegistrationForm({
       setFormError(message);
       return;
     }
+    const validatedForm = validateUserRegistrationValues(
+      effectiveRegistrationForm,
+      { profile, customFields: profileCustomFields },
+      selectedEvent ? selectedEvent.allowOutsiders === true : true,
+    );
+    if (Object.keys(validatedForm.errors).length) {
+      setFieldErrors(validatedForm.errors);
+      setFormError(Object.values(validatedForm.errors)[0]);
+      return;
+    }
     const parsed = eventRegistrationSchema.safeParse({
-      ...profile,
+      ...validatedForm.profile,
       workshop,
+      profileCustomFields: validatedForm.customFields,
       customFields: submittedCustomFields,
     });
     if (!parsed.success) {
@@ -182,6 +199,7 @@ export default function EventRegistrationForm({
       const registration = await registerMutation.mutateAsync(parsed.data);
       setResult(registration);
       setProfile(emptyProfile());
+      setProfileCustomFields({});
       setWorkshop("");
       setCustomFields({});
     } catch (error) {
@@ -464,15 +482,26 @@ export default function EventRegistrationForm({
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {fields.map(([key, label]) => (
+        {displayedProfileFields.map((field) => {
+          const key = field.key as UserProfileFieldKey;
+          const required = field.required || (key === "registrationNumber" && Boolean(selectedEvent && selectedEvent.allowOutsiders !== true));
+          const validationSchema = required
+            ? key === "registrationNumber" && Boolean(selectedEvent && selectedEvent.allowOutsiders !== true)
+              ? campusRegistrationNumberSchema
+              : undefined
+            : key === "emailAddress"
+              ? z.preprocess((value) => typeof value === "string" && !value.trim() ? undefined : value, z.string().email("Invalid format").optional())
+              : z.string().optional();
+          return (
           <label
             key={key}
             className="block text-sm font-semibold text-navy-800"
           >
-            {label} <span className="text-red-600">*</span>
+            {field.label} {required ? <span className="text-red-600">*</span> : <span className="text-xs font-normal text-navy-500">(optional)</span>}
             <UserProfileField
               name={key}
-              required
+              required={required}
+              validationSchema={validationSchema}
               registrationMode={
                 selectedEvent?.allowOutsiders ? "free" : "campus"
               }
@@ -492,8 +521,44 @@ export default function EventRegistrationForm({
               className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
             />
           </label>
-        ))}
+          );
+        })}
       </div>
+
+      {registrationForm.fields.some((field) => field.key.startsWith("custom-")) && (
+        <div className="mt-5 grid gap-4 border-t border-navy-100 pt-5 sm:grid-cols-2">
+          {registrationForm.fields.filter((field) => field.key.startsWith("custom-")).map((field) => {
+            const value = profileCustomFields[field.key] ?? (field.type === "checkbox" && field.choices?.length ? "[]" : "");
+            const chosen = field.type === "checkbox" && field.choices?.length ? selectedChoices(value) : [];
+            const updateValue = (nextValue: string) => {
+              setProfileCustomFields((current) => ({ ...current, [field.key]: nextValue }));
+              setFieldErrors((current) => ({ ...current, [field.key]: "" }));
+            };
+            return (
+              <div key={field.key} className="min-w-0 text-sm font-semibold text-navy-800">
+                <p>{field.label} {field.required ? <span className="text-red-600">*</span> : <span className="text-xs font-normal text-navy-500">(optional)</span>}</p>
+                {field.type === "yes_no" ? (
+                  <select value={value} onChange={(event) => updateValue(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none focus:border-gold-500">
+                    <option value="">Choose an answer</option><option value="yes">Yes</option><option value="no">No</option>
+                  </select>
+                ) : field.type === "checkbox" && field.choices?.length ? (
+                  <div className="mt-2 space-y-2 rounded-xl border border-navy-200 bg-navy-50/60 p-3">
+                    {field.choices.map((choice) => {
+                      const checked = chosen.includes(choice);
+                      return <label key={choice} className="flex items-center gap-2 text-sm font-normal"><input type="checkbox" checked={checked} onChange={() => updateValue(JSON.stringify(checked ? chosen.filter((item) => item !== choice) : field.selectionMode === "single" ? [choice] : [...chosen, choice]))} />{choice}</label>;
+                    })}
+                  </div>
+                ) : field.type === "checkbox" ? (
+                  <label className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal"><input type="checkbox" checked={value === "true"} onChange={(event) => updateValue(String(event.target.checked))} />Yes</label>
+                ) : (
+                  <input type="text" value={value} maxLength={4000} onChange={(event) => updateValue(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none focus:border-gold-500" />
+                )}
+                {fieldErrors[field.key] && <p role="alert" className="mt-1 text-xs text-red-600">{fieldErrors[field.key]}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {selectedEvent?.registrationFields?.length ? (
         <div className="mt-5 space-y-4 border-t border-navy-100 pt-5">
@@ -650,10 +715,15 @@ export default function EventRegistrationForm({
         </div>
       ) : null}
 
+      {formError && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{formError}</p>}
+      {registrationFormQuery.isError && <p role="alert" className="mt-4 text-sm text-red-600">Registration form settings could not be loaded. Refresh the page and try again.</p>}
+
       <button
         type="submit"
         disabled={
           registerMutation.isPending ||
+          registrationFormQuery.isPending ||
+          registrationFormQuery.isError ||
           (eventCode
             ? !pinnedEvent || pinnedEventStatus !== "ready" || !workshop
             : eventsQuery.isPending || events.length === 0)

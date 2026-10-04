@@ -58,6 +58,7 @@ const navigation: NavigationItem[] = [
     children: [
       { href: "/admin/users", label: "Add User" },
       { href: "/admin/users/all", label: "All Users" },
+      { href: "/admin/users/registration-form", label: "Registration Form" },
     ],
   },
   {
@@ -605,6 +606,13 @@ function NavigationIcon({
         <path d="M16 20v-1.5a4 4 0 00-4-4H7a4 4 0 00-4 4V20" />
         <circle cx="9.5" cy="7" r="4" />
         <path d="M17 4.2a4 4 0 010 7.6M20 14.5a4 4 0 011 3V20" />
+      </svg>
+    );
+  if (label === "Registration Form")
+    return (
+      <svg {...common}>
+        <rect x="4" y="3" width="16" height="18" rx="2" />
+        <path d="M8 8h8M8 12h5M8 16h8M16 11v3" />
       </svg>
     );
   if (label === "Add Organizer")

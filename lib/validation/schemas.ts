@@ -40,6 +40,36 @@ export const adminUserProfileSchema = z.object({
 }).strict();
 export const adminCampusUserProfileSchema = adminUserProfileSchema.extend({ registrationNumber: campusRegistrationNumberSchema });
 
+const userRegistrationFieldSchema = z.object({
+  key: z.string().trim().min(1).max(80).regex(/^(?:emailAddress|fullName|registrationNumber|department|semester|section|institute|whatsappNumber|custom-[a-z0-9]+(?:-[a-z0-9]+)*)$/),
+  label: requiredText("Field label", 100),
+  required: z.boolean(),
+  type: z.enum(["text", "yes_no", "checkbox"]).default("text"),
+  choices: z.array(requiredText("Choice", 100)).max(30).default([]),
+  selectionMode: z.enum(["multiple", "single"]).default("multiple"),
+}).strict().superRefine((field, context) => {
+  const isCustom = field.key.startsWith("custom-");
+  if (!isCustom && (field.type !== "text" || field.choices.length)) {
+    context.addIssue({ code: "custom", message: "Built-in fields cannot have custom options", path: ["type"] });
+  }
+  if (field.type !== "checkbox" && field.choices.length) {
+    context.addIssue({ code: "custom", message: "Choices are only available for checkbox fields", path: ["choices"] });
+  }
+  if (field.type === "checkbox" && field.choices.length && new Set(field.choices.map((choice) => choice.toLowerCase())).size !== field.choices.length) {
+    context.addIssue({ code: "custom", message: "Choices must be unique", path: ["choices"] });
+  }
+});
+
+export const userRegistrationFormConfigSchema = z.object({
+  fields: z.array(userRegistrationFieldSchema).min(1).max(40),
+}).strict().refine((config) => new Set(config.fields.map((field) => field.key)).size === config.fields.length, {
+  message: "Registration fields must have unique identifiers",
+  path: ["fields"],
+}).refine((config) => config.fields.some((field) => field.key === "fullName" && field.required), {
+  message: "Full Name must remain visible and required",
+  path: ["fields"],
+});
+
 const ratio = z.number().finite().min(0).max(1);
 export const layoutRatioSchema = ratio;
 export const layoutPercentSchema = z.number().finite().min(0).max(100);
@@ -144,7 +174,19 @@ export const updateWorkshopSchema = z.object({
   imageExt: z.string().trim().toLowerCase().pipe(z.enum(["png", "jpg", "jpeg"], { error: "Invalid format" })).optional(),
   layout: layoutConfigSchema.optional(),
 }).strict().refine((value) => new Set(value.registrationFields.map((field) => field.key)).size === value.registrationFields.length, { message: "Custom registration fields must have unique identifiers", path: ["registrationFields"] }).refine((value) => !value.imageBase64 || (value.imageExt && value.layout), { message: "A template image type and layout are required", path: ["imageExt"] });
-export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema, customFields: z.record(z.string(), z.string().max(4000)).default({}) });
+export const eventRegistrationSchema = z.object({
+  emailAddress: z.string().max(254).optional(),
+  fullName: z.string().max(160).optional(),
+  registrationNumber: z.string().max(80).optional(),
+  department: z.string().max(120).optional(),
+  semester: z.string().max(32).optional(),
+  section: z.string().max(8).optional(),
+  institute: z.string().max(160).optional(),
+  whatsappNumber: z.string().max(32).optional(),
+  workshop: workshopKeySchema,
+  profileCustomFields: z.record(z.string(), z.string().max(4000)).default({}),
+  customFields: z.record(z.string(), z.string().max(4000)).default({}),
+}).strict();
 export const adminUpdateUserSchema = adminCampusUserProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
 export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");

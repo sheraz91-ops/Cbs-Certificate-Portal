@@ -18,6 +18,7 @@ export interface UserRecord extends UserProfileInput {
   userId: string;
   createdAt: string;
   isActive: boolean;
+  profileCustomFields?: Record<string, string>;
 }
 
 export interface UserEnrollment {

@@ -24,7 +24,19 @@ export const POST = organizerPost(async (body: OrganizerBody, organizer) => {
     userId: participant.userId,
     name: participant.name,
     attendance: participant.attendance === true,
-    user: usersById.get(participant.userId) ?? null,
+    user: (() => {
+      const user = usersById.get(participant.userId);
+      return user ? {
+        ...user,
+        emailAddress: user.emailAddress ?? "",
+        registrationNumber: user.registrationNumber ?? "",
+        department: user.department ?? "",
+        semester: user.semester ?? "",
+        section: user.section ?? "",
+        institute: user.institute ?? "",
+        whatsappNumber: user.whatsappNumber ?? "",
+      } : null;
+    })(),
   }));
   return successResponse(content, "Successfully retrieved event participants", content.length);
 }, "Organizer participant list");
