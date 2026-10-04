@@ -8,8 +8,10 @@ export interface UserProfileInput {
   section: string;
   institute: string;
   whatsappNumber: string;
-  cnic: string;
 }
+
+export type AdminUserProfileInput = Pick<UserProfileInput, "fullName" | "registrationNumber" | "semester" | "whatsappNumber"> &
+  Partial<Pick<UserProfileInput, "emailAddress" | "department" | "section" | "institute">>;
 
 /** User record returned to authenticated admin screens. */
 export interface UserRecord extends UserProfileInput {

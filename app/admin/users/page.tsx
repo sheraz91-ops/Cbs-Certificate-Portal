@@ -3,9 +3,9 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createUser } from "@/features/users/api";
-import type { UserProfileInput } from "@/types/user";
+import type { AdminUserProfileInput } from "@/types/user";
 import { useAdminToast } from "../AdminShell";
-import { campusUserProfileSchema, validationMessage } from "@/lib/validation/schemas";
+import { adminCampusUserProfileSchema, validationMessage } from "@/lib/validation/schemas";
 import UserProfileField from "@/components/UserProfileField";
 
 const fields = [
@@ -17,22 +17,23 @@ const fields = [
   ["section", "Section"],
   ["institute", "Institute"],
   ["whatsappNumber", "WhatsApp Number"],
-  ["cnic", "CNIC"],
 ] as const;
 
-function emptyUser(): UserProfileInput {
+const requiredFields = new Set(["fullName", "registrationNumber", "semester", "whatsappNumber"]);
+
+function emptyUser(): AdminUserProfileInput {
   return {
     emailAddress: "", fullName: "", registrationNumber: "", department: "",
-    semester: "", section: "", institute: "", whatsappNumber: "", cnic: "",
+    semester: "", section: "", institute: "", whatsappNumber: "",
   };
 }
 
 export default function AddUserPage() {
   const toast = useAdminToast();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<UserProfileInput>(emptyUser());
+  const [form, setForm] = useState<AdminUserProfileInput>(emptyUser());
   const createMutation = useMutation({
-    mutationFn: (input: UserProfileInput) => createUser(input),
+    mutationFn: (input: AdminUserProfileInput) => createUser(input),
     onSuccess: async (user) => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast({ title: "User created", description: `Assigned ID: ${user.userId}`, tone: "success" });
@@ -43,7 +44,7 @@ export default function AddUserPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = campusUserProfileSchema.safeParse(form);
+    const parsed = adminCampusUserProfileSchema.safeParse(form);
     if (!parsed.success) {
       toast({ title: "Check the user details", description: validationMessage(parsed.error), tone: "error" });
       return;
@@ -68,13 +69,14 @@ export default function AddUserPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {fields.map(([key, label]) => (
               <label key={key} className="block text-xs font-medium text-slate-300">
-                {label} <span className="text-red-300">*</span>
+                {label} {requiredFields.has(key) ? <span className="text-red-300">*</span> : <span className="text-slate-500">(optional)</span>}
                 <UserProfileField
                   name={key}
-                  required
+                  required={requiredFields.has(key)}
                   registrationMode="campus"
+                  validationSchema={adminCampusUserProfileSchema.shape[key]}
                   autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"}
-                  value={form[key]}
+                  value={form[key] ?? ""}
                   onValueChange={(value) => setForm((current) => ({ ...current, [key]: value }))}
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500"
                 />

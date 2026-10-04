@@ -1,7 +1,7 @@
 import { getData, postData } from "@/lib/api-client";
 import { createOrganizerSchema, organizerDeleteSchema, organizerDetailsSchema, organizerLoginSchema, organizerStatusSchema, organizerAssignmentSchema, updateOrganizerSchema } from "@/lib/validation/schemas";
 import type { EventOption } from "@/features/events/api";
-import type { UserProfileInput } from "@/types/user";
+import type { AdminUserProfileInput, UserProfileInput } from "@/types/user";
 
 export type OrganizerSummary = {
   organizerId: string;
@@ -14,13 +14,13 @@ export type OrganizerSummary = {
   createdAt: string;
 };
 
-export type CreateOrganizerInput = UserProfileInput & {
+export type CreateOrganizerInput = AdminUserProfileInput & {
   password: string;
   workshops: string[];
 };
 
 export type OrganizerDetails = OrganizerSummary & UserProfileInput;
-export type UpdateOrganizerInput = UserProfileInput & { organizerId: string; workshops: string[]; password?: string };
+export type UpdateOrganizerInput = AdminUserProfileInput & { organizerId: string; workshops: string[]; password?: string };
 
 export type OrganizerSessionSummary = { id: string; organizerId: string; fullName: string; emailAddress: string; createdAt: string; expiresAt: string };
 export function getOrganizerSessions(): Promise<OrganizerSessionSummary[]> {

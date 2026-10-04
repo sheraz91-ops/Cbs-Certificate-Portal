@@ -14,5 +14,5 @@ export const POST = adminPost(async (body: AdminBody) => {
   if (validWorkshops !== workshops.length) return errorResponse("One or more selected events were not found", 404);
   const organizer = await OrganizerModel.findOneAndUpdate({ organizerId }, { $set: { workshops } }, { new: true }).select("organizerId emailAddress fullName workshops").lean();
   if (!organizer) return errorResponse("Organizer was not found", 404);
-  return successResponse({ organizerId, emailAddress: organizer.emailAddress, fullName: organizer.fullName, workshops: organizer.workshops }, "Successfully updated organizer events", 1);
+  return successResponse({ organizerId, emailAddress: organizer.emailAddress ?? "", fullName: organizer.fullName, workshops: organizer.workshops }, "Successfully updated organizer events", 1);
 }, "Admin organizer assign");

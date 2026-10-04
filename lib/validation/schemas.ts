@@ -5,11 +5,6 @@ const requiredText = (_label: string, max = 200) => z.string({ error: "Required"
 export const campusRegistrationNumberSchema = z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}-uam-\d{4}$/i, "Invalid format").transform((value) => value.toLowerCase());
 const semesterSchema = z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "Graduated"], { error: "Required" });
 const sectionSchema = z.enum(["A", "B", "C", "D", "E", "F"], { error: "Required" });
-const cnicSchema = z.string({ error: "Required" }).trim().min(1, "Required").regex(/^(?:\d{13}|\d{5}-\d{7}-\d)$/, "Invalid format").transform((value) => {
-  const digits = value.replace(/\D/g, "");
-  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
-});
-
 export const userProfileSchema = z.object({
   emailAddress: z.string({ error: "Required" }).trim().min(1, "Required").email("Invalid format").max(254).transform((value) => value.toLowerCase()),
   fullName: requiredText("Full name", 160),
@@ -22,9 +17,28 @@ export const userProfileSchema = z.object({
     const digits = value.replace(/\D/g, "").length;
     return digits >= 7 && digits <= 15;
   }, "Invalid format"),
-  cnic: cnicSchema,
 }).strict();
 export const campusUserProfileSchema = userProfileSchema.extend({ registrationNumber: campusRegistrationNumberSchema });
+
+const optionalText = (max: number) => z.string().trim().max(max).optional().transform((value) => value || undefined);
+const optionalEmail = z.preprocess((value) => typeof value === "string" && !value.trim() ? undefined : value,
+  z.string().trim().email("Invalid format").max(254).transform((value) => value.toLowerCase()).optional(),
+);
+const optionalSection = z.preprocess((value) => value === "" ? undefined : value, sectionSchema.optional());
+export const adminUserProfileSchema = z.object({
+  emailAddress: optionalEmail,
+  fullName: requiredText("Full name", 160),
+  registrationNumber: requiredText("Registration number", 80),
+  department: optionalText(120),
+  semester: semesterSchema,
+  section: optionalSection,
+  institute: optionalText(160),
+  whatsappNumber: requiredText("WhatsApp number", 32).regex(/^[+()\d .-]+$/, "Invalid format").refine((value) => {
+    const digits = value.replace(/\D/g, "").length;
+    return digits >= 7 && digits <= 15;
+  }, "Invalid format"),
+}).strict();
+export const adminCampusUserProfileSchema = adminUserProfileSchema.extend({ registrationNumber: campusRegistrationNumberSchema });
 
 const ratio = z.number().finite().min(0).max(1);
 export const layoutRatioSchema = ratio;
@@ -131,7 +145,7 @@ export const updateWorkshopSchema = z.object({
   layout: layoutConfigSchema.optional(),
 }).strict().refine((value) => new Set(value.registrationFields.map((field) => field.key)).size === value.registrationFields.length, { message: "Custom registration fields must have unique identifiers", path: ["registrationFields"] }).refine((value) => !value.imageBase64 || (value.imageExt && value.layout), { message: "A template image type and layout are required", path: ["imageExt"] });
 export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema, customFields: z.record(z.string(), z.string().max(4000)).default({}) });
-export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
+export const adminUpdateUserSchema = adminCampusUserProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
 export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");
 export const organizerCertificateIdentitySchema = z.object({
@@ -139,13 +153,13 @@ export const organizerCertificateIdentitySchema = z.object({
   fullName: requiredText("Full name", 160),
 }).strict();
 export const organizerCertificateGenerateSchema = organizerCertificateIdentitySchema.extend({ workshop: workshopKeySchema }).strict();
-export const createOrganizerBaseSchema = campusUserProfileSchema.extend({
+export const createOrganizerBaseSchema = adminCampusUserProfileSchema.extend({
   password: z.string({ error: "Required" }).min(1, "Required").min(16, "Password must contain at least 16 characters").max(128),
   workshops: z.array(workshopKeySchema, { error: "Required" }).min(1, "Required").max(100),
 });
 export const createOrganizerSchema = createOrganizerBaseSchema.transform((value) => ({ ...value, workshops: [...new Set(value.workshops)] }));
 export const organizerDetailsSchema = z.object({ organizerId: organizerIdSchema }).strict();
-export const updateOrganizerSchema = campusUserProfileSchema.extend({
+export const updateOrganizerSchema = adminCampusUserProfileSchema.extend({
   organizerId: organizerIdSchema,
   workshops: z.array(workshopKeySchema, { error: "Required" }).max(100),
   password: z.string().max(128).refine((value) => value.length === 0 || value.length >= 16, "New password must contain at least 16 characters").optional(),

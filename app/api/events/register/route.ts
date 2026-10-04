@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { connectToDatabase } from "@/lib/mongodb";
 import { normalizeParticipantId } from "@/lib/participantId";
-import { formatCnic } from "@/lib/inputMasks";
 import { formatCertificateId } from "@/lib/formatId";
 import { allocateParticipantIds } from "@/lib/participantSequence";
 import { campusRegistrationNumberSchema, eventRegistrationSchema, validationMessage } from "@/lib/validation/schemas";
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const matchingUsers = await UserModel.find({
-      $or: [{ emailAddress: profile.emailAddress }, { cnic: profile.cnic }, { cnic: profile.cnic.replace(/-/g, "") }],
+      $or: [{ emailAddress: profile.emailAddress }, { registrationNumber: profile.registrationNumber }],
     }).limit(2).lean();
     if (matchingUsers.length > 1) {
       return errorResponse("These details match more than one CBS account. Please contact the CBS team.", 409);
@@ -92,12 +91,11 @@ export async function POST(request: NextRequest) {
         section: user.section,
         institute: user.institute,
         whatsappNumber: user.whatsappNumber,
-        cnic: user.cnic,
       };
       const detailsMatch = Object.keys(profile).every((key) => {
         const field = key as keyof UserProfileInput;
-        const existingValue = field === "cnic" ? formatCnic(existingProfile.cnic) : existingProfile[field];
-        return existingValue === profile[field];
+        const existingValue = existingProfile[field];
+        return !existingValue || existingValue === profile[field];
       });
       if (!detailsMatch) {
         return errorResponse("These details do not match the existing CBS account. Please contact the CBS team.", 409);

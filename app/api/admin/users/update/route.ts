@@ -17,8 +17,12 @@ export const POST = adminPost(async (body: AdminBody) => {
     if (!registrationNumber.success) return errorResponse(validationMessage(registrationNumber.error), 400);
     profile.registrationNumber = registrationNumber.data;
   }
-  const user = await UserModel.findOneAndUpdate({ userId }, { $set: profile }, { new: true, runValidators: true }).lean();
+  const optionalFields = ["emailAddress", "department", "section", "institute"] as const;
+  const update: Record<string, unknown> = { ...profile };
+  const unset = Object.fromEntries(optionalFields.filter((field) => profile[field] === undefined).map((field) => [field, 1]));
+  for (const field of optionalFields) if (profile[field] === undefined) delete update[field];
+  const user = await UserModel.findOneAndUpdate({ userId }, { $set: update, ...(Object.keys(unset).length ? { $unset: unset } : {}) }, { new: true, runValidators: true }).lean();
   if (!user) return errorResponse("User was not found", 404);
   if (profile.fullName) await ParticipantModel.updateMany({ userId }, { $set: { name: profile.fullName } });
-  return successResponse({ ...profile, userId: user.userId, isActive: user.isActive !== false, createdAt: user.createdAt.toISOString() }, "Successfully updated user", 1);
+  return successResponse({ ...profile, emailAddress: user.emailAddress ?? "", department: user.department ?? "", section: user.section ?? "", institute: user.institute ?? "", userId: user.userId, isActive: user.isActive !== false, createdAt: user.createdAt.toISOString() }, "Successfully updated user", 1);
 }, "Admin user update");

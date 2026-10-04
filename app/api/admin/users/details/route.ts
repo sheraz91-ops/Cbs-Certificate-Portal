@@ -24,15 +24,14 @@ export const POST = adminPost(async (body: AdminBody) => {
   const workshopsByKey = new Map(workshops.map((item) => [item.key, item]));
   const result: UserDetailsRecord = {
     userId: user.userId,
-    emailAddress: user.emailAddress,
+    emailAddress: user.emailAddress ?? "",
     fullName: user.fullName,
     registrationNumber: user.registrationNumber,
-    department: user.department,
+    department: user.department ?? "",
     semester: user.semester,
-    section: user.section,
-    institute: user.institute,
+    section: user.section ?? "",
+    institute: user.institute ?? "",
     whatsappNumber: user.whatsappNumber,
-    cnic: user.cnic,
     isActive: user.isActive !== false,
     createdAt: user.createdAt.toISOString(),
     enrollments: participants.flatMap((participant) => {

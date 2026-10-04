@@ -10,9 +10,9 @@ export const POST = adminPost(async () => {
   const users: UserSummary[] = records.map((user) => ({
     userId: user.userId,
     fullName: user.fullName,
-    emailAddress: user.emailAddress,
+    emailAddress: user.emailAddress ?? "",
     registrationNumber: user.registrationNumber,
-    department: user.department,
+    department: user.department ?? "",
     isActive: user.isActive !== false,
   }));
   return successResponse(users, "Successfully retrieved users", users.length);

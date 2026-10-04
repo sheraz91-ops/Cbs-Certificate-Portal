@@ -17,11 +17,11 @@ import {
 } from "@/features/users/api";
 import { getAdminWorkshops } from "@/features/workshops/api";
 import {
+  adminCampusUserProfileSchema,
   campusRegistrationNumberSchema,
-  userProfileSchema,
   validationMessage,
 } from "@/lib/validation/schemas";
-import type { UserProfileInput } from "@/types/user";
+import type { AdminUserProfileInput, UserProfileInput } from "@/types/user";
 
 const fields = [
   ["emailAddress", "Email Address"],
@@ -32,8 +32,9 @@ const fields = [
   ["section", "Section"],
   ["institute", "Institute"],
   ["whatsappNumber", "WhatsApp Number"],
-  ["cnic", "CNIC"],
 ] as const;
+
+const requiredFields = new Set(["fullName", "registrationNumber", "semester", "whatsappNumber"]);
 
 function toProfile(user: UserProfileInput): UserProfileInput {
   return {
@@ -45,7 +46,6 @@ function toProfile(user: UserProfileInput): UserProfileInput {
     section: user.section,
     institute: user.institute,
     whatsappNumber: user.whatsappNumber,
-    cnic: user.cnic,
   };
 }
 
@@ -84,7 +84,7 @@ export default function UserDetails({ userId }: { userId: string }) {
   }, [user]);
 
   const updateMutation = useMutation({
-    mutationFn: (next: UserProfileInput) => updateUser(userId, next),
+    mutationFn: (next: AdminUserProfileInput) => updateUser(userId, next),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "users", userId] }),
@@ -160,7 +160,7 @@ export default function UserDetails({ userId }: { userId: string }) {
   function submitProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!profile) return;
-    const parsed = userProfileSchema.safeParse(profile);
+    const parsed = adminCampusUserProfileSchema.safeParse(profile);
     if (!parsed.success) {
       const errors: Record<string, string> = {};
       for (const issue of parsed.error.issues)
@@ -235,9 +235,11 @@ export default function UserDetails({ userId }: { userId: string }) {
                       key={key}
                       className="block text-xs font-medium text-slate-300"
                     >
-                      {label}
+                      {label} {requiredFields.has(key) ? <span className="text-red-300">*</span> : <span className="text-slate-500">(optional)</span>}
                       <UserProfileField
                         name={key}
+                        required={requiredFields.has(key)}
+                        validationSchema={adminCampusUserProfileSchema.shape[key]}
                         registrationMode={
                           campusRegistrationNumberSchema.safeParse(
                             user.registrationNumber,

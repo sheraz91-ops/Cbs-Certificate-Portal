@@ -22,8 +22,9 @@ const fields = [
   ["section", "Section"],
   ["institute", "Institute"],
   ["whatsappNumber", "WhatsApp Number"],
-  ["cnic", "CNIC"],
 ] as const;
+
+const requiredFields = new Set(["fullName", "registrationNumber", "semester", "whatsappNumber"]);
 
 type OrganizerProfile = UserProfileInput & { workshops: string[]; password: string };
 
@@ -37,7 +38,6 @@ function toProfile(organizer: OrganizerRecord): OrganizerProfile {
     section: organizer.section,
     institute: organizer.institute,
     whatsappNumber: organizer.whatsappNumber,
-    cnic: organizer.cnic,
     workshops: organizer.workshops,
     password: "",
   };
@@ -159,8 +159,8 @@ export default function OrganizerDetails({ organizerId }: { organizerId: string 
             <form onSubmit={submit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 {fields.map(([key, label]) => (
-                  <label key={key} className="block text-xs font-medium text-slate-300">{label}
-                    <UserProfileField name={key} registrationMode="campus" value={profile[key]} onValueChange={(value) => setProfile((current) => current ? { ...current, [key]: value } : current)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
+                    <label key={key} className="block text-xs font-medium text-slate-300">{label} {requiredFields.has(key) ? <span className="text-red-300">*</span> : <span className="text-slate-500">(optional)</span>}
+                    <UserProfileField name={key} required={requiredFields.has(key)} validationSchema={updateOrganizerSchema.shape[key]} registrationMode="campus" value={profile[key]} onValueChange={(value) => setProfile((current) => current ? { ...current, [key]: value } : current)} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100 outline-none focus:border-indigo-500" />
                   </label>
                 ))}
                 <label className="block text-xs font-medium text-slate-300 sm:col-span-2">Set a new password (optional)

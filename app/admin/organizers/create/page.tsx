@@ -19,12 +19,12 @@ const profileFields = [
   ["section", "Section"],
   ["institute", "Institute"],
   ["whatsappNumber", "WhatsApp Number"],
-  ["cnic", "CNIC"],
 ] as const;
 
+const requiredFields = new Set(["fullName", "registrationNumber", "semester", "whatsappNumber"]);
 const empty: CreateOrganizerInput = {
   emailAddress: "", fullName: "", registrationNumber: "", department: "",
-  semester: "", section: "", institute: "", whatsappNumber: "", cnic: "",
+  semester: "", section: "", institute: "", whatsappNumber: "",
   password: "", workshops: [],
 };
 
@@ -65,13 +65,14 @@ export default function CreateOrganizerPage() {
       <form onSubmit={submit} className="space-y-5 rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl sm:space-y-6 sm:p-6">
         <div><h3 className="text-lg font-semibold text-white">Organizer Details</h3><p className="mt-1 text-sm text-slate-400">CBS assigns the Organizer ID after this form is saved.</p></div>
         <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {profileFields.map(([key, label]) => <label key={key} className="text-xs font-medium text-slate-300">{label} <span className="text-red-300">*</span>
-            <UserProfileField name={key} required registrationMode="campus" autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"} value={form[key]} onValueChange={(value) => setForm((current) => ({ ...current, [key]: value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />
+          {profileFields.map(([key, label]) => <label key={key} className="text-xs font-medium text-slate-300">{label} {requiredFields.has(key) ? <span className="text-red-300">*</span> : <span className="text-slate-500">(optional)</span>}
+            <UserProfileField name={key} required={requiredFields.has(key)} validationSchema={createOrganizerBaseSchema.shape[key]} registrationMode="campus" autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"} value={form[key] ?? ""} onValueChange={(value) => setForm((current) => ({ ...current, [key]: value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />
           </label>)}
           <label className="text-xs font-medium text-slate-300 sm:col-span-2 lg:col-span-3">Organizer Password <span className="text-red-300">*</span>
             <PasswordField required autoComplete="new-password" value={form.password} validationSchema={createOrganizerBaseSchema.shape.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />
             <span className="mt-1 block text-xs text-slate-500">Use at least 16 characters and share it privately.</span>
           </label>
+          <p className="text-xs text-slate-500">Email is optional, but an organizer needs an email address to sign in.</p>
         </div>
         <fieldset>
           <legend className="text-sm font-semibold text-white">Assigned Events <span className="text-red-300">*</span></legend>

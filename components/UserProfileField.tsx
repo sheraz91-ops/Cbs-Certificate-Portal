@@ -1,8 +1,9 @@
 "use client";
 
 import { useId, useState, type ChangeEvent, type InputHTMLAttributes } from "react";
+import type { ZodType } from "zod";
 import InputField from "@/components/InputField";
-import { formatCnic, formatRegistrationNumber } from "@/lib/inputMasks";
+import { formatRegistrationNumber } from "@/lib/inputMasks";
 import { campusRegistrationNumberSchema, userProfileSchema } from "@/lib/validation/schemas";
 import type { UserProfileInput } from "@/types/user";
 
@@ -16,6 +17,7 @@ type Props = {
   autoComplete?: InputHTMLAttributes<HTMLInputElement>["autoComplete"];
   error?: string;
   registrationMode?: "campus" | "free";
+  validationSchema?: ZodType;
 };
 
 const semesters = ["1", "2", "3", "4", "5", "6", "7", "8", "Graduated"];
@@ -29,10 +31,9 @@ const labels: Record<ProfileFieldName, string> = {
   section: "Section",
   institute: "Institute",
   whatsappNumber: "WhatsApp Number",
-  cnic: "CNIC",
 };
 
-export default function UserProfileField({ name, value, onValueChange, className, required, autoComplete, error, registrationMode = "campus" }: Props) {
+export default function UserProfileField({ name, value, onValueChange, className, required, autoComplete, error, registrationMode = "campus", validationSchema }: Props) {
   const id = useId();
   const [selectError, setSelectError] = useState("");
   const common = {
@@ -60,7 +61,7 @@ export default function UserProfileField({ name, value, onValueChange, className
             setSelectError("");
           }}
           onBlur={() => {
-            const parsed = userProfileSchema.shape[name].safeParse(value);
+            const parsed = (validationSchema ?? userProfileSchema.shape[name]).safeParse(value);
             setSelectError(parsed.success ? "" : parsed.error.issues[0]?.message ?? "Invalid format");
           }}
           onInvalid={() => setSelectError("Required")}
@@ -78,9 +79,6 @@ export default function UserProfileField({ name, value, onValueChange, className
   if (name === "registrationNumber" && registrationMode === "campus") {
     return <InputField {...common} type="text" inputMode="numeric" maxLength={13} placeholder="____-uam-____" autoComplete="off" validationSchema={campusRegistrationNumberSchema} value={formatRegistrationNumber(value)} onChange={(event) => onValueChange(formatRegistrationNumber(event.target.value))} />;
   }
-  if (name === "cnic") {
-    return <InputField {...common} type="text" inputMode="numeric" maxLength={15} placeholder="_____-_______-_" autoComplete="off" validationSchema={userProfileSchema.shape.cnic} value={formatCnic(value)} onChange={(event) => onValueChange(formatCnic(event.target.value))} />;
-  }
   const placeholders: Record<ProfileFieldName, string> = {
     emailAddress: "Enter email address",
     fullName: "Enter full name",
@@ -90,7 +88,6 @@ export default function UserProfileField({ name, value, onValueChange, className
     section: "",
     institute: "Enter institute",
     whatsappNumber: "Enter WhatsApp number",
-    cnic: "",
   };
-  return <InputField {...common} type={type} autoComplete={autoComplete} placeholder={placeholders[name] || undefined} validationSchema={userProfileSchema.shape[name]} />;
+  return <InputField {...common} type={type} autoComplete={autoComplete} placeholder={placeholders[name] || undefined} validationSchema={validationSchema ?? userProfileSchema.shape[name]} />;
 }

@@ -1,21 +1,21 @@
 import { postData } from "@/lib/api-client";
-import type { UserDetailsRecord, UserProfileInput, UserRecord, UserSummary } from "@/types/user";
-import { adminAttendanceSchema, adminUpdateUserSchema, assignUserEventSchema, campusUserProfileSchema, userDeleteSchema, userDetailsSchema, userStatusSchema } from "@/lib/validation/schemas";
+import type { AdminUserProfileInput, UserDetailsRecord, UserRecord, UserSummary } from "@/types/user";
+import { adminAttendanceSchema, adminCampusUserProfileSchema, adminUpdateUserSchema, assignUserEventSchema, userDeleteSchema, userDetailsSchema, userStatusSchema } from "@/lib/validation/schemas";
 
 export function getUsers(): Promise<UserSummary[]> {
   return postData<UserSummary[], Record<string, never>>("/api/admin/users/list", {});
 }
 
-export function createUser(user: UserProfileInput): Promise<UserRecord> {
-  return postData<UserRecord, UserProfileInput>("/api/admin/users/create", campusUserProfileSchema.parse(user));
+export function createUser(user: AdminUserProfileInput): Promise<UserRecord> {
+  return postData<UserRecord, AdminUserProfileInput>("/api/admin/users/create", adminCampusUserProfileSchema.parse(user));
 }
 
 export function getUserById(userId: string): Promise<UserDetailsRecord> {
   return postData<UserDetailsRecord, { userId: string }>("/api/admin/users/details", userDetailsSchema.parse({ userId }));
 }
 
-export function updateUser(userId: string, profile: UserProfileInput): Promise<UserRecord> {
-  return postData<UserRecord, UserProfileInput & { userId: string }>("/api/admin/users/update", adminUpdateUserSchema.parse({ ...profile, userId }));
+export function updateUser(userId: string, profile: AdminUserProfileInput): Promise<UserRecord> {
+  return postData<UserRecord, AdminUserProfileInput & { userId: string }>("/api/admin/users/update", adminUpdateUserSchema.parse({ ...profile, userId }));
 }
 
 export function setUserActive(userId: string, isActive: boolean): Promise<{ userId: string; isActive: boolean }> {

@@ -28,7 +28,6 @@ const fields = [
   ["section", "Section"],
   ["institute", "Institute"],
   ["whatsappNumber", "WhatsApp Number"],
-  ["cnic", "CNIC"],
 ] as const;
 
 function emptyProfile(): UserProfileInput {
@@ -41,14 +40,16 @@ function emptyProfile(): UserProfileInput {
     section: "",
     institute: "",
     whatsappNumber: "",
-    cnic: "",
   };
 }
 
 function selectedChoices(value: string): string[] {
   try {
     const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed) && parsed.every((item) => typeof item === "string") ? parsed : [];
+    return Array.isArray(parsed) &&
+      parsed.every((item) => typeof item === "string")
+      ? parsed
+      : [];
   } catch {
     return [];
   }
@@ -114,24 +115,39 @@ export default function EventRegistrationForm({
     setClosedByServer(false);
     const submittedCustomFields = { ...customFields };
     for (const field of selectedEvent?.registrationFields ?? []) {
-      if (field.type === "checkbox" && submittedCustomFields[field.key] === undefined) {
-        submittedCustomFields[field.key] = field.choices?.length ? "[]" : "false";
+      if (
+        field.type === "checkbox" &&
+        submittedCustomFields[field.key] === undefined
+      ) {
+        submittedCustomFields[field.key] = field.choices?.length
+          ? "[]"
+          : "false";
       }
     }
-    const requiredCustomField = selectedEvent?.registrationFields?.find((field) =>
-      field.required && (field.type === "checkbox"
-        ? field.choices?.length
-          ? selectedChoices(submittedCustomFields[field.key] ?? "[]").length === 0
-          : submittedCustomFields[field.key] !== "true"
-        : !submittedCustomFields[field.key]?.trim()),
+    const requiredCustomField = selectedEvent?.registrationFields?.find(
+      (field) =>
+        field.required &&
+        (field.type === "checkbox"
+          ? field.choices?.length
+            ? selectedChoices(submittedCustomFields[field.key] ?? "[]")
+                .length === 0
+            : submittedCustomFields[field.key] !== "true"
+          : !submittedCustomFields[field.key]?.trim()),
     );
     if (requiredCustomField) {
       const message = `${requiredCustomField.label} is required`;
-      setFieldErrors((current) => ({ ...current, [requiredCustomField.key]: message }));
+      setFieldErrors((current) => ({
+        ...current,
+        [requiredCustomField.key]: message,
+      }));
       setFormError(message);
       return;
     }
-    const parsed = eventRegistrationSchema.safeParse({ ...profile, workshop, customFields: submittedCustomFields });
+    const parsed = eventRegistrationSchema.safeParse({
+      ...profile,
+      workshop,
+      customFields: submittedCustomFields,
+    });
     if (!parsed.success) {
       const errors: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
@@ -287,11 +303,16 @@ export default function EventRegistrationForm({
           Registration closed
         </p>
         <h2 className="mt-3 font-display text-2xl font-semibold text-navy-900">
-          {pinnedEvent?.isCompleted ? "This event is completed" : "This event is closed"}
+          {pinnedEvent?.isCompleted
+            ? "This event is completed"
+            : "This event is closed"}
         </h2>
         <p className="mt-2 text-sm leading-6 text-navy-600">
-          Registration for {pinnedEvent?.workshopName ?? "this event"} has
-          ended{pinnedEvent?.isCompleted ? " because the event has been marked completed" : ""}. You can still review the event details or browse other open events.
+          Registration for {pinnedEvent?.workshopName ?? "this event"} has ended
+          {pinnedEvent?.isCompleted
+            ? " because the event has been marked completed"
+            : ""}
+          . You can still review the event details or browse other open events.
         </p>
         <Link
           href="/register"
@@ -308,7 +329,7 @@ export default function EventRegistrationForm({
       <section
         role="status"
         aria-live="polite"
-        className="flex min-h-20 items-center justify-center rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
+        className="flex min-h-20 items-center justify-center rounded-3xl border border-white/60 bg-white w-full p-5 shadow-card min-[380px]:p-7 sm:p-9"
       >
         <LoadingSpinner label="Checking for active events..." />
       </section>
@@ -389,7 +410,13 @@ export default function EventRegistrationForm({
                 : "",
             );
             setCustomFields({});
-            setFieldErrors((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith("custom-"))));
+            setFieldErrors((current) =>
+              Object.fromEntries(
+                Object.entries(current).filter(
+                  ([key]) => !key.startsWith("custom-"),
+                ),
+              ),
+            );
             setFieldErrors((current) => ({ ...current, workshop: "" }));
           }}
           className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
@@ -470,52 +497,153 @@ export default function EventRegistrationForm({
 
       {selectedEvent?.registrationFields?.length ? (
         <div className="mt-5 space-y-4 border-t border-navy-100 pt-5">
-          <h3 className="text-sm font-semibold text-navy-800">Additional event details</h3>
+          <h3 className="text-sm font-semibold text-navy-800">
+            Additional event details
+          </h3>
           {selectedEvent.registrationFields.map((field) => {
-            const value = customFields[field.key] ?? (field.type === "checkbox" && field.choices?.length ? "[]" : "");
-            const chosen = field.type === "checkbox" && field.choices?.length ? selectedChoices(value) : [];
+            const value =
+              customFields[field.key] ??
+              (field.type === "checkbox" && field.choices?.length ? "[]" : "");
+            const chosen =
+              field.type === "checkbox" && field.choices?.length
+                ? selectedChoices(value)
+                : [];
             const fieldId = `custom-${field.key}`;
-            const controlClass = "mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100";
+            const controlClass =
+              "mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100";
             const updateValue = (nextValue: string) => {
-              setCustomFields((current) => ({ ...current, [field.key]: nextValue }));
+              setCustomFields((current) => ({
+                ...current,
+                [field.key]: nextValue,
+              }));
               setFieldErrors((current) => ({ ...current, [field.key]: "" }));
             };
             return (
-              <div key={field.key} className="text-sm font-semibold text-navy-800">
+              <div
+                key={field.key}
+                className="text-sm font-semibold text-navy-800"
+              >
                 {field.type === "checkbox" && field.choices?.length ? (
                   <fieldset className="space-y-2">
-                    <legend className="text-sm font-semibold text-navy-800">{field.label}{field.required ? <span className="text-red-600"> *</span> : <span className="ml-1 text-xs font-normal text-navy-500">(optional)</span>}</legend>
+                    <legend className="text-sm font-semibold text-navy-800">
+                      {field.label}
+                      {field.required ? (
+                        <span className="text-red-600"> *</span>
+                      ) : (
+                        <span className="ml-1 text-xs font-normal text-navy-500">
+                          (optional)
+                        </span>
+                      )}
+                    </legend>
                     {field.choices.map((choice, choiceIndex) => {
                       const choiceId = `${fieldId}-${choiceIndex}`;
                       const checked = chosen.includes(choice);
-                      return <label key={choiceId} htmlFor={choiceId} className="flex min-h-10 items-center gap-3 text-sm font-normal text-navy-800"><input id={choiceId} type={field.selectionMode === "single" ? "radio" : "checkbox"} name={fieldId} required={field.required && field.selectionMode === "single"} checked={checked} onChange={(event) => {
-                        const next = field.selectionMode === "single"
-                          ? [choice]
-                          : event.target.checked
-                            ? [...chosen, choice]
-                            : chosen.filter((item) => item !== choice);
-                        updateValue(JSON.stringify(next));
-                      }} className="h-4 w-4 rounded border-navy-300 accent-navy-800 focus:ring-gold-500" />{choice}</label>;
+                      return (
+                        <label
+                          key={choiceId}
+                          htmlFor={choiceId}
+                          className="flex min-h-10 items-center gap-3 text-sm font-normal text-navy-800"
+                        >
+                          <input
+                            id={choiceId}
+                            type={
+                              field.selectionMode === "single"
+                                ? "radio"
+                                : "checkbox"
+                            }
+                            name={fieldId}
+                            required={
+                              field.required && field.selectionMode === "single"
+                            }
+                            checked={checked}
+                            onChange={(event) => {
+                              const next =
+                                field.selectionMode === "single"
+                                  ? [choice]
+                                  : event.target.checked
+                                    ? [...chosen, choice]
+                                    : chosen.filter((item) => item !== choice);
+                              updateValue(JSON.stringify(next));
+                            }}
+                            className="h-4 w-4 rounded border-navy-300 accent-navy-800 focus:ring-gold-500"
+                          />
+                          {choice}
+                        </label>
+                      );
                     })}
                   </fieldset>
                 ) : field.type === "checkbox" ? (
-                  <label htmlFor={fieldId} className="flex min-h-11 items-center gap-3">
-                    <input id={fieldId} type="checkbox" required={field.required} checked={value === "true"} onChange={(event) => updateValue(event.target.checked ? "true" : "false")} aria-invalid={Boolean(fieldErrors[field.key])} className="h-4 w-4 rounded border-navy-300 accent-navy-800 focus:ring-gold-500" />
-                    <span>{field.label}{field.required ? <span className="text-red-600"> *</span> : <span className="ml-1 text-xs font-normal text-navy-500">(optional)</span>}</span>
+                  <label
+                    htmlFor={fieldId}
+                    className="flex min-h-11 items-center gap-3"
+                  >
+                    <input
+                      id={fieldId}
+                      type="checkbox"
+                      required={field.required}
+                      checked={value === "true"}
+                      onChange={(event) =>
+                        updateValue(event.target.checked ? "true" : "false")
+                      }
+                      aria-invalid={Boolean(fieldErrors[field.key])}
+                      className="h-4 w-4 rounded border-navy-300 accent-navy-800 focus:ring-gold-500"
+                    />
+                    <span>
+                      {field.label}
+                      {field.required ? (
+                        <span className="text-red-600"> *</span>
+                      ) : (
+                        <span className="ml-1 text-xs font-normal text-navy-500">
+                          (optional)
+                        </span>
+                      )}
+                    </span>
                   </label>
                 ) : (
                   <label htmlFor={fieldId} className="block">
-                    {field.label}{field.required ? <span className="text-red-600"> *</span> : <span className="ml-1 text-xs font-normal text-navy-500">(optional)</span>}
+                    {field.label}
+                    {field.required ? (
+                      <span className="text-red-600"> *</span>
+                    ) : (
+                      <span className="ml-1 text-xs font-normal text-navy-500">
+                        (optional)
+                      </span>
+                    )}
                     {field.type === "yes_no" ? (
-                      <select id={fieldId} required={field.required} value={value} onChange={(event) => updateValue(event.target.value)} aria-invalid={Boolean(fieldErrors[field.key])} className={controlClass}>
-                        <option value="">Choose an answer</option><option value="yes">Yes</option><option value="no">No</option>
+                      <select
+                        id={fieldId}
+                        required={field.required}
+                        value={value}
+                        onChange={(event) => updateValue(event.target.value)}
+                        aria-invalid={Boolean(fieldErrors[field.key])}
+                        className={controlClass}
+                      >
+                        <option value="">Choose an answer</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
                       </select>
                     ) : (
-                      <input id={fieldId} type="text" required={field.required} maxLength={1000} value={value} onChange={(event) => updateValue(event.target.value)} aria-invalid={Boolean(fieldErrors[field.key])} className={controlClass} />
+                      <input
+                        id={fieldId}
+                        type="text"
+                        required={field.required}
+                        maxLength={1000}
+                        value={value}
+                        onChange={(event) => updateValue(event.target.value)}
+                        aria-invalid={Boolean(fieldErrors[field.key])}
+                        className={controlClass}
+                      />
                     )}
                   </label>
                 )}
-                {fieldErrors[field.key] && <span role="alert" className="mt-1 block text-xs text-red-600">{fieldErrors[field.key]}</span>}
+                {fieldErrors[field.key] && (
+                  <span
+                    role="alert"
+                    className="mt-1 block text-xs text-red-600"
+                  >
+                    {fieldErrors[field.key]}
+                  </span>
+                )}
               </div>
             );
           })}
