@@ -14,6 +14,6 @@ export const POST = adminPost(async (body: AdminBody) => {
     { $set: changes },
     { new: true, runValidators: true },
   ).select("-templateData").lean();
-  if (!workshop) return errorResponse("Workshop was not found", 404);
-  return successResponse(workshop, "Successfully updated workshop", 1);
-}, "Admin workshop update");
+  if (!workshop) return errorResponse("Event was not found", 404);
+  return successResponse(workshop, "Successfully updated event", 1);
+}, "Admin event update");

@@ -260,7 +260,7 @@ export default function VerifyPanel() {
             </dd>
 
             <dt className="text-emerald-700 font-medium sm:col-span-1">
-              Workshop
+              Event
             </dt>
             <dd className="min-w-0 break-words text-emerald-950 sm:col-span-2">
               {result.workshop.workshopName}
@@ -306,7 +306,7 @@ export default function VerifyPanel() {
                 Multiple matches found
               </p>
               <p className="text-xs text-gold-700">
-                That number exists in more than one workshop. Which one is
+                That number exists in more than one event. Which one is
                 yours?
               </p>
             </div>

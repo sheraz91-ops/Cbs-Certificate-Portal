@@ -56,7 +56,7 @@ export default function AddUserPage() {
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">Admin · Users</p>
         <h2 className="mt-2 text-3xl font-bold">Add User</h2>
-        <p className="mt-2 text-sm text-slate-400">Register a user once. The portal assigns their ID for workshop enrollment.</p>
+        <p className="mt-2 text-sm text-slate-400">Register a user once. The portal assigns their ID for event enrollment.</p>
       </header>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">

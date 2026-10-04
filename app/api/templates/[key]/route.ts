@@ -10,7 +10,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ key
   try {
     const { key } = await params;
     const parsedKey = workshopKeySchema.safeParse(key);
-    if (!parsedKey.success) return errorResponse("Invalid workshop key", 400);
+    if (!parsedKey.success) return errorResponse("Invalid event key", 400);
     const validKey = parsedKey.data;
     await connectToDatabase();
     const workshop = await WorkshopModel.findOne({ key: validKey }).select("templateData").lean();

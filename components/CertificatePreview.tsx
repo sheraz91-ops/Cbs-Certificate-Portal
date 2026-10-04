@@ -153,7 +153,7 @@ export default function CertificatePreview() {
           Multiple certificates found
         </h2>
         <p className="text-sm text-navy-500">
-          That number matches participants in more than one workshop. Select
+          That number matches participants in more than one event. Select
           yours below:
         </p>
         <div className="w-full flex flex-col gap-2">

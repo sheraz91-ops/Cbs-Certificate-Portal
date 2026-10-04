@@ -9,7 +9,7 @@ export async function GET() {
     await connectToDatabase();
     const events = await WorkshopModel.find({ isActive: { $ne: false } })
       .sort({ eventYear: -1, eventDate: 1, workshopName: 1 })
-      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive allowOutsiders")
+      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive allowOutsiders registrationFields")
       .lean();
     const content = events.map(({ _id, ...event }) => ({ ...event, isActive: true, allowOutsiders: event.allowOutsiders ?? false }));
     return successResponse(content, "Successfully retrieved events", content.length);

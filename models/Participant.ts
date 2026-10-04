@@ -8,10 +8,15 @@ const participantSchema = new Schema({
   workshop: { type: String, required: true, trim: true, lowercase: true, index: true },
   enrollmentKey: { type: String, trim: true, unique: true, sparse: true },
   attendance: { type: Boolean, required: true, default: false },
+  customFields: { type: Schema.Types.Mixed, default: {} },
 }, { timestamps: true, versionKey: false });
 participantSchema.index({ workshop: 1, id: 1 }, { unique: true });
 participantSchema.index({ workshop: 1, normalizedId: 1 });
 participantSchema.index({ workshop: 1, userId: 1 });
+
+if (models.Participant && !models.Participant.schema.path("customFields")) {
+  delete models.Participant;
+}
 
 const ParticipantModel = models.Participant || model("Participant", participantSchema);
 export default ParticipantModel;

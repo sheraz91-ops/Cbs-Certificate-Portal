@@ -22,6 +22,14 @@ export type CreateOrganizerInput = UserProfileInput & {
 export type OrganizerDetails = OrganizerSummary & UserProfileInput;
 export type UpdateOrganizerInput = UserProfileInput & { organizerId: string; workshops: string[]; password?: string };
 
+export type OrganizerSessionSummary = { id: string; organizerId: string; fullName: string; emailAddress: string; createdAt: string; expiresAt: string };
+export function getOrganizerSessions(): Promise<OrganizerSessionSummary[]> {
+  return postData<OrganizerSessionSummary[], Record<string, never>>("/api/admin/organizer-sessions/list", {});
+}
+export function revokeOrganizerSession(id: string): Promise<null> {
+  return postData<null, { id: string }>("/api/admin/organizer-sessions/revoke", { id });
+}
+
 export type OrganizerParticipant = {
   participantId: string;
   userId: string;

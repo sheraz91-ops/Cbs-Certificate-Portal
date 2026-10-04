@@ -34,21 +34,21 @@ export default function ManageWorkshopsPage() {
     <div className="space-y-6">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
-          Admin · Workshop
+          Admin · Event
         </p>
-        <h2 className="mt-2 text-3xl font-bold">Manage Workshops</h2>
+        <h2 className="mt-2 text-3xl font-bold">Manage Events</h2>
         <p className="mt-2 text-sm text-slate-400">
-          Select a workshop ID to manage its details and participants.
+          Select an event ID to manage its details and participants.
         </p>
       </header>
 
       <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <p className="text-sm text-slate-400">
-            {workshops.length} workshop{workshops.length === 1 ? "" : "s"}
+            {workshops.length} event{workshops.length === 1 ? "" : "s"}
           </p>
           <label className="text-xs font-medium text-slate-300">
-            Search workshops
+            Search events
             <InputField
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -67,13 +67,13 @@ export default function ManageWorkshopsPage() {
           </p>
         ) : workshopsQuery.isPending ? (
           <p className="py-8 text-center text-sm text-slate-400">
-            Loading workshops…
+            Loading events…
           </p>
         ) : filteredWorkshops.length === 0 ? (
           <p className="py-8 text-center text-sm text-slate-400">
             {workshops.length
-              ? "No workshops match that search."
-              : "No workshops have been created yet."}
+              ? "No events match that search."
+              : "No events have been created yet."}
           </p>
         ) : (
           <>
@@ -85,7 +85,7 @@ export default function ManageWorkshopsPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-xs text-slate-500">Workshop ID</p>
+                      <p className="text-xs text-slate-500">Event ID</p>
                       <Link
                         href={`/admin/workshops/manage/${encodeURIComponent(workshop.key)}`}
                         className="mt-1 block break-all font-mono text-sm font-semibold text-indigo-300 underline decoration-indigo-500/40 underline-offset-4"
@@ -136,8 +136,8 @@ export default function ManageWorkshopsPage() {
                 <thead className="bg-slate-900 text-xs uppercase text-slate-400">
                   <tr>
                     {[
-                      "Workshop ID",
-                      "Workshop Name",
+                      "Event ID",
+                      "Event Name",
                       "Code",
                       "Event Date",
                       "Status",

@@ -14,7 +14,7 @@ export const POST = adminPost(async (body: AdminBody) => {
   const parsed = addParticipantsSchema.safeParse(body);
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
   const { workshop, userIds } = parsed.data;
-  if (!await WorkshopModel.exists({ key: workshop })) return errorResponse("Workshop was not found", 404);
+  if (!await WorkshopModel.exists({ key: workshop })) return errorResponse("Event was not found", 404);
 
   const users = await UserModel.find({ userId: { $in: userIds } }).lean();
   const usersById = new Map(users.map((user) => [user.userId, user]));
@@ -34,7 +34,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     enrolledUserIds.add(userId);
     return [user];
   });
-  if (!usersToEnroll.length) return errorResponse("No new users were added to this workshop", 409);
+  if (!usersToEnroll.length) return errorResponse("No new users were added to this event", 409);
 
   const assignedIds = await allocateParticipantIds(workshop, usersToEnroll.length);
   const enrollments = usersToEnroll.map((user, index): ParticipantRecord & { enrollmentKey: string } => {
@@ -46,5 +46,5 @@ export const POST = adminPost(async (body: AdminBody) => {
     added: enrollments.length,
     assignedIds: enrollments.map((entry) => `${entry.userId} -> ${entry.id}`),
     skipped,
-  }, "Successfully added users to workshop", enrollments.length, 201);
+  }, "Successfully added users to event", enrollments.length, 201);
 }, "Admin participant add");

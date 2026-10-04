@@ -10,8 +10,8 @@ export const runtime = "nodejs";
 export const POST = adminPost(async (body: AdminBody) => {
   const parsed = createWorkshopSchema.safeParse(body);
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
-  const { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, isActive, allowOutsiders, imageExt, imageBase64, layout } = parsed.data;
-  if (await WorkshopModel.exists({ key })) return errorResponse(`Workshop key "${key}" already exists`, 409);
+  const { key, workshopName, workshopFullTitle, workshopCode, eventYear, eventDate, isActive, allowOutsiders, registrationFields, imageExt, imageBase64, layout } = parsed.data;
+  if (await WorkshopModel.exists({ key })) return errorResponse(`Event key "${key}" already exists`, 409);
 
   const extension = imageExt ?? "png";
   const mimeType = extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "image/png";
@@ -26,6 +26,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     eventDate,
     isActive,
     allowOutsiders,
+    registrationFields,
     organizedBy: `${ORG_CONFIG.organizationName} (${ORG_CONFIG.institutionAbbreviation})`,
     templatePath: imageData ? `/api/templates/${key}` : "Not set",
     layout: workshopLayout,
@@ -35,7 +36,7 @@ export const POST = adminPost(async (body: AdminBody) => {
   return successResponse({
     workshop: { key, workshopName: workshop.workshopName, isActive },
     note: imageData
-      ? layout ? "Workshop and template saved to MongoDB with a custom layout." : "Workshop and template saved to MongoDB."
-      : "Workshop saved without a template image. Add a template before generating certificates.",
-  }, "Successfully created workshop", 1, 201);
-}, "Admin workshop create");
+      ? layout ? "Event and template saved to MongoDB with a custom layout." : "Event and template saved to MongoDB."
+      : "Event saved without a template image. Add a template before generating certificates.",
+  }, "Successfully created event", 1, 201);
+}, "Admin event create");

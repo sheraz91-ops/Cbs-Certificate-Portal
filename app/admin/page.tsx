@@ -35,10 +35,10 @@ export default function AdminPage() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-indigo-300">CBS Certificate Portal</p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Overview</h2>
-          <p className="mt-2 text-sm text-slate-400">A live summary of your workshops, people, registrations, and attendance.</p>
+          <p className="mt-2 text-sm text-slate-400">A live summary of your events, people, registrations, and attendance.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/admin/workshops" className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500">Create Workshop</Link>
+          <Link href="/admin/workshops" className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500">Create Event</Link>
           <Link href="/admin/users" className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-900">Add User</Link>
         </div>
       </header>
@@ -50,7 +50,7 @@ export default function AdminPage() {
       ) : overview ? (
         <>
           <section aria-label="Portal totals" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <MetricCard label="Workshops" value={overview.totals.workshops} description="Events configured in the portal" href="/admin/workshops/manage" icon="▦" />
+            <MetricCard label="Events" value={overview.totals.workshops} description="Events configured in the portal" href="/admin/workshops/manage" icon="▦" />
             <MetricCard label="Registered Users" value={overview.totals.registeredUsers} description={`${overview.totals.enrolledUsers.toLocaleString()} enrolled in at least one event`} href="/admin/users/all" icon="♙" />
             <MetricCard label="Event Registrations" value={overview.totals.registrations} description="Participant records across all events" href="/admin/participants" icon="▤" />
             <MetricCard label="Organizers" value={overview.totals.organizers} description={`${overview.totals.activeOrganizers.toLocaleString()} active organizer accounts`} href="/admin/organizers" icon="♧" />
@@ -68,8 +68,8 @@ export default function AdminPage() {
             </div>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-3"><div><h3 className="text-lg font-semibold text-white">Recent Workshops</h3><p className="mt-1 text-sm text-slate-400">Latest events added to the portal</p></div><Link href="/admin/workshops/manage" className="text-sm font-medium text-indigo-300 hover:text-indigo-200">View all</Link></div>
-              {overview.recentWorkshops.length ? <div className="mt-5 divide-y divide-slate-800">{overview.recentWorkshops.map((workshop) => <div key={workshop.key} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-100">{workshop.workshopName}</p><p className="mt-1 text-xs text-slate-500">{workshop.workshopCode} · {workshop.eventYear} · {workshop.eventDate}</p></div><span className="shrink-0 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-200">{workshop.registrations} registration{workshop.registrations === 1 ? "" : "s"}</span></div>)}</div> : <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-5 text-center text-sm text-slate-400">No workshops yet. Create one to get started.</p>}
+              <div className="flex items-center justify-between gap-3"><div><h3 className="text-lg font-semibold text-white">Recent Events</h3><p className="mt-1 text-sm text-slate-400">Latest events added to the portal</p></div><Link href="/admin/workshops/manage" className="text-sm font-medium text-indigo-300 hover:text-indigo-200">View all</Link></div>
+              {overview.recentWorkshops.length ? <div className="mt-5 divide-y divide-slate-800">{overview.recentWorkshops.map((workshop) => <div key={workshop.key} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-100">{workshop.workshopName}</p><p className="mt-1 text-xs text-slate-500">{workshop.workshopCode} · {workshop.eventYear} · {workshop.eventDate}</p></div><span className="shrink-0 rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-200">{workshop.registrations} registration{workshop.registrations === 1 ? "" : "s"}</span></div>)}</div> : <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-5 text-center text-sm text-slate-400">No events yet. Create one to get started.</p>}
             </div>
           </section>
 

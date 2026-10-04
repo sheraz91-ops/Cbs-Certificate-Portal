@@ -25,13 +25,19 @@ export async function POST(request: NextRequest) {
 
   const parsed = eventRegistrationSchema.safeParse(body);
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
-  const { workshop: workshopKey, ...profile } = parsed.data;
+  const { workshop: workshopKey, customFields, ...profile } = parsed.data;
 
   try {
     await connectToDatabase();
     const workshop = await WorkshopModel.findOne({ key: workshopKey }).lean() as unknown as WorkshopDefinition | null;
     if (!workshop) return errorResponse("The selected event was not found", 404);
     if (workshop.isActive === false) return errorResponse("Registration for this event is closed", 403);
+    const configuredFields = workshop.registrationFields ?? [];
+    const allowedKeys = new Set(configuredFields.map((field) => field.key));
+    if (Object.keys(customFields).some((key) => !allowedKeys.has(key))) return errorResponse("Registration includes an unknown event field", 400);
+    for (const field of configuredFields) {
+      if (field.required && !customFields[field.key]?.trim()) return errorResponse(`${field.label} is required`, 400);
+    }
     if (!workshop.allowOutsiders) {
       const registrationNumber = campusRegistrationNumberSchema.safeParse(profile.registrationNumber);
       if (!registrationNumber.success) return errorResponse(validationMessage(registrationNumber.error), 400);
@@ -94,6 +100,7 @@ export async function POST(request: NextRequest) {
         name: user.fullName,
         workshop: workshopKey,
         enrollmentKey: `${workshopKey}:${user.userId}`,
+        customFields,
       });
       return successResponse({
         userId: user.userId,

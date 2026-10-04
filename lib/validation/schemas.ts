@@ -70,18 +70,22 @@ export const layoutConfigSchema = z.object({
 }).strict();
 
 export const createWorkshopSchema = z.object({
-  key: requiredText("Workshop key", 80).toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid format"),
-  workshopName: requiredText("Workshop name", 160),
-  workshopFullTitle: requiredText("Workshop full title", 240),
-  workshopCode: requiredText("Workshop code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
+  key: requiredText("Event key", 80).toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid format"),
+  workshopName: requiredText("Event name", 160),
+  workshopFullTitle: requiredText("Event full title", 240),
+  workshopCode: requiredText("Event code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
   eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
   eventDate: requiredText("Event date", 100),
   isActive: z.boolean({ error: "Required" }).default(true),
   allowOutsiders: z.boolean().default(false),
+  registrationFields: z.array(z.object({ key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), label: requiredText("Field label", 100), required: z.boolean() }).strict()).max(30).default([]),
   imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
   imageExt: z.string().trim().toLowerCase().pipe(z.enum(["png", "jpg", "jpeg"], { error: "Invalid format" })).optional(),
   layout: layoutConfigSchema.optional(),
-}).strict().refine((value) => !value.imageBase64 || value.imageExt, {
+}).strict().refine((value) => new Set(value.registrationFields.map((field) => field.key)).size === value.registrationFields.length, {
+  message: "Custom registration fields must have unique identifiers",
+  path: ["registrationFields"],
+}).refine((value) => !value.imageBase64 || value.imageExt, {
   message: "Required",
   path: ["imageExt"],
 });
@@ -95,15 +99,16 @@ export const userIdSchema = z.string({ error: "Required" }).trim().min(1, "Requi
 export const workshopKeySchema = z.string({ error: "Required" }).trim().min(1, "Required").toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid format");
 export const updateWorkshopSchema = z.object({
   key: workshopKeySchema,
-  workshopName: requiredText("Workshop name", 160),
-  workshopFullTitle: requiredText("Workshop full title", 240),
-  workshopCode: requiredText("Workshop code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
+  workshopName: requiredText("Event name", 160),
+  workshopFullTitle: requiredText("Event full title", 240),
+  workshopCode: requiredText("Event code", 32).toUpperCase().regex(/^[A-Z0-9]+$/, "Invalid format"),
   eventYear: z.string({ error: "Required" }).trim().min(1, "Required").regex(/^\d{4}$/, "Invalid format"),
   eventDate: requiredText("Event date", 100),
   isActive: z.boolean({ error: "Required" }),
   allowOutsiders: z.boolean({ error: "Required" }),
-}).strict();
-export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema });
+  registrationFields: z.array(z.object({ key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), label: requiredText("Field label", 100), required: z.boolean() }).strict()).max(30).default([]),
+}).strict().refine((value) => new Set(value.registrationFields.map((field) => field.key)).size === value.registrationFields.length, { message: "Custom registration fields must have unique identifiers", path: ["registrationFields"] });
+export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema, customFields: z.record(z.string(), z.string().max(1000)).default({}) });
 export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
 export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");

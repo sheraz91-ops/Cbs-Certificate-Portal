@@ -11,7 +11,7 @@ export const POST = adminPost(async (body: AdminBody) => {
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
   const { workshop } = parsed.data;
   const deleted = await WorkshopModel.findOneAndDelete({ key: workshop });
-  if (!deleted) return errorResponse(`Workshop "${workshop}" was not found`, 404);
+  if (!deleted) return errorResponse(`Event "${workshop}" was not found`, 404);
   const result = await ParticipantModel.deleteMany({ workshop });
-  return successResponse({ deletedParticipants: result.deletedCount }, "Successfully deleted workshop and its participants", result.deletedCount + 1);
-}, "Admin workshop delete");
+  return successResponse({ deletedParticipants: result.deletedCount }, "Successfully deleted event and its participants", result.deletedCount + 1);
+}, "Admin event delete");

@@ -76,7 +76,7 @@ export default function CreateOrganizerPage() {
         <fieldset>
           <legend className="text-sm font-semibold text-white">Assigned Events <span className="text-red-300">*</span></legend>
           <p className="mt-1 text-xs text-slate-500">The organizer can view participants and update attendance only for selected events.</p>
-          {eventsQuery.isPending ? <p className="mt-4 text-sm text-slate-400">Loading events…</p> : eventsQuery.isError ? <p role="alert" className="mt-4 text-sm text-red-300">{eventsQuery.error.message}</p> : (eventsQuery.data ?? []).length === 0 ? <p className="mt-4 text-sm text-slate-400">Create a workshop before adding an organizer.</p> : (
+          {eventsQuery.isPending ? <p className="mt-4 text-sm text-slate-400">Loading events…</p> : eventsQuery.isError ? <p role="alert" className="mt-4 text-sm text-red-300">{eventsQuery.error.message}</p> : (eventsQuery.data ?? []).length === 0 ? <p className="mt-4 text-sm text-slate-400">Create an event before adding an organizer.</p> : (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">{eventsQuery.data?.map((item) => <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-200"><InputField type="checkbox" checked={form.workshops.includes(item.key)} onChange={() => toggleWorkshop(item.key)} className="mt-0.5 accent-indigo-500" /><span><span className="block font-medium">{item.workshopName}</span><span className="mt-0.5 block text-xs text-slate-500">{item.eventDate} · {item.eventYear}</span></span></label>)}</div>
           )}
         </fieldset>

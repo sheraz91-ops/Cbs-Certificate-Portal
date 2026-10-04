@@ -18,7 +18,7 @@ export default function ParticipantsPage() {
   const error = workshopsQuery.error instanceof Error ? workshopsQuery.error.message : "";
 
   useEffect(() => {
-    if (workshopsQuery.isError) toast({ title: "Could not load workshops", description: error, tone: "error" });
+    if (workshopsQuery.isError) toast({ title: "Could not load events", description: error, tone: "error" });
   }, [error, toast, workshopsQuery.isError]);
 
   return (
@@ -27,9 +27,9 @@ export default function ParticipantsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
           Admin
         </p>
-        <h1 className="mt-2 text-3xl font-bold">Add Users to Workshop</h1>
+        <h1 className="mt-2 text-3xl font-bold">Add Users to Event</h1>
         <p className="mt-2 text-sm text-slate-400">
-          Choose a workshop and enter one or more assigned user IDs. User details are registered on the Users page.
+          Choose an event and enter one or more assigned user IDs. User details are registered on the Users page.
         </p>
       </header>
       {error && (

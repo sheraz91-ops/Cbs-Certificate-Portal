@@ -59,7 +59,7 @@ export default function WorkshopDetails({
       setEditing(false);
       setFormError("");
       toast({
-        title: "Workshop updated",
+        title: "Event updated",
         description: `${updated.workshopName} details were saved.`,
         tone: "success",
       });
@@ -99,7 +99,7 @@ export default function WorkshopDetails({
         queryClient.invalidateQueries({ queryKey: ["certificate-lookup"] }),
       ]);
       toast({
-        title: "Workshop deleted",
+        title: "Event deleted",
         description: `${result.deletedParticipants} participant record(s) were also removed.`,
         tone: "success",
       });
@@ -107,7 +107,7 @@ export default function WorkshopDetails({
     },
     onError: (error) =>
       toast({
-        title: "Could not delete workshop",
+        title: "Could not delete event",
         description: error.message,
         tone: "error",
       }),
@@ -116,7 +116,7 @@ export default function WorkshopDetails({
   useEffect(() => {
     if (workshopsQuery.isError)
       toast({
-        title: "Could not load workshop",
+        title: "Could not load event",
         description: workshopsQuery.error.message,
         tone: "error",
       });
@@ -128,7 +128,7 @@ export default function WorkshopDetails({
   }) {
     if (
       !window.confirm(
-        `Remove ${participant.name} (ID ${participant.id}) from ${workshop?.workshopName ?? "this workshop"}?`,
+        `Remove ${participant.name} (ID ${participant.id}) from ${workshop?.workshopName ?? "this event"}?`,
       )
     )
       return;
@@ -136,7 +136,7 @@ export default function WorkshopDetails({
       await participantMutation.mutateAsync(participant);
       toast({
         title: "Participant deleted",
-        description: `${participant.name} was removed from this workshop.`,
+        description: `${participant.name} was removed from this event.`,
         tone: "success",
       });
     } catch (error) {
@@ -173,6 +173,7 @@ export default function WorkshopDetails({
       eventDate: workshop.eventDate,
       isActive: workshop.isActive !== false,
       allowOutsiders: workshop.allowOutsiders ?? false,
+      registrationFields: workshop.registrationFields ?? [],
     });
     setFormError("");
     setEditing(true);
@@ -196,11 +197,11 @@ export default function WorkshopDetails({
         href="/admin/workshops/manage"
         className="inline-flex items-center gap-2 text-sm font-medium text-indigo-300 hover:text-indigo-200"
       >
-        ← Manage Workshops
+        ← Manage Events
       </Link>
       {workshopsQuery.isPending ? (
         <p className="rounded-2xl border border-slate-800 bg-slate-950 px-6 py-10 text-center text-sm text-slate-400">
-          Loading workshop…
+          Loading event…
         </p>
       ) : workshopsQuery.isError ? (
         <p
@@ -214,13 +215,13 @@ export default function WorkshopDetails({
           role="alert"
           className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
         >
-          Workshop “{workshopKey}” was not found.
+          Event “{workshopKey}” was not found.
         </p>
       ) : (
         <>
           <header>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">
-              Admin · Workshop
+              Admin · Event
             </p>
             <h2 className="mt-2 text-3xl font-bold">{workshop.workshopName}</h2>
             <p className="mt-2 font-mono text-sm text-slate-400">
@@ -231,7 +232,7 @@ export default function WorkshopDetails({
           <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-white">
-                Workshop Details
+                Event Details
               </h3>
               {!editing && (
                 <button
@@ -239,22 +240,22 @@ export default function WorkshopDetails({
                   onClick={beginEditing}
                   className="rounded-xl border border-indigo-400/30 px-4 py-2 text-sm font-semibold text-indigo-200 hover:bg-indigo-500/10"
                 >
-                  Edit workshop fields
+                  Edit event fields
                 </button>
               )}
             </div>
             {editing && draft ? (
               <form onSubmit={submitUpdate} className="mt-5 space-y-5">
                 <p className="text-xs text-slate-500">
-                  Workshop ID is fixed because participant records and organizer
+                  Event ID is fixed because participant records and organizer
                   access use it.
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {(
                     [
-                      ["workshopName", "Workshop Name"],
+                      ["workshopName", "Event Name"],
                       ["workshopFullTitle", "Full Descriptive Title"],
-                      ["workshopCode", "Workshop Code"],
+                      ["workshopCode", "Event Code"],
                       ["eventYear", "Event Year"],
                       ["eventDate", "Event Date"],
                     ] as const
@@ -331,6 +332,17 @@ export default function WorkshopDetails({
                     </span>
                   </span>
                 </label>
+                <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div><h4 className="text-sm font-semibold text-slate-100">Custom registration fields</h4><p className="mt-1 text-xs text-slate-400">Edit extra questions shown during registration.</p></div>
+                    <button type="button" disabled={draft.registrationFields.length >= 30} onClick={() => setDraft((current) => current ? { ...current, registrationFields: [...current.registrationFields, { key: `custom-${Date.now().toString(36)}-${current.registrationFields.length}`, label: "", required: false }] } : current)} className="rounded-lg border border-indigo-500/40 px-3 py-2 text-xs font-semibold text-indigo-200 disabled:opacity-50">Add field</button>
+                  </div>
+                  {draft.registrationFields.map((field, index) => <div key={`${field.key}-${index}`} className="mt-3 grid gap-3 rounded-lg border border-slate-800 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                    <InputField value={field.label} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, label: event.target.value } : item) } : current)} placeholder="Field label" className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white" />
+                    <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={field.required} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, required: event.target.checked } : item) } : current)} className="accent-indigo-500" />Required</label>
+                    <button type="button" onClick={() => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.filter((_, i) => i !== index) } : current)} className="justify-self-start text-xs text-rose-300">Remove</button>
+                  </div>)}
+                </section>
                 {(formError || updateMutation.isError) && (
                   <p role="alert" className="text-sm text-red-300">
                     {formError ||
@@ -347,7 +359,7 @@ export default function WorkshopDetails({
                   >
                     {updateMutation.isPending
                       ? "Saving…"
-                      : "Save workshop fields"}
+                      : "Save event fields"}
                   </button>
                   <button
                     type="button"
@@ -364,10 +376,10 @@ export default function WorkshopDetails({
               </form>
             ) : (
               <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-                <Info label="Workshop ID" value={workshop.key} />
-                <Info label="Workshop Name" value={workshop.workshopName} />
+                <Info label="Event ID" value={workshop.key} />
+                <Info label="Event Name" value={workshop.workshopName} />
                 <Info label="Full Title" value={workshop.workshopFullTitle} />
-                <Info label="Workshop Code" value={workshop.workshopCode} />
+                <Info label="Event Code" value={workshop.workshopCode} />
                 <Info label="Event Year" value={workshop.eventYear} />
                 <Info label="Event Date" value={workshop.eventDate} />
                 <Info
@@ -418,7 +430,7 @@ export default function WorkshopDetails({
             </h3>
             {workshop.participants.length === 0 ? (
               <p className="mt-4 text-sm text-slate-400">
-                No users are enrolled in this workshop.
+                No users are enrolled in this event.
               </p>
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:hidden">
@@ -444,6 +456,16 @@ export default function WorkshopDetails({
                         </dd>
                       </div>
                     </dl>
+                    {Object.keys(participant.customFields ?? {}).length > 0 && (
+                      <dl className="mt-3 space-y-2 border-t border-slate-800 pt-3 text-xs">
+                        {Object.entries(participant.customFields ?? {}).map(([key, value]) => (
+                          <div key={key}>
+                            <dt className="text-slate-500">{workshop.registrationFields?.find((field) => field.key === key)?.label ?? key}</dt>
+                            <dd className="mt-0.5 whitespace-pre-wrap break-words text-slate-300">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
                     <button
                       type="button"
                       disabled={participantMutation.isPending}
@@ -458,12 +480,13 @@ export default function WorkshopDetails({
             )}
             {workshop.participants.length > 0 && (
               <div className="mt-4 hidden overflow-x-auto rounded-xl border border-slate-800 lg:block">
-                <table className="w-full min-w-[680px] text-left text-sm">
+                <table className="w-full min-w-[900px] text-left text-sm">
                   <thead className="bg-slate-900 text-xs uppercase text-slate-400">
                     <tr>
                       <th className="px-4 py-3">User ID</th>
                       <th className="px-4 py-3">Certificate ID</th>
                       <th className="px-4 py-3">Full Name</th>
+                      <th className="px-4 py-3">Additional Details</th>
                       <th className="px-4 py-3 text-right">Action</th>
                     </tr>
                   </thead>
@@ -478,6 +501,9 @@ export default function WorkshopDetails({
                         </td>
                         <td className="px-4 py-3 text-slate-200">
                           {participant.name}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-slate-400">
+                          {Object.entries(participant.customFields ?? {}).map(([key, value]) => `${workshop.registrationFields?.find((field) => field.key === key)?.label ?? key}: ${value}`).join(" · ") || "—"}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button
@@ -501,9 +527,9 @@ export default function WorkshopDetails({
 
           <section className="flex flex-col gap-3 rounded-2xl border border-red-500/20 bg-slate-950 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div>
-              <h3 className="font-semibold text-red-200">Delete Workshop</h3>
+              <h3 className="font-semibold text-red-200">Delete Event</h3>
               <p className="mt-1 text-sm text-slate-400">
-                Deletes this workshop and all its participant enrollments.
+                Deletes this event and all its participant enrollments.
                 Registered users remain.
               </p>
             </div>
@@ -515,7 +541,7 @@ export default function WorkshopDetails({
             >
               {removeWorkshopMutation.isPending
                 ? "Deleting…"
-                : "Delete Workshop"}
+                : "Delete Event"}
             </button>
           </section>
         </>

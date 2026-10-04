@@ -338,7 +338,7 @@ function LayoutEditor({
             Manual layout adjust
           </p>
           <p className="text-xs text-slate-500">
-            Nudge the detected boxes before saving the workshop.
+            Nudge the detected boxes before saving the event.
           </p>
         </div>
         <button
@@ -507,6 +507,7 @@ export function AddWorkshopForm({
   const [eventDate, setEventDate] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [allowOutsiders, setAllowOutsiders] = useState(false);
+  const [registrationFields, setRegistrationFields] = useState<{ key: string; label: string; required: boolean }[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewSize, setPreviewSize] = useState<{
@@ -609,6 +610,7 @@ export function AddWorkshopForm({
         eventDate: formatEventDate(eventDate),
         isActive,
         allowOutsiders,
+        registrationFields,
         imageBase64,
         imageExt,
         layout,
@@ -618,13 +620,13 @@ export function AddWorkshopForm({
       onDone(data.workshop);
       setNote(data.note);
       toast({
-        title: "Workshop added",
+        title: "Event added",
         description: `${data.workshop.workshopName} is ready.`,
         tone: "success",
       });
       if (data.note)
         toast({
-          title: "Workshop saved with a note",
+          title: "Event saved with a note",
           description: data.note,
           tone: "info",
         });
@@ -635,11 +637,12 @@ export function AddWorkshopForm({
       setEventDate("");
       setIsActive(true);
       setAllowOutsiders(false);
+      setRegistrationFields([]);
       setFile(null);
     } catch (e: any) {
       setError(e.message);
       toast({
-        title: "Could not add workshop",
+        title: "Could not add event",
         description: e.message,
         tone: "error",
       });
@@ -651,22 +654,22 @@ export function AddWorkshopForm({
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-white">Create Workshop</h2>
+        <h2 className="text-lg font-semibold text-white">Create Event</h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          Add the workshop details and certificate template.
+          Add the event details and certificate template.
         </p>
       </div>
 
       <div className="space-y-5">
         <div>
           <label className="block text-sm font-medium text-slate-200 mb-2">
-            Workshop Key
+            Event Key
           </label>
 
           <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-            placeholder="Enter workshop key"
+            placeholder="Enter event key"
             validationSchema={workshopKeySchema}
             value={key}
             onChange={(e) => setKey(e.target.value)}
@@ -684,7 +687,7 @@ export function AddWorkshopForm({
 
           <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-            placeholder="Enter workshop name"
+            placeholder="Enter event name"
             validationSchema={createWorkshopSchema.shape.workshopName}
             value={workshopName}
             onChange={(e) => setWorkshopName(e.target.value)}
@@ -698,7 +701,7 @@ export function AddWorkshopForm({
 
           <InputField
             className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-            placeholder="Enter workshop title"
+            placeholder="Enter event title"
             validationSchema={createWorkshopSchema.shape.workshopFullTitle}
             value={workshopFullTitle}
             onChange={(e) => setWorkshopFullTitle(e.target.value)}
@@ -708,12 +711,12 @@ export function AddWorkshopForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-slate-200 mb-2">
-              Workshop Code
+              Event Code
             </label>
 
             <InputField
               className="w-full h-11 rounded-xl border border-slate-700 bg-slate-900 px-4 text-sm uppercase text-white placeholder:text-slate-600 outline-none transition-all hover:border-slate-600 focus:border-indigo-500 focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10"
-              placeholder="Enter workshop code"
+              placeholder="Enter event code"
               validationSchema={createWorkshopSchema.shape.workshopCode}
               value={workshopCode}
               onChange={(e) => setWorkshopCode(e.target.value.toUpperCase())}
@@ -787,6 +790,23 @@ export function AddWorkshopForm({
             </span>
           </span>
         </label>
+
+        <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-100">Custom registration fields</h3>
+              <p className="mt-1 text-xs text-slate-400">Add extra text questions for this event and choose which must be answered.</p>
+            </div>
+            <button type="button" disabled={registrationFields.length >= 30} onClick={() => setRegistrationFields((current) => [...current, { key: `custom-${Date.now().toString(36)}-${current.length}`, label: "", required: false }])} className="rounded-lg border border-indigo-500/40 px-3 py-2 text-xs font-semibold text-indigo-200 hover:bg-indigo-500/10 disabled:opacity-50">Add field</button>
+          </div>
+          {registrationFields.map((field, index) => (
+            <div key={field.key} className="mt-3 grid gap-3 rounded-lg border border-slate-800 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+              <InputField value={field.label} onChange={(event) => setRegistrationFields((current) => current.map((item, i) => i === index ? { ...item, label: event.target.value } : item))} placeholder="Field label (e.g. Dietary requirements)" className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white" />
+              <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={field.required} onChange={(event) => setRegistrationFields((current) => current.map((item, i) => i === index ? { ...item, required: event.target.checked } : item))} className="accent-indigo-500" />Required</label>
+              <button type="button" onClick={() => setRegistrationFields((current) => current.filter((_, i) => i !== index))} className="justify-self-start text-xs text-rose-300 hover:text-rose-200">Remove</button>
+            </div>
+          ))}
+        </section>
 
         <div>
           <label className="block text-sm font-medium text-slate-200 mb-2">
@@ -955,7 +975,7 @@ export function AddWorkshopForm({
           onClick={submit}
           className="w-full h-12 rounded-xl bg-indigo-600 text-white text-sm font-semibold shadow-lg shadow-indigo-950/20 transition-all hover:bg-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
         >
-          {busy ? "Saving" : "Save Workshop"}
+          {busy ? "Saving" : "Save Event"}
         </button>
 
         <div className="flex items-start gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 py-3">
@@ -976,8 +996,8 @@ export function AddWorkshopForm({
           <p className="text-xs leading-5 text-slate-500">
             Upload the certificate artwork and the portal will try to detect the
             &lt;&lt;Full Name&gt;&gt; and &lt;&lt;ID&gt;&gt; placeholders
-            automatically, then save the measured layout into the workshop
-            registry. If detection fails, the workshop is still added with the
+            automatically, then save the measured layout into the event
+            registry. If detection fails, the event is still added with the
             default layout and you&apos;ll need to adjust the placeholder
             positions manually.
           </p>
@@ -1016,7 +1036,7 @@ export function AddParticipantsForm({
 
   async function submit() {
     if (!workshop) {
-      setError("Select a workshop first.");
+      setError("Select an event first.");
       return;
     }
     const parsed = addParticipantsSchema.safeParse({
@@ -1064,18 +1084,18 @@ export function AddParticipantsForm({
     <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-white">
-          Add Users to Workshop
+          Add Users to Event
         </h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          Add registered users to this workshop using their assigned user IDs.
+          Add registered users to this event using their assigned user IDs.
         </p>
       </div>
 
       <div className="space-y-5">
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-200">
-            Workshop
+            Event
           </label>
 
           <select
@@ -1084,7 +1104,7 @@ export function AddParticipantsForm({
             onChange={(e) => setWorkshop(e.target.value)}
           >
             <option value="" className="bg-slate-900 text-slate-400">
-              Select workshop
+              Select event
             </option>
 
             {workshops.map((w) => (
@@ -1208,7 +1228,7 @@ export function AddParticipantsForm({
           onClick={submit}
           className="h-12 w-full rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-lg shadow-indigo-950/20 transition-all hover:bg-indigo-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
         >
-          {busy ? "Adding users" : "Add Users to Workshop"}
+          {busy ? "Adding users" : "Add Users to Event"}
         </button>
       </div>
     </section>

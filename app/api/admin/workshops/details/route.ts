@@ -14,7 +14,7 @@ export const POST = adminPost(async () => {
   const participantsByWorkshop = new Map<string, Participant[]>();
   for (const participant of participants) {
     const group = participantsByWorkshop.get(participant.workshop) ?? [];
-    group.push({ id: participant.id, name: participant.name, workshop: participant.workshop, userId: participant.userId });
+    group.push({ id: participant.id, name: participant.name, workshop: participant.workshop, userId: participant.userId, customFields: participant.customFields as Record<string, string> | undefined });
     participantsByWorkshop.set(participant.workshop, group);
   }
   const content = workshops.map((workshop) => ({
@@ -22,5 +22,5 @@ export const POST = adminPost(async () => {
     isActive: workshop.isActive !== false,
     participants: participantsByWorkshop.get(workshop.key) ?? [],
   }));
-  return successResponse(content, "Successfully retrieved workshop details", content.length);
-}, "Admin workshop details");
+  return successResponse(content, "Successfully retrieved event details", content.length);
+}, "Admin event details");

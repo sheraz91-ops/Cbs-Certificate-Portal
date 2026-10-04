@@ -11,6 +11,7 @@ export type EventOption = {
   eventDate: string;
   isActive: boolean;
   allowOutsiders?: boolean;
+  registrationFields?: { key: string; label: string; required: boolean }[];
 };
 
 export type EventRegistrationInput = z.input<typeof eventRegistrationSchema>;

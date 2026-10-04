@@ -12,9 +12,9 @@ export async function GET() {
       .select("key workshopName")
       .lean();
     const content = workshops.map(({ _id, ...workshop }) => workshop);
-    return successResponse(content, "Successfully retrieved workshops", content.length);
+    return successResponse(content, "Successfully retrieved events", content.length);
   } catch (error) {
     console.error("Workshop list error:", error);
-    return errorResponse("Unable to load workshops");
+    return errorResponse("Unable to load events");
   }
 }

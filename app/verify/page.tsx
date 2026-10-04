@@ -6,7 +6,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 
 export const metadata: Metadata = {
   title: "Verify a Certificate",
-  description: "Verify the authenticity of a CBS workshop certificate.",
+  description: "Verify the authenticity of a CBS event certificate.",
 };
 
 export default function VerifyPage() {

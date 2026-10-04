@@ -42,7 +42,14 @@ export interface WorkshopDefinition {
   eventDate: string;
   isActive: boolean;
   allowOutsiders?: boolean;
+  registrationFields?: RegistrationField[];
   organizedBy: string;
   templatePath: string;
   layout: LayoutConfig;
+}
+
+export interface RegistrationField {
+  key: string;
+  label: string;
+  required: boolean;
 }

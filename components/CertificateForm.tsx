@@ -364,7 +364,7 @@ export default function CertificateForm() {
               Certificates matching ID {certificateId.trim()}
             </p>
             <p className="mb-3 text-xs text-navy-500">
-              Choose the workshop where you received your certificate.
+              Choose the event where you received your certificate.
             </p>
             <div className="flex flex-col gap-2">
               {candidates.map((c) => (

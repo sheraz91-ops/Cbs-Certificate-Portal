@@ -12,7 +12,7 @@ const pillars = [
   {
     number: "02",
     title: "Learning by doing",
-    description: "Bring students together through workshops, activities, and shared experiences beyond the classroom.",
+    description: "Bring students together through events, activities, and shared experiences beyond the classroom.",
   },
   {
     number: "03",

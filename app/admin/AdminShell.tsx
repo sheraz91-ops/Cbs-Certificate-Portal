@@ -44,11 +44,11 @@ const navigation: NavigationItem[] = [
   { href: "/admin", label: "Overview", icon: "⌂" },
   {
     key: "workshops",
-    label: "Workshop",
+    label: "Event",
     icon: "▦",
     children: [
-      { href: "/admin/workshops", label: "Create Workshop" },
-      { href: "/admin/workshops/manage", label: "Manage Workshop" },
+      { href: "/admin/workshops", label: "Create Event" },
+      { href: "/admin/workshops/manage", label: "Manage Events" },
     ],
   },
   {
@@ -67,9 +67,10 @@ const navigation: NavigationItem[] = [
     children: [
       { href: "/admin/organizers/create", label: "Add Organizer" },
       { href: "/admin/organizers", label: "All Organizers" },
+      { href: "/admin/organizers/sessions", label: "Organizer Sessions" },
     ],
   },
-  { href: "/admin/participants", label: "Add Users to Workshop", icon: "＋" },
+  { href: "/admin/participants", label: "Add Users to Event", icon: "＋" },
 ];
 
 export default function AdminShell({ children }: { children: ReactNode }) {
@@ -156,7 +157,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       setAuthenticated(true);
       pushToast({
         title: "Admin session unlocked",
-        description: "You can now manage users, workshops, and participants.",
+        description: "You can now manage users, events, and participants.",
         tone: "success",
       });
     } catch (err) {
@@ -297,7 +298,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     (pathname.toLowerCase().startsWith("/admin/users/")
       ? "User Details"
       : pathname.toLowerCase().startsWith("/admin/workshops/")
-        ? "Workshop Details"
+        ? "Event Details"
         : pathname.toLowerCase().startsWith("/admin/organizers/")
           ? "Organizer Details"
           : "Admin");
@@ -571,14 +572,14 @@ function NavigationIcon({
         <path d="M9 12l2 2 4-4" />
       </svg>
     );
-  if (label.startsWith("Add Users to Workshop"))
+  if (label.startsWith("Add Users to Event"))
     return (
       <svg {...common}>
         <rect x="3" y="4" width="18" height="16" rx="2" />
         <path d="M8 2v4M16 2v4M3 9h18M8 13h3M8 16h3M16 13v5M13.5 15.5h5" />
       </svg>
     );
-  if (label.includes("Workshop"))
+  if (label.includes("Event") || label.includes("Workshop"))
     return label.startsWith("Create") ? (
       <svg {...common}>
         <rect x="3" y="4" width="18" height="17" rx="2" />
@@ -619,6 +620,13 @@ function NavigationIcon({
       <svg {...common}>
         <circle cx="9" cy="8" r="4" />
         <path d="M2 20v-1.5a4 4 0 014-4h6a4 4 0 014 4V20M16 11l2 2 4-4" />
+      </svg>
+    );
+  if (label === "Organizer Sessions")
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M4 20v-1a8 8 0 0116 0v1M19 4l2 2-2 2" />
       </svg>
     );
   return (

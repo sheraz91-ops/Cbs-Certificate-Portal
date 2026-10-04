@@ -58,6 +58,7 @@ export default function EventRegistrationForm({
 }) {
   const [profile, setProfile] = useState<UserProfileInput>(emptyProfile());
   const [workshop, setWorkshop] = useState("");
+  const [customFields, setCustomFields] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [result, setResult] = useState<EventRegistrationResult | null>(null);
@@ -102,7 +103,14 @@ export default function EventRegistrationForm({
     setFormError("");
     setResult(null);
     setClosedByServer(false);
-    const parsed = eventRegistrationSchema.safeParse({ ...profile, workshop });
+    const requiredCustomField = selectedEvent?.registrationFields?.find((field) => field.required && !customFields[field.key]?.trim());
+    if (requiredCustomField) {
+      const message = `${requiredCustomField.label} is required`;
+      setFieldErrors((current) => ({ ...current, [requiredCustomField.key]: message }));
+      setFormError(message);
+      return;
+    }
+    const parsed = eventRegistrationSchema.safeParse({ ...profile, workshop, customFields });
     if (!parsed.success) {
       const errors: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
@@ -138,6 +146,7 @@ export default function EventRegistrationForm({
       setResult(registration);
       setProfile(emptyProfile());
       setWorkshop("");
+      setCustomFields({});
     } catch (error) {
       const message =
         error instanceof Error
@@ -436,6 +445,19 @@ export default function EventRegistrationForm({
           </label>
         ))}
       </div>
+
+      {selectedEvent?.registrationFields?.length ? (
+        <div className="mt-5 space-y-4 border-t border-navy-100 pt-5">
+          <h3 className="text-sm font-semibold text-navy-800">Additional event details</h3>
+          {selectedEvent.registrationFields.map((field) => (
+            <label key={field.key} className="block text-sm font-semibold text-navy-800">
+              {field.label}{field.required ? <span className="text-red-600"> *</span> : <span className="ml-1 text-xs font-normal text-navy-500">(optional)</span>}
+              <input type="text" required={field.required} maxLength={1000} value={customFields[field.key] ?? ""} onChange={(event) => { setCustomFields((current) => ({ ...current, [field.key]: event.target.value })); setFieldErrors((current) => ({ ...current, [field.key]: "" })); }} aria-invalid={Boolean(fieldErrors[field.key])} className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100" />
+              {fieldErrors[field.key] && <span role="alert" className="mt-1 block text-xs text-red-600">{fieldErrors[field.key]}</span>}
+            </label>
+          ))}
+        </div>
+      ) : null}
 
       <button
         type="submit"

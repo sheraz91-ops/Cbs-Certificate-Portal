@@ -21,7 +21,7 @@ export async function GET(
         { workshopCode: { $regex: `^${escapedCode}$`, $options: "i" } },
       ],
     })
-      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive allowOutsiders")
+      .select("key workshopName workshopFullTitle workshopCode eventYear eventDate isActive allowOutsiders registrationFields")
       .lean();
 
     if (!event) return errorResponse("Event not found", 404);
@@ -35,6 +35,7 @@ export async function GET(
       eventDate: event.eventDate,
       isActive: event.isActive !== false,
       allowOutsiders: event.allowOutsiders ?? false,
+      registrationFields: event.registrationFields ?? [],
     };
     return successResponse(content, "Successfully retrieved event", 1);
   } catch (error) {
