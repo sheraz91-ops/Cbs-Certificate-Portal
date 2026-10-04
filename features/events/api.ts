@@ -1,6 +1,7 @@
 import { getData, postData } from "@/lib/api-client";
 import type { z } from "zod";
 import { eventRegistrationSchema } from "@/lib/validation/schemas";
+import type { RegistrationFieldType } from "@/types/workshop";
 
 export type EventOption = {
   key: string;
@@ -11,7 +12,7 @@ export type EventOption = {
   eventDate: string;
   isActive: boolean;
   allowOutsiders?: boolean;
-  registrationFields?: { key: string; label: string; required: boolean }[];
+  registrationFields?: { key: string; label: string; type?: RegistrationFieldType; choices?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
 };
 
 export type EventRegistrationInput = z.input<typeof eventRegistrationSchema>;

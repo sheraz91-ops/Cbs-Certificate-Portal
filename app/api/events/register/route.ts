@@ -35,8 +35,36 @@ export async function POST(request: NextRequest) {
     const configuredFields = workshop.registrationFields ?? [];
     const allowedKeys = new Set(configuredFields.map((field) => field.key));
     if (Object.keys(customFields).some((key) => !allowedKeys.has(key))) return errorResponse("Registration includes an unknown event field", 400);
+    const validatedCustomFields = { ...customFields };
     for (const field of configuredFields) {
-      if (field.required && !customFields[field.key]?.trim()) return errorResponse(`${field.label} is required`, 400);
+      const value = customFields[field.key];
+      const fieldType = field.type ?? "text";
+      if (value !== undefined && fieldType === "yes_no" && value !== "yes" && value !== "no") {
+        return errorResponse(`${field.label} must be answered Yes or No`, 400);
+      }
+      if (fieldType === "checkbox" && field.choices?.length) {
+        let selected: unknown;
+        try {
+          selected = value === undefined ? [] : JSON.parse(value);
+        } catch {
+          return errorResponse(`${field.label} has an invalid selection`, 400);
+        }
+        if (!Array.isArray(selected) || selected.some((choice) => typeof choice !== "string" || !field.choices?.includes(choice)) || new Set(selected).size !== selected.length) {
+          return errorResponse(`${field.label} has an invalid selection`, 400);
+        }
+        if (field.selectionMode === "single" && selected.length > 1) {
+          return errorResponse(`${field.label} allows only one selection`, 400);
+        }
+        if (field.required && selected.length === 0) return errorResponse(`${field.label} is required`, 400);
+        validatedCustomFields[field.key] = JSON.stringify(selected);
+        continue;
+      }
+      if (value !== undefined && fieldType === "checkbox" && value !== "true" && value !== "false") {
+        return errorResponse(`${field.label} has an invalid checkbox value`, 400);
+      }
+      if (field.required && (fieldType === "checkbox" ? value !== "true" : !value?.trim())) {
+        return errorResponse(`${field.label} is required`, 400);
+      }
     }
     if (!workshop.allowOutsiders) {
       const registrationNumber = campusRegistrationNumberSchema.safeParse(profile.registrationNumber);
@@ -101,7 +129,7 @@ export async function POST(request: NextRequest) {
         name: user.fullName,
         workshop: workshopKey,
         enrollmentKey: `${workshopKey}:${user.userId}`,
-        customFields,
+        customFields: validatedCustomFields,
       });
       return successResponse({
         userId: user.userId,

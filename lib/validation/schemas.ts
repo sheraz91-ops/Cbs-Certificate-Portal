@@ -69,6 +69,23 @@ export const layoutConfigSchema = z.object({
   maskColor: requiredText("Mask color", 40),
 }).strict();
 
+const registrationFieldSchema = z.object({
+  _id: z.string().optional(),
+  key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  label: requiredText("Field label", 100),
+  type: z.enum(["text", "yes_no", "checkbox"]).default("text"),
+  choices: z.array(requiredText("Choice", 100)).max(30).default([]),
+  selectionMode: z.enum(["multiple", "single"]).default("multiple"),
+  required: z.boolean(),
+}).strict().transform(({ _id: _databaseId, ...field }) => field).superRefine((field, context) => {
+  if (new Set(field.choices.map((choice) => choice.toLowerCase())).size !== field.choices.length) {
+    context.addIssue({ code: "custom", message: "Choices must be unique", path: ["choices"] });
+  }
+  if (field.type !== "checkbox" && field.choices.length > 0) {
+    context.addIssue({ code: "custom", message: "Choices are only available for checkbox fields", path: ["choices"] });
+  }
+});
+
 export const createWorkshopSchema = z.object({
   key: requiredText("Event key", 80).toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid format"),
   workshopName: requiredText("Event name", 160),
@@ -78,7 +95,7 @@ export const createWorkshopSchema = z.object({
   eventDate: requiredText("Event date", 100),
   isActive: z.boolean({ error: "Required" }).default(true),
   allowOutsiders: z.boolean().default(false),
-  registrationFields: z.array(z.object({ key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), label: requiredText("Field label", 100), required: z.boolean() }).strict()).max(30).default([]),
+  registrationFields: z.array(registrationFieldSchema).max(30).default([]),
   imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
   imageExt: z.string().trim().toLowerCase().pipe(z.enum(["png", "jpg", "jpeg"], { error: "Invalid format" })).optional(),
   layout: layoutConfigSchema.optional(),
@@ -106,9 +123,9 @@ export const updateWorkshopSchema = z.object({
   eventDate: requiredText("Event date", 100),
   isActive: z.boolean({ error: "Required" }),
   allowOutsiders: z.boolean({ error: "Required" }),
-  registrationFields: z.array(z.object({ key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), label: requiredText("Field label", 100), required: z.boolean() }).strict()).max(30).default([]),
+  registrationFields: z.array(registrationFieldSchema).max(30).default([]),
 }).strict().refine((value) => new Set(value.registrationFields.map((field) => field.key)).size === value.registrationFields.length, { message: "Custom registration fields must have unique identifiers", path: ["registrationFields"] });
-export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema, customFields: z.record(z.string(), z.string().max(1000)).default({}) });
+export const eventRegistrationSchema = userProfileSchema.extend({ workshop: workshopKeySchema, customFields: z.record(z.string(), z.string().max(4000)).default({}) });
 export const adminUpdateUserSchema = userProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
 export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");

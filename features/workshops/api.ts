@@ -26,7 +26,7 @@ export type AddWorkshopInput = {
   eventDate: string;
   isActive: boolean;
   allowOutsiders: boolean;
-  registrationFields: { key: string; label: string; required: boolean }[];
+  registrationFields: { key: string; label: string; type?: "text" | "yes_no" | "checkbox"; choices?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
   imageBase64?: string;
   imageExt?: string;
   layout?: unknown;
@@ -46,7 +46,7 @@ export type UpdateWorkshopInput = {
   eventDate: string;
   isActive: boolean;
   allowOutsiders: boolean;
-  registrationFields: { key: string; label: string; required: boolean }[];
+  registrationFields: { key: string; label: string; type?: "text" | "yes_no" | "checkbox"; choices?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
 };
 
 export function updateWorkshop(input: UpdateWorkshopInput): Promise<WorkshopDefinition> {

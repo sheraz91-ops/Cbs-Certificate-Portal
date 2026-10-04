@@ -51,5 +51,10 @@ export interface WorkshopDefinition {
 export interface RegistrationField {
   key: string;
   label: string;
+  type?: RegistrationFieldType;
+  choices?: string[];
+  selectionMode?: "multiple" | "single";
   required: boolean;
 }
+
+export type RegistrationFieldType = "text" | "yes_no" | "checkbox";

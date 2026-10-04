@@ -20,6 +20,22 @@ import {
 } from "@/lib/validation/schemas";
 import { useAdminSession, useAdminToast } from "../../../AdminShell";
 
+function formatCustomAnswer(field: { type?: string; choices?: string[] } | undefined, value: string) {
+  if (field?.type === "checkbox" && field.choices?.length) {
+    try {
+      const selected: unknown = JSON.parse(value);
+      if (Array.isArray(selected) && selected.every((choice) => typeof choice === "string")) {
+        return selected.join(", ") || "No selections";
+      }
+    } catch {
+      return value;
+    }
+  }
+  if (field?.type === "checkbox") return value === "true" ? "Checked" : "Not checked";
+  if (field?.type === "yes_no") return value === "yes" ? "Yes" : value === "no" ? "No" : value;
+  return value;
+}
+
 export default function WorkshopDetails({
   workshopKey,
 }: {
@@ -173,7 +189,7 @@ export default function WorkshopDetails({
       eventDate: workshop.eventDate,
       isActive: workshop.isActive !== false,
       allowOutsiders: workshop.allowOutsiders ?? false,
-      registrationFields: workshop.registrationFields ?? [],
+      registrationFields: (workshop.registrationFields ?? []).map((field) => ({ ...field, type: field.type ?? "text", choices: field.choices ?? [], selectionMode: field.selectionMode ?? "multiple" })),
     });
     setFormError("");
     setEditing(true);
@@ -335,10 +351,12 @@ export default function WorkshopDetails({
                 <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div><h4 className="text-sm font-semibold text-slate-100">Custom registration fields</h4><p className="mt-1 text-xs text-slate-400">Edit extra questions shown during registration.</p></div>
-                    <button type="button" disabled={draft.registrationFields.length >= 30} onClick={() => setDraft((current) => current ? { ...current, registrationFields: [...current.registrationFields, { key: `custom-${Date.now().toString(36)}-${current.registrationFields.length}`, label: "", required: false }] } : current)} className="rounded-lg border border-indigo-500/40 px-3 py-2 text-xs font-semibold text-indigo-200 disabled:opacity-50">Add field</button>
+                    <button type="button" disabled={draft.registrationFields.length >= 30} onClick={() => setDraft((current) => current ? { ...current, registrationFields: [...current.registrationFields, { key: `custom-${Date.now().toString(36)}-${current.registrationFields.length}`, label: "", type: "text", choices: [], selectionMode: "multiple", required: false }] } : current)} className="rounded-lg border border-indigo-500/40 px-3 py-2 text-xs font-semibold text-indigo-200 disabled:opacity-50">Add field</button>
                   </div>
-                  {draft.registrationFields.map((field, index) => <div key={`${field.key}-${index}`} className="mt-3 grid gap-3 rounded-lg border border-slate-800 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                  {draft.registrationFields.map((field, index) => <div key={`${field.key}-${index}`} className="mt-3 grid gap-3 rounded-lg border border-slate-800 p-3 sm:grid-cols-[minmax(0,1fr)_10rem_auto_auto] sm:items-center">
                     <InputField value={field.label} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, label: event.target.value } : item) } : current)} placeholder="Field label" className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white" />
+                    <select aria-label={`Type for ${field.label || `custom field ${index + 1}`}`} value={field.type ?? "text"} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => { if (i !== index) return item; const type = event.target.value as "text" | "yes_no" | "checkbox"; return { ...item, type, choices: type === "checkbox" ? item.choices : [] }; }) } : current)} className="h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white"><option value="text">Text</option><option value="yes_no">Yes / No</option><option value="checkbox">Checkbox</option></select>
+                    {field.type === "checkbox" && <div className="space-y-2 sm:col-span-4"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-medium text-slate-300">Choices (leave empty for a single checkbox)</span><select aria-label={`Selection mode for ${field.label || `custom field ${index + 1}`}`} value={field.selectionMode ?? "multiple"} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, selectionMode: event.target.value as "multiple" | "single" } : item) } : current)} className="h-9 rounded-lg border border-slate-700 bg-slate-900 px-2 text-xs text-white"><option value="multiple">Allow multiple selections</option><option value="single">Only one selection</option></select></div><div className="grid gap-2 sm:grid-cols-2">{(field.choices ?? []).map((choice, choiceIndex) => <div key={choiceIndex} className="flex gap-2"><InputField aria-label={`Choice ${choiceIndex + 1}`} value={choice} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, choices: (item.choices ?? []).map((value, j) => j === choiceIndex ? event.target.value : value) } : item) } : current)} placeholder={`Choice ${choiceIndex + 1}`} className="h-9 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white" /><button type="button" onClick={() => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, choices: (item.choices ?? []).filter((_, j) => j !== choiceIndex) } : item) } : current)} className="px-2 text-xs text-rose-300">Remove</button></div>)}</div><button type="button" disabled={(field.choices?.length ?? 0) >= 30} onClick={() => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, choices: [...(item.choices ?? []), ""] } : item) } : current)} className="text-xs font-semibold text-indigo-300 disabled:opacity-50">Add choice</button></div>}
                     <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={field.required} onChange={(event) => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.map((item, i) => i === index ? { ...item, required: event.target.checked } : item) } : current)} className="accent-indigo-500" />Required</label>
                     <button type="button" onClick={() => setDraft((current) => current ? { ...current, registrationFields: current.registrationFields.filter((_, i) => i !== index) } : current)} className="justify-self-start text-xs text-rose-300">Remove</button>
                   </div>)}
@@ -475,7 +493,7 @@ export default function WorkshopDetails({
                         {Object.entries(participant.customFields ?? {}).map(([key, value]) => (
                           <div key={key}>
                             <dt className="text-slate-500">{workshop.registrationFields?.find((field) => field.key === key)?.label ?? key}</dt>
-                            <dd className="mt-0.5 whitespace-pre-wrap break-words text-slate-300">{value}</dd>
+                            <dd className="mt-0.5 whitespace-pre-wrap break-words text-slate-300">{formatCustomAnswer(workshop.registrationFields?.find((item) => item.key === key), value)}</dd>
                           </div>
                         ))}
                       </dl>
@@ -517,7 +535,11 @@ export default function WorkshopDetails({
                           {participant.name}
                         </td>
                         <td className="px-4 py-3 text-xs text-slate-400">
-                          {Object.entries(participant.customFields ?? {}).map(([key, value]) => `${workshop.registrationFields?.find((field) => field.key === key)?.label ?? key}: ${value}`).join(" · ") || "—"}
+                          {Object.entries(participant.customFields ?? {}).map(([key, value]) => {
+                            const field = workshop.registrationFields?.find((item) => item.key === key);
+                            const answer = formatCustomAnswer(field, value);
+                            return `${field?.label ?? key}: ${answer}`;
+                          }).join(" · ") || "—"}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button

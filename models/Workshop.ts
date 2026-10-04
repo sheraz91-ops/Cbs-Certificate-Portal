@@ -10,7 +10,7 @@ const workshopSchema = new Schema({
   eventDate: { type: String, required: true, trim: true },
   isActive: { type: Boolean, required: true, default: true },
   allowOutsiders: { type: Boolean, required: true, default: false },
-  registrationFields: { type: [{ key: { type: String, required: true }, label: { type: String, required: true, trim: true }, required: { type: Boolean, required: true, default: false } }], default: [] },
+  registrationFields: { type: [{ key: { type: String, required: true }, label: { type: String, required: true, trim: true }, type: { type: String, enum: ["text", "yes_no", "checkbox"], default: "text" }, choices: { type: [String], default: [] }, selectionMode: { type: String, enum: ["multiple", "single"], default: "multiple" }, required: { type: Boolean, required: true, default: false } }], default: [] },
   organizedBy: { type: String, required: true, trim: true },
   templatePath: { type: String, required: true },
   layout: { type: Schema.Types.Mixed, required: true },
@@ -21,7 +21,7 @@ export type WorkshopDocument = InferSchemaType<typeof workshopSchema> & { layout
 
 // In development, Next.js can retain the previously compiled Mongoose model
 // after a schema change. Recompile it when the cached model lacks this field.
-if (models.Workshop && (!models.Workshop.schema.path("isActive") || !models.Workshop.schema.path("registrationFields"))) {
+if (models.Workshop && (!models.Workshop.schema.path("isActive") || !models.Workshop.schema.path("registrationFields") || !models.Workshop.schema.path("registrationFields.type") || !models.Workshop.schema.path("registrationFields.choices") || !models.Workshop.schema.path("registrationFields.selectionMode"))) {
   delete models.Workshop;
 }
 
