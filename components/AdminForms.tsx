@@ -649,7 +649,7 @@ export function AddWorkshopForm({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+    <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-white">Create Workshop</h2>
 
@@ -705,7 +705,7 @@ export function AddWorkshopForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-slate-200 mb-2">
               Workshop Code
@@ -1061,7 +1061,7 @@ export function AddParticipantsForm({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+    <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-white">
           Add Users to Workshop

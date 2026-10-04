@@ -62,9 +62,9 @@ export default function CreateOrganizerPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <header><p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300">Admin · Organizer</p><h2 className="mt-2 text-3xl font-bold">Add Organizer</h2><p className="mt-2 text-sm text-slate-400">Enter organizer details, set a password, and choose which events they can manage.</p></header>
-      <form onSubmit={submit} className="space-y-6 rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
+      <form onSubmit={submit} className="space-y-5 rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl sm:space-y-6 sm:p-6">
         <div><h3 className="text-lg font-semibold text-white">Organizer Details</h3><p className="mt-1 text-sm text-slate-400">CBS assigns the Organizer ID after this form is saved.</p></div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {profileFields.map(([key, label]) => <label key={key} className="text-xs font-medium text-slate-300">{label} <span className="text-red-300">*</span>
             <UserProfileField name={key} required registrationMode="campus" autoComplete={key === "emailAddress" ? "email" : key === "whatsappNumber" ? "tel" : "off"} value={form[key]} onValueChange={(value) => setForm((current) => ({ ...current, [key]: value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />
           </label>)}

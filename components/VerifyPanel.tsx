@@ -246,35 +246,35 @@ export default function VerifyPanel() {
             </div>
           </div>
 
-          <dl className="grid grid-cols-3 gap-y-2 text-sm">
-            <dt className="col-span-1 text-emerald-700 font-medium">Name</dt>
-            <dd className="col-span-2 text-emerald-950 font-semibold">
+          <dl className="grid grid-cols-[minmax(5.5rem,0.7fr)_minmax(0,1.3fr)] gap-x-3 gap-y-2 text-sm sm:grid-cols-3">
+            <dt className="text-emerald-700 font-medium sm:col-span-1">Name</dt>
+            <dd className="min-w-0 break-words text-emerald-950 font-semibold sm:col-span-2">
               {result.participant.name}
             </dd>
 
-            <dt className="col-span-1 text-emerald-700 font-medium">
+            <dt className="text-emerald-700 font-medium sm:col-span-1">
               Certificate ID
             </dt>
-            <dd className="col-span-2 text-emerald-950 font-mono">
+            <dd className="min-w-0 break-all text-emerald-950 font-mono sm:col-span-2">
               {result.formattedId}
             </dd>
 
-            <dt className="col-span-1 text-emerald-700 font-medium">
+            <dt className="text-emerald-700 font-medium sm:col-span-1">
               Workshop
             </dt>
-            <dd className="col-span-2 text-emerald-950">
+            <dd className="min-w-0 break-words text-emerald-950 sm:col-span-2">
               {result.workshop.workshopName}
             </dd>
 
-            <dt className="col-span-1 text-emerald-700 font-medium">Date</dt>
-            <dd className="col-span-2 text-emerald-950">
+            <dt className="text-emerald-700 font-medium sm:col-span-1">Date</dt>
+            <dd className="min-w-0 break-words text-emerald-950 sm:col-span-2">
               {result.workshop.eventDate}
             </dd>
 
-            <dt className="col-span-1 text-emerald-700 font-medium">
+            <dt className="text-emerald-700 font-medium sm:col-span-1">
               Organized by
             </dt>
-            <dd className="col-span-2 text-emerald-950">
+            <dd className="min-w-0 break-words text-emerald-950 sm:col-span-2">
               {result.workshop.organizedBy}
             </dd>
           </dl>

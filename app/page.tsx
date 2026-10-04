@@ -25,18 +25,18 @@ export default function HomePage() {
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="grid min-h-[590px] items-center gap-12 py-16 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:py-24">
+        <section className="grid min-h-0 items-center gap-10 py-12 sm:min-h-[590px] sm:gap-12 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:py-24">
           <div className="max-w-2xl text-white">
             <p className="inline-flex items-center gap-2 rounded-full border border-gold-300/25 bg-gold-300/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-200">
               {ORG_CONFIG.institutionAbbreviation} · Student community
             </p>
-            <h1 className="mt-6 font-display text-5xl font-semibold leading-[1.08] tracking-tight sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 font-display text-4xl font-semibold leading-[1.08] tracking-tight min-[380px]:text-5xl sm:mt-6 sm:text-6xl lg:text-7xl">
               Character grows <span className="text-gold-300">together.</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-navy-100/75 sm:text-lg sm:leading-8">
               {ORG_CONFIG.organizationName} at {ORG_CONFIG.institutionName} brings students together to learn, lead, and make a positive difference in campus life.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-col gap-3 min-[440px]:flex-row min-[440px]:flex-wrap">
               <Link href="/register" className="rounded-xl bg-gold-400 px-5 py-3 text-sm font-bold text-navy-950 shadow-gold transition hover:bg-gold-300">Register for an event</Link>
               <Link href="/#download" className="rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:border-gold-300/50 hover:bg-white/10">Download a certificate</Link>
             </div>
@@ -48,7 +48,7 @@ export default function HomePage() {
 
           <aside className="relative mx-auto w-full max-w-md">
             <div aria-hidden className="absolute -inset-5 rounded-[2rem] bg-gradient-to-br from-gold-300/20 via-transparent to-blue-400/10 blur-2xl" />
-            <div className="relative overflow-hidden rounded-[1.75rem] border border-white/15 bg-gradient-to-br from-white/10 to-white/[0.03] p-7 shadow-2xl backdrop-blur sm:p-9">
+            <div className="relative overflow-hidden rounded-[1.5rem] border border-white/15 bg-gradient-to-br from-white/10 to-white/[0.03] p-5 shadow-2xl backdrop-blur min-[380px]:p-7 sm:rounded-[1.75rem] sm:p-9">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-[0.2em] text-gold-200">About CBS</span>
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold-300/25 bg-gold-300/10 font-display text-lg font-bold text-gold-200">C</span>

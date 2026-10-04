@@ -24,7 +24,7 @@ export default function CertificatePage() {
         <div className="w-full flex items-center justify-center">
           <Suspense
             fallback={
-              <div className="w-full max-w-lg rounded-3xl bg-white/95 p-10 shadow-card ring-1 ring-black/5 flex items-center justify-center">
+              <div className="flex w-full max-w-lg items-center justify-center rounded-3xl bg-white/95 p-5 shadow-card ring-1 ring-black/5 min-[380px]:p-8 sm:p-10">
                 <LoadingSpinner label="Loading..." />
               </div>
             }

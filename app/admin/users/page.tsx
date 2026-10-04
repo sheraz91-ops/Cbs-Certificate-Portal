@@ -59,7 +59,7 @@ export default function AddUserPage() {
         <p className="mt-2 text-sm text-slate-400">Register a user once. The portal assigns their ID for workshop enrollment.</p>
       </header>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+      <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
         <div className="mb-5">
           <h3 className="text-lg font-semibold text-white">User Details</h3>
           <p className="mt-1 text-sm text-slate-400">A unique assigned ID is generated when this form is saved.</p>

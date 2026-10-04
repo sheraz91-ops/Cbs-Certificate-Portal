@@ -137,7 +137,7 @@ export default function CertificatePreview() {
 
   if (status === "loading") {
     return (
-      <div className="w-full max-w-lg animate-scale-in rounded-3xl bg-white/95 p-10 shadow-card ring-1 ring-black/5 flex flex-col items-center gap-4">
+      <div className="flex w-full max-w-lg animate-scale-in flex-col items-center gap-4 rounded-3xl bg-white/95 p-5 shadow-card ring-1 ring-black/5 min-[380px]:p-8 sm:p-10">
         <LoadingSpinner label="Rendering your certificate..." />
       </div>
     );
@@ -145,7 +145,7 @@ export default function CertificatePreview() {
 
   if (status === "ambiguous") {
     return (
-      <div className="w-full max-w-md animate-scale-in rounded-3xl bg-white/95 p-8 shadow-card ring-1 ring-black/5 text-center flex flex-col items-center gap-4">
+      <div className="flex w-full max-w-md animate-scale-in flex-col items-center gap-4 rounded-3xl bg-white/95 p-5 text-center shadow-card ring-1 ring-black/5 min-[380px]:p-7 sm:p-8">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gold-100 text-gold-700 text-xl font-bold">
           ?
         </span>
@@ -188,7 +188,7 @@ export default function CertificatePreview() {
     status === "error"
   ) {
     return (
-      <div className="w-full max-w-md animate-scale-in rounded-3xl bg-white/95 p-8 shadow-card ring-1 ring-black/5 text-center flex flex-col items-center gap-4">
+      <div className="flex w-full max-w-md animate-scale-in flex-col items-center gap-4 rounded-3xl bg-white/95 p-5 text-center shadow-card ring-1 ring-black/5 min-[380px]:p-7 sm:p-8">
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600 text-xl font-bold">
           !
         </span>
@@ -229,15 +229,15 @@ export default function CertificatePreview() {
         )}
       </div>
 
-      <div className="w-full rounded-3xl bg-white/95 p-6 shadow-card ring-1 ring-black/5 flex flex-col gap-5">
+      <div className="flex w-full flex-col gap-5 rounded-3xl bg-white/95 p-5 shadow-card ring-1 ring-black/5 min-[380px]:p-6">
         <div className="text-center">
           <p className="text-xs uppercase tracking-wide text-navy-400 font-semibold">
             Certificate ready for
           </p>
-          <h2 className="font-display text-2xl font-semibold text-navy-900 mt-1">
+          <h2 className="mt-1 break-words font-display text-xl font-semibold text-navy-900 min-[380px]:text-2xl">
             {plan?.fullName}
           </h2>
-          <p className="text-sm text-navy-500 mt-1">
+          <p className="mt-1 break-words text-xs text-navy-500 min-[380px]:text-sm">
             ID: <span className="font-mono">{plan?.formattedId}</span> &middot;{" "}
             {plan?.workshop.workshopName}
           </p>
@@ -268,7 +268,7 @@ export default function CertificatePreview() {
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-4 text-xs font-medium">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center text-xs font-medium sm:gap-4">
           <a
             href={plan ? buildVerifyUrl(plan.formattedId, plan.workshop.key) : "/verify"}
             className="text-navy-400 hover:text-gold-600 underline underline-offset-2 transition-colors"

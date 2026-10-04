@@ -8,7 +8,7 @@ export default function RegisterPageContent() {
 
   return (
     <section
-      className={`mx-auto w-full max-w-6xl gap-10 py-10 ${isActiveEvent === true ? "grid lg:grid-cols-[0.8fr_1.2fr] lg:items-start" : "w-full"} lg:py-16`}
+      className={`mx-auto w-full max-w-6xl px-3 py-7 min-[380px]:px-4 sm:px-6 sm:py-10 lg:gap-10 lg:py-16 ${isActiveEvent === true ? "grid lg:grid-cols-[0.8fr_1.2fr] lg:items-start" : ""}`}
     >
       {isActiveEvent === true && (
         <div className="pt-2 text-white">

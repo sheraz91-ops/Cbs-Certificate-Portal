@@ -173,7 +173,7 @@ export default function UserDetails({ userId }: { userId: string }) {
         </p>
       ) : user && profile ? (
         <>
-          <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+          <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
@@ -245,11 +245,11 @@ export default function UserDetails({ userId }: { userId: string }) {
                     {updateMutation.error.message}
                   </p>
                 )}
-                <div className="mt-5 flex gap-3">
+                <div className="mt-5 flex flex-col gap-2 min-[420px]:flex-row min-[420px]:gap-3">
                   <button
                     type="submit"
                     disabled={updateMutation.isPending}
-                    className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                    className="min-h-11 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
                   >
                     {updateMutation.isPending ? "Saving…" : "Save details"}
                   </button>
@@ -261,7 +261,7 @@ export default function UserDetails({ userId }: { userId: string }) {
                       setFormError("");
                       setEditing(false);
                     }}
-                    className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-900"
+                    className="min-h-11 rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-slate-900"
                   >
                     Cancel
                   </button>
@@ -291,7 +291,7 @@ export default function UserDetails({ userId }: { userId: string }) {
             )}
           </section>
 
-          <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl shadow-slate-950/10">
+          <section className="rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">
@@ -303,7 +303,7 @@ export default function UserDetails({ userId }: { userId: string }) {
                 </p>
               </div>
               {availableWorkshops.length > 0 && (
-                <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="flex flex-col gap-2 sm:flex-row w-full sm:w-auto">
                   <label className="text-xs font-medium text-slate-400">
                     Add to event
                     <select
@@ -311,7 +311,7 @@ export default function UserDetails({ userId }: { userId: string }) {
                       onChange={(event) =>
                         setSelectedWorkshop(event.target.value)
                       }
-                      className="mt-1 block h-10 min-w-56 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white"
+                      className="mt-1 block h-10 w-full min-w-0 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white sm:min-w-56"
                     >
                       <option value="">Select event</option>
                       {availableWorkshops.map((workshop) => (
@@ -325,7 +325,7 @@ export default function UserDetails({ userId }: { userId: string }) {
                     type="button"
                     disabled={!selectedWorkshop || enrollMutation.isPending}
                     onClick={() => enrollMutation.mutate(selectedWorkshop)}
-                    className="self-end rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40"
+                    className="h-10 w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-40 sm:w-auto self-end"
                   >
                     {enrollMutation.isPending ? "Adding…" : "Add to event"}
                   </button>
@@ -342,7 +342,67 @@ export default function UserDetails({ userId }: { userId: string }) {
                 This user is not enrolled in any events yet.
               </p>
             ) : (
-              <div className="mt-6 overflow-x-auto rounded-xl border border-slate-800">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:hidden">
+                {user.enrollments.map((entry) => (
+                  <article
+                    key={entry.workshopKey}
+                    className="min-w-0 rounded-xl border border-slate-800 bg-slate-900/70 p-4"
+                  >
+                    <p className="break-words font-semibold text-slate-100">
+                      {entry.workshopName}{" "}
+                      <span className="text-xs font-normal text-slate-500">
+                        {entry.eventYear}
+                      </span>
+                    </p>
+                    <dl className="mt-3 space-y-2 border-t border-slate-800 pt-3 text-xs">
+                      <div>
+                        <dt className="text-slate-500">Date</dt>
+                        <dd className="mt-0.5 text-slate-300">
+                          {entry.eventDate}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">Certificate ID</dt>
+                        <dd className="mt-0.5 break-all font-mono text-indigo-200">
+                          {entry.certificateId}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">Attendance</dt>
+                        <dd className="mt-1">
+                          <span
+                            className={`rounded-full px-2.5 py-1 font-semibold ${entry.attendance ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}
+                          >
+                            {entry.attendance ? "Present" : "Absent"}
+                          </span>
+                        </dd>
+                      </div>
+                    </dl>
+                    <button
+                      type="button"
+                      disabled={attendanceMutation.isPending}
+                      onClick={() =>
+                        attendanceMutation.mutate({
+                          userId,
+                          workshop: entry.workshopKey,
+                          participantId: entry.participantId,
+                          present: !entry.attendance,
+                        })
+                      }
+                      className={`mt-4 min-h-10 w-full rounded-lg px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 ${entry.attendance ? "border border-slate-700 text-slate-300 hover:bg-slate-800" : "bg-emerald-600 text-white hover:bg-emerald-500"}`}
+                    >
+                      {attendanceMutation.isPending
+                        ? "Saving…"
+                        : entry.attendance
+                          ? "Mark Absent"
+                          : "Mark Present"}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+            {user.enrollments.length > 0 && (
+              <div className="mt-6 hidden overflow-x-auto rounded-xl border border-slate-800 lg:block">
                 <table className="w-full min-w-[700px] text-left text-sm">
                   <thead className="bg-slate-900 text-xs uppercase text-slate-400">
                     <tr>

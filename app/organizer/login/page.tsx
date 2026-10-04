@@ -50,7 +50,7 @@ export default function OrganizerLoginPage() {
     <main className="hero-bg flex min-h-screen items-center justify-center px-4 py-10">
       <form
         onSubmit={submit}
-        className="w-full max-w-md rounded-3xl border border-white/10 bg-navy-950/80 p-7 text-white shadow-2xl backdrop-blur sm:p-9"
+        className="w-full max-w-md rounded-3xl border border-white/10 bg-navy-950/80 p-5 text-white shadow-2xl backdrop-blur min-[380px]:p-7 sm:p-9"
       >
         <Link
           href="/"

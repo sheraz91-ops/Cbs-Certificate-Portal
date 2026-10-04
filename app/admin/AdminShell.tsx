@@ -81,6 +81,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [openMenus, setOpenMenus] = useState<
     Record<NavigationGroup["key"], boolean>
@@ -91,6 +92,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    setMobileNavOpen(false);
     const savedTheme = localStorage.getItem("admin_theme");
     if (savedTheme === "light" || savedTheme === "dark") setTheme(savedTheme);
 
@@ -199,7 +201,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     return (
       <main
         data-admin-theme={theme}
-        className={`admin-shell ${theme === "light" ? "admin-theme-light" : ""} flex min-h-screen items-center justify-center px-4 py-10`}
+        className={`admin-shell ${theme === "light" ? "admin-theme-light" : ""} flex min-h-[90vh] sm:min-h-[100vh] items-center justify-center px-4 py-10`}
       >
         <div className="w-full max-w-md">
           <div className="mb-6 flex items-center justify-between">
@@ -226,7 +228,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           </div>
           <form
             onSubmit={unlock}
-            className="admin-login-card rounded-3xl border p-8 shadow-2xl"
+            className="admin-login-card rounded-3xl border p-5 shadow-2xl min-[380px]:p-7 sm:p-8"
           >
             <div className="mb-7 flex items-center gap-3">
               <div className="admin-brand-mark flex h-12 w-12 items-center justify-center rounded-2xl text-xl font-black">
@@ -305,10 +307,10 @@ export default function AdminShell({ children }: { children: ReactNode }) {
       <AdminToastContext.Provider value={pushToast}>
         <div
           data-admin-theme={theme}
-          className={`admin-shell ${theme === "light" ? "admin-theme-light" : ""} min-h-screen md:flex`}
+          className={`admin-shell ${theme === "light" ? "admin-theme-light" : ""} min-h-screen xl:flex`}
         >
-          <aside className="admin-sidebar flex shrink-0 flex-col border-b md:sticky md:top-0 md:h-screen md:w-[260px] md:self-start md:overflow-y-auto md:border-b-0 md:border-r">
-            <div className="flex items-center gap-3 px-5 py-5 md:px-6 md:pt-7">
+          <aside className="admin-sidebar flex min-w-0 shrink-0 flex-col border-b xl:sticky xl:top-0 xl:h-screen xl:w-[260px] xl:self-start xl:overflow-y-auto xl:border-b-0 xl:border-r">
+            <div className="flex items-center gap-3 px-4 py-3 sm:px-5 xl:px-6 xl:pt-7">
               <div className="admin-brand-mark flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black">
                 C
               </div>
@@ -316,14 +318,44 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 <p className="truncate text-sm font-bold tracking-wide">
                   CBS Admin
                 </p>
+                <p className="text-[10px] text-slate-500 xl:hidden">
+                  Administration
+                </p>
               </div>
+              <button
+                type="button"
+                aria-label={
+                  mobileNavOpen ? "Close navigation" : "Open navigation"
+                }
+                aria-expanded={mobileNavOpen}
+                aria-controls="admin-navigation"
+                onClick={() => setMobileNavOpen((open) => !open)}
+                className="admin-utility-button ml-auto inline-flex h-10 w-10 items-center justify-center rounded-xl border xl:hidden"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="h-5 w-5"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                >
+                  {mobileNavOpen ? (
+                    <path d="m6 6 12 12M18 6 6 18" />
+                  ) : (
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
             </div>
-            <div className="px-5 pb-2 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 md:px-6">
+            <div className="hidden px-5 pb-2 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 xl:block xl:px-6">
               Workspace
             </div>
             <nav
+              id="admin-navigation"
               aria-label="Admin navigation"
-              className="flex gap-2 overflow-x-auto px-3 pb-4 md:flex-col md:overflow-visible md:px-4"
+              className={`${mobileNavOpen ? "flex" : "hidden"} max-h-[70vh] flex-col gap-1 overflow-y-auto px-3 pb-4 xl:flex xl:max-h-none xl:overflow-visible xl:px-4`}
             >
               {navigation.map((item) => {
                 if ("children" in item) {
@@ -380,6 +412,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                               <Link
                                 key={child.href}
                                 href={child.href}
+                                onClick={() => setMobileNavOpen(false)}
                                 aria-current={childActive ? "page" : undefined}
                                 className={`rounded-lg px-3 py-2 text-sm transition ${childActive ? "bg-indigo-500/10 font-semibold text-indigo-200" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
                               >
@@ -402,6 +435,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={() => setMobileNavOpen(false)}
                     aria-current={active ? "page" : undefined}
                     className={`admin-nav-link flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${active ? "is-active" : "text-slate-400 hover:bg-slate-800 hover:text-white"}`}
                   >
@@ -439,7 +473,9 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 </button>
               </div>
             </header>
-            <main className="min-w-0 p-4 sm:p-6 lg:p-10">{children}</main>
+            <main className="min-w-0 p-3 sm:p-5 lg:p-8 2xl:p-10">
+              {children}
+            </main>
           </div>
 
           <div

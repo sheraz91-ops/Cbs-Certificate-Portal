@@ -124,7 +124,7 @@ export default function EventRegistrationForm({
     return (
       <div
         role="status"
-        className="rounded-3xl border border-emerald-200 bg-white p-7 shadow-card sm:p-9"
+        className="rounded-3xl border border-emerald-200 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
       >
         <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl font-bold text-emerald-700">
           ✓
@@ -144,7 +144,7 @@ export default function EventRegistrationForm({
             <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
               CBS Participant ID
             </dt>
-            <dd className="mt-1 font-mono font-bold text-navy-900">
+            <dd className="mt-1 break-all font-mono font-bold text-navy-900">
               {result.userId}
             </dd>
           </div>
@@ -152,7 +152,7 @@ export default function EventRegistrationForm({
             <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
               Event Certificate ID
             </dt>
-            <dd className="mt-1 font-mono font-bold text-navy-900">
+            <dd className="mt-1 break-all font-mono font-bold text-navy-900">
               {result.certificateId}
             </dd>
           </div>
@@ -173,7 +173,7 @@ export default function EventRegistrationForm({
       <section
         role="status"
         aria-live="polite"
-        className="flex min-h-20 items-center justify-center rounded-3xl border border-white/60 bg-white p-7 shadow-card sm:p-9"
+        className="flex min-h-20 items-center justify-center rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
       >
         <LoadingSpinner label="Checking for active events..." />
       </section>
@@ -184,7 +184,7 @@ export default function EventRegistrationForm({
     return (
       <section
         role="status"
-        className="rounded-3xl border border-white/60 bg-white p-7 shadow-card sm:p-9"
+        className="rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
       >
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
           Registration status
@@ -215,7 +215,7 @@ export default function EventRegistrationForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded-3xl border border-white/60 bg-white p-6 shadow-card sm:p-9"
+      className="rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-6 sm:p-9"
       noValidate
     >
       <div className="mb-6">

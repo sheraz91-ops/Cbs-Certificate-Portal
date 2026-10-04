@@ -42,7 +42,7 @@ export default function RootLayout({
         To use a custom Google Font instead, swap this for
         next/font/google and update the CSS variables — see README.
       */}
-      <body className="font-sans antialiased">
+      <body className="min-w-[320px] overflow-x-hidden font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
