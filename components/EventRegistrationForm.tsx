@@ -10,6 +10,7 @@ import {
   registerForEvent,
   type EventOption,
   type EventRegistrationResult,
+  type ExistingAccountMatch,
 } from "@/features/events/api";
 import {
   campusRegistrationNumberSchema,
@@ -75,8 +76,13 @@ export default function EventRegistrationForm({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [result, setResult] = useState<
-    (EventRegistrationResult & { confirmationMessage?: string }) | null
+    | (Extract<EventRegistrationResult, { certificateId: string }> & {
+        confirmationMessage?: string;
+      })
+    | null
   >(null);
+  const [existingAccount, setExistingAccount] =
+    useState<ExistingAccountMatch | null>(null);
   const [closedByServer, setClosedByServer] = useState(false);
   const eventsQuery = useQuery({
     queryKey: ["events"],
@@ -139,6 +145,7 @@ export default function EventRegistrationForm({
   ]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
     event.preventDefault();
     setFormError("");
     setResult(null);
@@ -204,6 +211,7 @@ export default function EventRegistrationForm({
       workshop,
       profileCustomFields: validatedForm.customFields,
       customFields: submittedCustomFields,
+      confirmExistingAccountId: existingAccount?.userId,
     });
     if (!parsed.success) {
       const errors: Record<string, string> = {};
@@ -237,10 +245,25 @@ export default function EventRegistrationForm({
     setFieldErrors({});
     try {
       const registration = await registerMutation.mutateAsync(parsed.data);
+      if ("existingUser" in registration) {
+        setExistingAccount(registration.existingUser);
+        setProfile({
+          emailAddress: registration.existingUser.emailAddress,
+          fullName: registration.existingUser.fullName,
+          registrationNumber: registration.existingUser.registrationNumber,
+          department: registration.existingUser.department,
+          semester: registration.existingUser.semester,
+          section: registration.existingUser.section,
+          institute: registration.existingUser.institute,
+          whatsappNumber: registration.existingUser.whatsappNumber,
+        });
+        return;
+      }
       setResult({
         ...registration,
         confirmationMessage: selectedEvent?.confirmationMessage ?? "",
       });
+      setExistingAccount(null);
       setProfile(emptyProfile());
       setProfileCustomFields({});
       setWorkshop("");
@@ -274,27 +297,18 @@ export default function EventRegistrationForm({
           You’re registered for {result.eventName}
         </h2>
         <p className="mt-3 text-sm leading-6 text-navy-600">
-          CBS assigned your IDs. Keep them safe to access your certificate after
-          the event.
+          Your participant number is:
         </p>
         {result.confirmationMessage && (
           <ConfirmationMessage value={result.confirmationMessage} />
         )}
-        <dl className="mt-6 grid gap-3 rounded-2xl bg-navy-50 p-4 text-sm sm:grid-cols-2">
+        <dl className="mt-6 rounded-2xl bg-navy-50 p-4 text-sm">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
-              CBS Participant ID
+              Your CBS Event Participant ID
             </dt>
             <dd className="mt-1 break-all font-mono font-bold text-navy-900">
-              {result.userId}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
-              Event Certificate ID
-            </dt>
-            <dd className="mt-1 break-all font-mono font-bold text-navy-900">
-              {result.certificateId}
+              {result.userId.replace(/^CBSU-0*/i, "") || "0"}
             </dd>
           </div>
         </dl>
@@ -440,16 +454,49 @@ export default function EventRegistrationForm({
     >
       <div className="mb-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
-          Event registration
+          {existingAccount ? "Existing CBS account" : "Event registration"}
         </p>
         <h2 className="mt-2 font-display text-2xl font-semibold text-navy-900">
-          Your details
+          {existingAccount ? "Complete event registration" : "Your details"}
         </h2>
         <p className="mt-2 text-sm leading-6 text-navy-600">
-          Your participant ID is assigned automatically by CBS and cannot be
-          changed here.
+          {existingAccount
+            ? "Your saved CBS profile is locked. Complete any additional profile and event questions below, then submit to register."
+            : "Your participant ID is assigned automatically by CBS and cannot be changed here."}
         </p>
       </div>
+
+      {existingAccount && (
+        <dl className="mb-6 grid gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
+              CBS ID
+            </dt>
+            <dd className="mt-1 break-all font-mono font-bold text-navy-900">
+              {existingAccount.userId}
+            </dd>
+          </div>
+          {([
+            ["Name", existingAccount.fullName],
+            ["Registration number", existingAccount.registrationNumber],
+            ["Email", existingAccount.emailAddress],
+            ["Department", existingAccount.department],
+            ["Semester", existingAccount.semester],
+            ["Section", existingAccount.section],
+            ["Institute", existingAccount.institute],
+            ["WhatsApp number", existingAccount.whatsappNumber],
+          ] as const).map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
+                {label}
+              </dt>
+              <dd className="mt-1 break-words font-medium text-navy-900">
+                {value || "—"}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       <label
         className="mb-5 block text-sm font-semibold text-navy-800"
@@ -527,6 +574,7 @@ export default function EventRegistrationForm({
           )}
       </label>
 
+      {!existingAccount && (
       <div className="grid gap-4 sm:grid-cols-2">
         {displayedProfileFields.map((field) => {
           const key = field.key as UserProfileFieldKey;
@@ -587,6 +635,7 @@ export default function EventRegistrationForm({
           );
         })}
       </div>
+      )}
 
       {registrationForm.fields.some((field) =>
         field.key.startsWith("custom-"),

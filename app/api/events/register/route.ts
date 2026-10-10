@@ -18,6 +18,10 @@ import type { UserProfileInput } from "@/types/user";
 
 export const runtime = "nodejs";
 
+function normalizePhoneNumber(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -96,19 +100,30 @@ export async function POST(request: NextRequest) {
         return errorResponse(`${field.label} is required`, 400);
       }
     }
-    const identityConditions: Array<{ emailAddress: string } | { registrationNumber: string }> = [];
+    const identityConditions: Array<Record<string, unknown>> = [];
     if (profile.emailAddress) identityConditions.push({ emailAddress: profile.emailAddress });
     if (profile.registrationNumber) identityConditions.push({ registrationNumber: profile.registrationNumber });
+    const phoneDigits = profile.whatsappNumber
+      ? normalizePhoneNumber(profile.whatsappNumber)
+      : "";
+    if (phoneDigits) {
+      const formattedPhonePattern = new RegExp(
+        `^\\D*${phoneDigits.split("").join("\\D*")}\\D*$`,
+      );
+      identityConditions.push({ whatsappNumber: formattedPhonePattern });
+    }
     const matchingUsers = identityConditions.length ? await UserModel.find({ $or: identityConditions }).limit(2).lean() : [];
     if (matchingUsers.length > 1) {
       return errorResponse("These details match more than one CBS account. Please contact the CBS team.", 409);
     }
 
     let user = matchingUsers[0];
-    if (user?.isActive === false) return errorResponse("This user account is deactivated. Contact CBS for assistance.", 403);
-    let createdUserId: string | null = null;
-    if (user) {
-      const existingProfile = {
+    if (parsed.data.confirmExistingAccountId && user?.userId !== parsed.data.confirmExistingAccountId) {
+      return errorResponse("The existing CBS account could not be verified. Please check your details and try again.", 409);
+    }
+    let registrationProfile = profile;
+    if (parsed.data.confirmExistingAccountId && user) {
+      registrationProfile = {
         emailAddress: user.emailAddress ?? "",
         fullName: user.fullName,
         registrationNumber: user.registrationNumber ?? "",
@@ -118,14 +133,27 @@ export async function POST(request: NextRequest) {
         institute: user.institute ?? "",
         whatsappNumber: user.whatsappNumber ?? "",
       };
-      const detailsMatch = formConfig.fields.filter((field) => shownProfileKeys.has(field.key)).every((field) => {
-        const key = field.key as keyof typeof existingProfile;
-        const existingValue = existingProfile[key];
-        const submittedValue = profile[key];
-        return !submittedValue || !existingValue || existingValue === submittedValue;
-      });
-      if (!detailsMatch) {
-        return errorResponse("These details do not match the existing CBS account. Please contact the CBS team.", 409);
+    }
+    if (user?.isActive === false) return errorResponse("This user account is deactivated. Contact CBS for assistance.", 403);
+    let createdUserId: string | null = null;
+    if (user) {
+      if (!parsed.data.confirmExistingAccountId) {
+        return successResponse(
+          {
+            existingUser: {
+              userId: user.userId,
+              fullName: user.fullName,
+              registrationNumber: user.registrationNumber ?? "",
+              emailAddress: user.emailAddress ?? "",
+              department: user.department ?? "",
+              semester: user.semester ?? "",
+              section: user.section ?? "",
+              institute: user.institute ?? "",
+              whatsappNumber: user.whatsappNumber ?? "",
+            },
+          },
+          "Existing CBS account found",
+        );
       }
     } else {
       const sequence = await UserSequenceModel.findOneAndUpdate(
@@ -135,7 +163,7 @@ export async function POST(request: NextRequest) {
       );
       if (!sequence) return errorResponse("Unable to assign a user ID", 500);
       const userId = `CBSU-${String(sequence.sequence).padStart(6, "0")}`;
-      const storedProfile: Partial<UserProfileInput> & Pick<UserProfileInput, "fullName"> = { ...profile };
+      const storedProfile: Partial<UserProfileInput> & Pick<UserProfileInput, "fullName"> = { ...registrationProfile };
       for (const key of ["emailAddress", "registrationNumber", "department", "semester", "section", "institute", "whatsappNumber"] as const) {
         if (!storedProfile[key]) delete storedProfile[key];
       }
@@ -164,8 +192,8 @@ export async function POST(request: NextRequest) {
         const backfilledProfile: Record<string, string> = {};
         for (const field of formConfig.fields) {
           if (shownProfileKeys.has(field.key)) {
-            const key = field.key as keyof typeof profile;
-            const value = profile[key];
+            const key = field.key as keyof typeof registrationProfile;
+            const value = registrationProfile[key];
             if (value && !user[key]) backfilledProfile[key] = value;
           }
         }

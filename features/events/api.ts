@@ -18,11 +18,26 @@ export type EventOption = {
 };
 
 export type EventRegistrationInput = z.input<typeof eventRegistrationSchema>;
-export type EventRegistrationResult = {
+export type ExistingAccountMatch = {
   userId: string;
-  certificateId: string;
-  eventName: string;
+  fullName: string;
+  registrationNumber: string;
+  emailAddress: string;
+  department: string;
+  semester: string;
+  section: string;
+  institute: string;
+  whatsappNumber: string;
 };
+export type EventRegistrationResult =
+  | {
+      userId: string;
+      certificateId: string;
+      eventName: string;
+    }
+  | {
+    existingUser: ExistingAccountMatch;
+    };
 
 export function getEvents(): Promise<EventOption[]> {
   return getData<EventOption[]>("/api/events");

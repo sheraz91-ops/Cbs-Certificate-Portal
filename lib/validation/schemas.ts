@@ -197,6 +197,7 @@ export const eventRegistrationSchema = z.object({
   workshop: workshopKeySchema,
   profileCustomFields: z.record(z.string(), z.string().max(4000)).default({}),
   customFields: z.record(z.string(), z.string().max(4000)).default({}),
+  confirmExistingAccountId: userIdSchema.optional(),
 }).strict();
 export const adminUpdateUserSchema = adminCampusUserProfileSchema.extend({ userId: userIdSchema });
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
