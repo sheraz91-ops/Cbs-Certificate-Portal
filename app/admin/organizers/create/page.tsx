@@ -21,7 +21,7 @@ const profileFields = [
   ["whatsappNumber", "WhatsApp Number"],
 ] as const;
 
-const requiredFields = new Set(["fullName", "registrationNumber", "semester", "whatsappNumber"]);
+const requiredFields = new Set(["emailAddress", "fullName", "registrationNumber", "semester", "whatsappNumber"]);
 const empty: CreateOrganizerInput = {
   emailAddress: "", fullName: "", registrationNumber: "", department: "",
   semester: "", section: "", institute: "", whatsappNumber: "",
@@ -72,7 +72,7 @@ export default function CreateOrganizerPage() {
             <PasswordField required autoComplete="new-password" value={form.password} validationSchema={createOrganizerBaseSchema.shape.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} className="mt-1.5 h-11 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500" />
             <span className="mt-1 block text-xs text-slate-500">Use at least 16 characters and share it privately.</span>
           </label>
-          <p className="text-xs text-slate-500">Email is optional, but an organizer needs an email address to sign in.</p>
+          <p className="text-xs text-slate-500">Organizers use this email address to sign in.</p>
         </div>
         <fieldset>
           <legend className="text-sm font-semibold text-white">Assigned Events <span className="text-red-300">*</span></legend>

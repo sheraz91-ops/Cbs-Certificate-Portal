@@ -47,27 +47,17 @@ export default function Header() {
             onClick={() => setMenuOpen((open) => !open)}
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-white transition hover:border-gold-300/40 hover:bg-white/10 lg:hidden"
           >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="h-5 w-5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            >
-              {menuOpen ? (
-                <path d="m6 6 12 12M18 6 6 18" />
-              ) : (
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
+            <span aria-hidden="true" className="relative h-5 w-5">
+              <span className={`absolute left-0 top-1/2 h-[2px] w-5 rounded-full bg-current transition-transform duration-300 motion-reduce:transition-none ${menuOpen ? "rotate-45" : "-translate-y-1.5"}`} />
+              <span className={`absolute left-0 top-1/2 h-[2px] w-5 rounded-full bg-current transition-opacity duration-200 motion-reduce:transition-none ${menuOpen ? "opacity-0" : "opacity-100"}`} />
+              <span className={`absolute left-0 top-1/2 h-[2px] w-5 rounded-full bg-current transition-transform duration-300 motion-reduce:transition-none ${menuOpen ? "-rotate-45" : "translate-y-1.5"}`} />
+            </span>
           </button>
 
           <nav
             id="public-navigation"
             aria-label="Main navigation"
-            className={`${menuOpen ? "flex" : "hidden"} absolute left-0 right-0 top-full z-30 flex-col gap-1 border-b border-white/10 bg-navy-950 px-3 py-3 shadow-xl min-[380px]:px-4 sm:px-6 lg:static lg:flex lg:w-auto lg:flex-row lg:items-center lg:gap-5 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
+            className={`${menuOpen ? "menu-panel-enter flex" : "hidden"} absolute left-0 right-0 top-full z-30 flex-col gap-1 border-b border-white/10 bg-navy-950 px-3 py-3 shadow-xl min-[380px]:px-4 sm:px-6 lg:static lg:flex lg:w-auto lg:flex-row lg:items-center lg:gap-5 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
           >
             {navigation.map((item) => (
               <Link

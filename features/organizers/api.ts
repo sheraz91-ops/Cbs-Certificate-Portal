@@ -14,7 +14,8 @@ export type OrganizerSummary = {
   createdAt: string;
 };
 
-export type CreateOrganizerInput = AdminUserProfileInput & {
+export type CreateOrganizerInput = Omit<AdminUserProfileInput, "emailAddress"> & {
+  emailAddress: string;
   password: string;
   workshops: string[];
 };

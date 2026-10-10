@@ -216,6 +216,7 @@ export const organizerCertificateIdentitySchema = z.object({
 }).strict();
 export const organizerCertificateGenerateSchema = organizerCertificateIdentitySchema.extend({ workshop: workshopKeySchema }).strict();
 export const createOrganizerBaseSchema = adminCampusUserProfileSchema.extend({
+  emailAddress: z.string({ error: "Required" }).trim().min(1, "Required").email("Invalid format").max(254).transform((value) => value.toLowerCase()),
   password: z.string({ error: "Required" }).min(1, "Required").min(16, "Password must contain at least 16 characters").max(128),
   workshops: z.array(workshopKeySchema, { error: "Required" }).min(1, "Required").max(100),
 });

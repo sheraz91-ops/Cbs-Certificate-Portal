@@ -334,21 +334,11 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 onClick={() => setMobileNavOpen((open) => !open)}
                 className="admin-utility-button ml-auto inline-flex h-10 w-10 items-center justify-center rounded-xl border xl:hidden"
               >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="h-5 w-5"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                >
-                  {mobileNavOpen ? (
-                    <path d="m6 6 12 12M18 6 6 18" />
-                  ) : (
-                    <path d="M4 6h16M4 12h16M4 18h16" />
-                  )}
-                </svg>
+                <span aria-hidden="true" className="relative h-5 w-5">
+                  <span className={`absolute left-0 top-1/2 h-[2px] w-5 rounded-full bg-current transition-transform duration-300 motion-reduce:transition-none ${mobileNavOpen ? "rotate-45" : "-translate-y-1.5"}`} />
+                  <span className={`absolute left-0 top-1/2 h-[2px] w-5 rounded-full bg-current transition-opacity duration-200 motion-reduce:transition-none ${mobileNavOpen ? "opacity-0" : "opacity-100"}`} />
+                  <span className={`absolute left-0 top-1/2 h-[2px] w-5 rounded-full bg-current transition-transform duration-300 motion-reduce:transition-none ${mobileNavOpen ? "-rotate-45" : "translate-y-1.5"}`} />
+                </span>
               </button>
             </div>
             <div className="hidden px-5 pb-2 pt-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 xl:block xl:px-6">
@@ -357,7 +347,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
             <nav
               id="admin-navigation"
               aria-label="Admin navigation"
-              className={`${mobileNavOpen ? "flex" : "hidden"} max-h-[70vh] flex-col gap-1 overflow-y-auto px-3 pb-4 xl:flex xl:max-h-none xl:overflow-visible xl:px-4`}
+              className={`${mobileNavOpen ? "menu-panel-enter flex" : "hidden"} max-h-[70vh] flex-col gap-1 overflow-y-auto px-3 pb-4 xl:flex xl:max-h-none xl:overflow-visible xl:px-4`}
             >
               {navigation.map((item) => {
                 if ("children" in item) {
