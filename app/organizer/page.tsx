@@ -352,6 +352,7 @@ export default function OrganizerDashboardPage() {
                       <th className="px-4 py-3">Department / semester</th>
                       <th className="px-4 py-3">Contact</th>
                       <th className="px-4 py-3">Attendance</th>
+                      <th className="px-4 py-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
@@ -397,7 +398,13 @@ export default function OrganizerDashboardPage() {
                             >
                               {participant.attendance ? "Present" : "Absent"}
                             </span>
-                            <button
+                           
+                          </div>
+                        </td>
+                                             <td className="px-4 py-4 text-xs text-slate-600">
+
+                          <div className="flex flex-wrap gap-2">
+                             <button
                               type="button"
                               aria-label={`Mark ${participant.name} present`}
                               disabled={
@@ -431,7 +438,7 @@ export default function OrganizerDashboardPage() {
                             >
                               Absent
                             </button>
-                          </div>
+                            </div>
                         </td>
                       </tr>
                     ))}

@@ -169,6 +169,14 @@ export const templateFileMetadataSchema = z.object({
 
 export const userIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSU-\d{6,}$/, "Invalid format");
 export const workshopKeySchema = z.string({ error: "Required" }).trim().min(1, "Required").toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid format");
+export const existingAccountLookupSchema = z.object({
+  userId: userIdSchema,
+  emailAddress: z.string().trim().email().max(254).transform((value) => value.toLowerCase()).optional(),
+  whatsappNumber: z.string().trim().max(32).optional(),
+}).strict().refine((value) => Boolean(value.emailAddress || value.whatsappNumber), {
+  message: "Enter the email address or phone number saved to your CBS account.",
+  path: ["emailAddress"],
+});
 export const updateWorkshopSchema = z.object({
   key: workshopKeySchema,
   workshopName: requiredText("Event name", 160),

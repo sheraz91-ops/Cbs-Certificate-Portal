@@ -50,9 +50,42 @@ export async function POST(request: NextRequest) {
     if (Object.entries(parsed.data).some(([key, value]) => ["emailAddress", "fullName", "registrationNumber", "department", "semester", "section", "institute", "whatsappNumber"].includes(key) && typeof value === "string" && value.trim() && !shownProfileKeys.has(key))) {
       return errorResponse("Registration includes a profile field that is not enabled", 400);
     }
+    const requestedExistingUser = parsed.data.confirmExistingAccountId
+      ? await UserModel.findOne({ userId: parsed.data.confirmExistingAccountId }).lean()
+      : null;
+    if (parsed.data.confirmExistingAccountId && !requestedExistingUser) {
+      return errorResponse("No CBS account was found for that ID", 404);
+    }
+    if (requestedExistingUser?.isActive === false) {
+      return errorResponse("This user account is deactivated. Contact CBS for assistance.", 403);
+    }
     const customProfileKeys = new Set(formConfig.fields.filter((field) => field.key.startsWith("custom-")).map((field) => field.key));
     if (Object.keys(profileCustomFields).some((key) => !customProfileKeys.has(key))) return errorResponse("Registration includes an unknown profile field", 400);
-    const validatedRegistration = validateUserRegistrationValues(formConfig, { profile: parsed.data, customFields: profileCustomFields }, workshop.allowOutsiders === true);
+    const registrationProfileValues = requestedExistingUser
+      ? {
+          ...parsed.data,
+          emailAddress: requestedExistingUser.emailAddress ?? "",
+          fullName: requestedExistingUser.fullName,
+          registrationNumber: requestedExistingUser.registrationNumber ?? "",
+          department: requestedExistingUser.department ?? "",
+          semester: requestedExistingUser.semester ?? "",
+          section: requestedExistingUser.section ?? "",
+          institute: requestedExistingUser.institute ?? "",
+          whatsappNumber: requestedExistingUser.whatsappNumber ?? "",
+        }
+      : parsed.data;
+    const registrationValidationForm = requestedExistingUser
+      ? {
+          fields: formConfig.fields.filter((field) =>
+            field.key.startsWith("custom-"),
+          ),
+        }
+      : formConfig;
+    const validatedRegistration = validateUserRegistrationValues(
+      registrationValidationForm,
+      { profile: registrationProfileValues, customFields: profileCustomFields },
+      requestedExistingUser ? true : workshop.allowOutsiders === true,
+    );
     if (Object.keys(validatedRegistration.errors).length) {
       const message = Object.values(validatedRegistration.errors)[0];
       return errorResponse(message, 400);
@@ -112,7 +145,11 @@ export async function POST(request: NextRequest) {
       );
       identityConditions.push({ whatsappNumber: formattedPhonePattern });
     }
-    const matchingUsers = identityConditions.length ? await UserModel.find({ $or: identityConditions }).limit(2).lean() : [];
+    const matchingUsers = requestedExistingUser
+      ? [requestedExistingUser]
+      : identityConditions.length
+        ? await UserModel.find({ $or: identityConditions }).limit(2).lean()
+        : [];
     if (matchingUsers.length > 1) {
       return errorResponse("These details match more than one CBS account. Please contact the CBS team.", 409);
     }

@@ -1,6 +1,9 @@
 import { getData, postData } from "@/lib/api-client";
 import type { z } from "zod";
-import { eventRegistrationSchema } from "@/lib/validation/schemas";
+import {
+  eventRegistrationSchema,
+  existingAccountLookupSchema,
+} from "@/lib/validation/schemas";
 import type { RegistrationFieldType } from "@/types/workshop";
 
 export type EventOption = {
@@ -45,6 +48,11 @@ export function getEvents(): Promise<EventOption[]> {
 
 export function getEventByCode(eventCode: string): Promise<EventOption> {
   return getData<EventOption>(`/api/events/${encodeURIComponent(eventCode)}`);
+}
+
+export function lookupExistingAccount(input: z.input<typeof existingAccountLookupSchema>): Promise<ExistingAccountMatch> {
+  const data = existingAccountLookupSchema.parse(input);
+  return postData<ExistingAccountMatch, typeof data>("/api/events/account", data);
 }
 
 export function registerForEvent(input: EventRegistrationInput): Promise<EventRegistrationResult> {

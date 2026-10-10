@@ -18,7 +18,7 @@ export default function Footer() {
         </div>
         <nav
           aria-label="Footer navigation"
-          className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/10 pt-4 text-xs font-medium min-[520px]:flex min-[520px]:flex-wrap min-[520px]:gap-x-5 min-[520px]:border-0 min-[520px]:pt-0 lg:justify-end"
+          className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/10 pt-4 text-xs font-medium min-[520px]:flex min-[520px]:flex-wrap min-[520px]:gap-x-5 min-[520px]:border-0 min-[520px]:pt-0 lg:justify-end mx-auto"
         >
           <Link
             href="/download"

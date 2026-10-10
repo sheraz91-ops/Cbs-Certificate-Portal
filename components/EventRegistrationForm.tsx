@@ -7,6 +7,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import UserProfileField from "@/components/UserProfileField";
 import {
   getEvents,
+  lookupExistingAccount,
   registerForEvent,
   type EventOption,
   type EventRegistrationResult,
@@ -15,6 +16,7 @@ import {
 import {
   campusRegistrationNumberSchema,
   eventRegistrationSchema,
+  userIdSchema,
   validationMessage,
   workshopKeySchema,
 } from "@/lib/validation/schemas";
@@ -56,6 +58,11 @@ function selectedChoices(value: string): string[] {
   }
 }
 
+function numericUserId(value: string): string | null {
+  const match = value.trim().match(/^(?:CBSU-)?(\d+)$/i);
+  return match ? match[1].replace(/^0+(?=\d)/, "") : null;
+}
+
 export default function EventRegistrationForm({
   setActiveEvent,
   eventCode,
@@ -67,6 +74,11 @@ export default function EventRegistrationForm({
   pinnedEvent?: EventOption;
   pinnedEventStatus?: "idle" | "loading" | "ready" | "error";
 }) {
+  const [savedUserId, setSavedUserId] = useState<string | null>(null);
+  const [localStorageChecked, setLocalStorageChecked] = useState(false);
+  const [returningUserId, setReturningUserId] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationPhone, setVerificationPhone] = useState("");
   const [profile, setProfile] = useState<UserProfileInput>(emptyProfile());
   const [profileCustomFields, setProfileCustomFields] = useState<
     Record<string, string>
@@ -94,6 +106,9 @@ export default function EventRegistrationForm({
     queryFn: getPublicUserRegistrationForm,
   });
   const registerMutation = useMutation({ mutationFn: registerForEvent });
+  const accountLookupMutation = useMutation({
+    mutationFn: lookupExistingAccount,
+  });
   const events = eventsQuery.data ?? [];
   const selectedEvent =
     pinnedEvent ?? events.find((item) => item.key === workshop);
@@ -118,6 +133,21 @@ export default function EventRegistrationForm({
   const effectiveRegistrationForm = campusRegistrationField
     ? { fields: [...registrationForm.fields, campusRegistrationField] }
     : registrationForm;
+
+  useEffect(() => {
+    const storedUserId = window.localStorage.getItem("cbs_user_id");
+    if (storedUserId) {
+      const numericId = numericUserId(storedUserId);
+      if (numericId) {
+        setSavedUserId(numericId);
+        setReturningUserId(numericId);
+        window.localStorage.setItem("cbs_user_id", numericId);
+      } else {
+        window.localStorage.removeItem("cbs_user_id");
+      }
+    }
+    setLocalStorageChecked(true);
+  }, []);
 
   useEffect(() => {
     if (eventCode && pinnedEvent) setWorkshop(pinnedEvent.key);
@@ -145,7 +175,6 @@ export default function EventRegistrationForm({
   ]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
     event.preventDefault();
     setFormError("");
     setResult(null);
@@ -196,10 +225,21 @@ export default function EventRegistrationForm({
       setFormError(message);
       return;
     }
+    const profileForm = existingAccount
+      ? {
+          fields: registrationForm.fields.filter((field) =>
+            field.key.startsWith("custom-"),
+          ),
+        }
+      : effectiveRegistrationForm;
     const validatedForm = validateUserRegistrationValues(
-      effectiveRegistrationForm,
+      profileForm,
       { profile, customFields: profileCustomFields },
-      selectedEvent ? selectedEvent.allowOutsiders === true : true,
+      existingAccount
+        ? true
+        : selectedEvent
+          ? selectedEvent.allowOutsiders === true
+          : true,
     );
     if (Object.keys(validatedForm.errors).length) {
       setFieldErrors(validatedForm.errors);
@@ -224,7 +264,7 @@ export default function EventRegistrationForm({
       return;
     }
 
-    if (selectedEvent && !selectedEvent.allowOutsiders) {
+    if (!existingAccount && selectedEvent && !selectedEvent.allowOutsiders) {
       const registrationNumber = campusRegistrationNumberSchema.safeParse(
         parsed.data.registrationNumber,
       );
@@ -247,6 +287,12 @@ export default function EventRegistrationForm({
       const registration = await registerMutation.mutateAsync(parsed.data);
       if ("existingUser" in registration) {
         setExistingAccount(registration.existingUser);
+        const numericId = numericUserId(registration.existingUser.userId);
+        if (numericId) {
+          setSavedUserId(numericId);
+          setReturningUserId(numericId);
+          window.localStorage.setItem("cbs_user_id", numericId);
+        }
         setProfile({
           emailAddress: registration.existingUser.emailAddress,
           fullName: registration.existingUser.fullName,
@@ -263,6 +309,12 @@ export default function EventRegistrationForm({
         ...registration,
         confirmationMessage: selectedEvent?.confirmationMessage ?? "",
       });
+      const numericId = numericUserId(registration.userId);
+      if (numericId) {
+        setSavedUserId(numericId);
+        setReturningUserId(numericId);
+        window.localStorage.setItem("cbs_user_id", numericId);
+      }
       setExistingAccount(null);
       setProfile(emptyProfile());
       setProfileCustomFields({});
@@ -279,6 +331,215 @@ export default function EventRegistrationForm({
       }
       setFormError(message);
     }
+  }
+
+  async function continueWithExistingUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError("");
+    const numericId = returningUserId.trim();
+    if (!/^\d+$/.test(numericId)) {
+      setFormError("Enter your numeric CBS ID, for example 2.");
+      return;
+    }
+    if (!workshop) {
+      setFormError("Select an event to continue.");
+      return;
+    }
+    if (!verificationEmail.trim() && !verificationPhone.trim()) {
+      setFormError(
+        "Enter the email address or phone number saved to your account.",
+      );
+      return;
+    }
+    const parsedUserId = userIdSchema.safeParse(
+      `CBSU-${numericId.padStart(6, "0")}`,
+    );
+    if (!parsedUserId.success) {
+      setFormError("Enter a valid numeric CBS ID.");
+      return;
+    }
+    try {
+      const account = await accountLookupMutation.mutateAsync({
+        userId: parsedUserId.data,
+        emailAddress: verificationEmail.trim() || undefined,
+        whatsappNumber: verificationPhone.trim() || undefined,
+      });
+      setExistingAccount(account);
+      setSavedUserId(numericUserId(account.userId));
+      setReturningUserId(numericUserId(account.userId) ?? numericId);
+      window.localStorage.setItem(
+        "cbs_user_id",
+        numericUserId(account.userId) ?? numericId,
+      );
+      setWorkshop(workshopKeySchema.parse(workshop));
+      setProfile({
+        emailAddress: account.emailAddress,
+        fullName: account.fullName,
+        registrationNumber: account.registrationNumber,
+        department: account.department,
+        semester: account.semester,
+        section: account.section,
+        institute: account.institute,
+        whatsappNumber: account.whatsappNumber,
+      });
+      setProfileCustomFields({});
+      setCustomFields({});
+      setFieldErrors({});
+    } catch (error) {
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "Unable to verify this CBS account.",
+      );
+    }
+  }
+
+  if (!localStorageChecked) {
+    return (
+      <section
+        role="status"
+        aria-live="polite"
+        className="flex min-h-20 w-full items-center justify-center rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
+      >
+        <LoadingSpinner label="Checking for your CBS ID..." />
+      </section>
+    );
+  }
+
+  if (savedUserId && !existingAccount && !result) {
+    return (
+      <form
+        onSubmit={continueWithExistingUser}
+        className="w-full rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
+        noValidate
+      >
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
+          Returning participant
+        </p>
+        <h2 className="mt-2 font-display text-2xl font-semibold text-navy-900">
+          Register with your CBS ID
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-navy-600">
+          Enter your numeric CBS ID, verify it with the email address or phone
+          number saved to the account, and choose an event.
+        </p>
+        <label
+          htmlFor="returning-cbs-id"
+          className="mt-5 block text-sm font-semibold text-navy-800"
+        >
+          CBS ID
+          <input
+            id="returning-cbs-id"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={returningUserId}
+            onChange={(event) =>
+              setReturningUserId(event.target.value.replace(/\D/g, ""))
+            }
+            placeholder="2"
+            className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 font-mono text-sm text-navy-900 outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
+          />
+        </label>
+        <label
+          htmlFor="returning-email"
+          className="mt-4 block text-sm font-semibold text-navy-800"
+        >
+          Saved email address
+          <input
+            id="returning-email"
+            type="email"
+            autoComplete="email"
+            value={verificationEmail}
+            onChange={(event) => setVerificationEmail(event.target.value)}
+            className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 text-sm font-normal text-navy-900 outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
+          />
+        </label>
+        <label
+          htmlFor="returning-phone"
+          className="mt-4 block text-sm font-semibold text-navy-800"
+        >
+          Or saved phone number
+          <input
+            id="returning-phone"
+            type="tel"
+            autoComplete="tel"
+            value={verificationPhone}
+            onChange={(event) => setVerificationPhone(event.target.value)}
+            className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 text-sm font-normal text-navy-900 outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
+          />
+        </label>
+        <label
+          htmlFor="returning-event"
+          className="mt-4 block text-sm font-semibold text-navy-800"
+        >
+          Select an event
+          <select
+            id="returning-event"
+            required
+            value={workshop}
+            disabled={
+              eventCode
+                ? pinnedEventStatus !== "ready" || !pinnedEvent?.isActive
+                : eventsQuery.isPending || events.length === 0
+            }
+            onChange={(event) => {
+              const parsedWorkshop = workshopKeySchema.safeParse(
+                event.target.value,
+              );
+              setWorkshop(parsedWorkshop.success ? parsedWorkshop.data : "");
+              setCustomFields({});
+            }}
+            className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 text-sm font-normal text-navy-900 outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
+          >
+            <option value="">
+              {eventsQuery.isPending || pinnedEventStatus === "loading"
+                ? "Loading events…"
+                : "Choose an event"}
+            </option>
+            {(eventCode && pinnedEvent ? [pinnedEvent] : events).map((item) => (
+              <option key={item.key} value={item.key} disabled={!item.isActive}>
+                {item.workshopName} · {item.eventYear} · {item.eventDate}
+              </option>
+            ))}
+          </select>
+        </label>
+        {formError && (
+          <p role="alert" className="mt-4 text-sm text-red-700">
+            {formError}
+          </p>
+        )}
+        <button
+          type="submit"
+          disabled={
+            accountLookupMutation.isPending ||
+            (eventCode
+              ? pinnedEventStatus !== "ready" || !pinnedEvent?.isActive
+              : eventsQuery.isPending || events.length === 0)
+          }
+          className="mt-6 h-12 w-full rounded-xl bg-navy-800 px-5 text-sm font-semibold text-white shadow-gold transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {accountLookupMutation.isPending ? "Verifying…" : "Continue"}
+        </button>
+        <div className="mt-5 border-t border-navy-100 pt-4 text-center">
+          <p className="text-sm text-navy-600">Not your CBS ID?</p>
+          <button
+            type="button"
+            onClick={() => {
+              window.localStorage.removeItem("cbs_user_id");
+              setSavedUserId(null);
+              setReturningUserId("");
+              setVerificationEmail("");
+              setVerificationPhone("");
+              setFormError("");
+            }}
+            className="mt-1 text-sm font-semibold text-navy-700 underline underline-offset-4 hover:text-gold-700"
+          >
+            Register as a new user
+          </button>
+        </div>
+      </form>
+    );
   }
 
   if (result) {
@@ -476,16 +737,18 @@ export default function EventRegistrationForm({
               {existingAccount.userId}
             </dd>
           </div>
-          {([
-            ["Name", existingAccount.fullName],
-            ["Registration number", existingAccount.registrationNumber],
-            ["Email", existingAccount.emailAddress],
-            ["Department", existingAccount.department],
-            ["Semester", existingAccount.semester],
-            ["Section", existingAccount.section],
-            ["Institute", existingAccount.institute],
-            ["WhatsApp number", existingAccount.whatsappNumber],
-          ] as const).map(([label, value]) => (
+          {(
+            [
+              ["Name", existingAccount.fullName],
+              ["Registration number", existingAccount.registrationNumber],
+              ["Email", existingAccount.emailAddress],
+              ["Department", existingAccount.department],
+              ["Semester", existingAccount.semester],
+              ["Section", existingAccount.section],
+              ["Institute", existingAccount.institute],
+              ["WhatsApp number", existingAccount.whatsappNumber],
+            ] as const
+          ).map(([label, value]) => (
             <div key={label} className="min-w-0">
               <dt className="text-xs font-semibold uppercase tracking-wide text-navy-500">
                 {label}
@@ -575,66 +838,68 @@ export default function EventRegistrationForm({
       </label>
 
       {!existingAccount && (
-      <div className="grid gap-4 sm:grid-cols-2">
-        {displayedProfileFields.map((field) => {
-          const key = field.key as UserProfileFieldKey;
-          const required =
-            field.required ||
-            (key === "registrationNumber" &&
-              Boolean(selectedEvent && selectedEvent.allowOutsiders !== true));
-          const validationSchema = required
-            ? key === "registrationNumber" &&
-              Boolean(selectedEvent && selectedEvent.allowOutsiders !== true)
-              ? campusRegistrationNumberSchema
-              : undefined
-            : key === "emailAddress"
-              ? z.preprocess(
-                  (value) =>
-                    typeof value === "string" && !value.trim()
-                      ? undefined
-                      : value,
-                  z.string().email("Invalid format").optional(),
-                )
-              : z.string().optional();
-          return (
-            <label
-              key={key}
-              className="block text-sm font-semibold text-navy-800"
-            >
-              {field.label}{" "}
-              {required ? (
-                <span className="text-red-600">*</span>
-              ) : (
-                <span className="text-xs font-normal text-navy-500">
-                  (optional)
-                </span>
-              )}
-              <UserProfileField
-                name={key}
-                required={required}
-                validationSchema={validationSchema}
-                registrationMode={
-                  selectedEvent?.allowOutsiders ? "free" : "campus"
-                }
-                autoComplete={
-                  key === "emailAddress"
-                    ? "email"
-                    : key === "whatsappNumber"
-                      ? "tel"
-                      : "off"
-                }
-                value={profile[key]}
-                onValueChange={(value) => {
-                  setProfile((current) => ({ ...current, [key]: value }));
-                  setFieldErrors((current) => ({ ...current, [key]: "" }));
-                }}
-                error={fieldErrors[key]}
-                className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
-              />
-            </label>
-          );
-        })}
-      </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {displayedProfileFields.map((field) => {
+            const key = field.key as UserProfileFieldKey;
+            const required =
+              field.required ||
+              (key === "registrationNumber" &&
+                Boolean(
+                  selectedEvent && selectedEvent.allowOutsiders !== true,
+                ));
+            const validationSchema = required
+              ? key === "registrationNumber" &&
+                Boolean(selectedEvent && selectedEvent.allowOutsiders !== true)
+                ? campusRegistrationNumberSchema
+                : undefined
+              : key === "emailAddress"
+                ? z.preprocess(
+                    (value) =>
+                      typeof value === "string" && !value.trim()
+                        ? undefined
+                        : value,
+                    z.string().email("Invalid format").optional(),
+                  )
+                : z.string().optional();
+            return (
+              <label
+                key={key}
+                className="block text-sm font-semibold text-navy-800"
+              >
+                {field.label}{" "}
+                {required ? (
+                  <span className="text-red-600">*</span>
+                ) : (
+                  <span className="text-xs font-normal text-navy-500">
+                    (optional)
+                  </span>
+                )}
+                <UserProfileField
+                  name={key}
+                  required={required}
+                  validationSchema={validationSchema}
+                  registrationMode={
+                    selectedEvent?.allowOutsiders ? "free" : "campus"
+                  }
+                  autoComplete={
+                    key === "emailAddress"
+                      ? "email"
+                      : key === "whatsappNumber"
+                        ? "tel"
+                        : "off"
+                  }
+                  value={profile[key]}
+                  onValueChange={(value) => {
+                    setProfile((current) => ({ ...current, [key]: value }));
+                    setFieldErrors((current) => ({ ...current, [key]: "" }));
+                  }}
+                  error={fieldErrors[key]}
+                  className="mt-2 h-11 w-full rounded-xl border border-navy-200 bg-navy-50/60 px-3 text-sm font-normal text-navy-900 outline-none transition focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
+                />
+              </label>
+            );
+          })}
+        </div>
       )}
 
       {registrationForm.fields.some((field) =>
