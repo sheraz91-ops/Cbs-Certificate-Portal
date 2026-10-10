@@ -7,7 +7,7 @@ import { ASSET_PATHS, ORG_CONFIG } from "@/config/certificate.config";
 
 const navigation = [
   { label: "Home", href: "/" },
-  { label: "Download certificate", href: "/#download" },
+  { label: "Download certificate", href: "/download" },
   { label: "Verify certificate", href: "/verify" },
 ];
 
@@ -73,8 +73,13 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-navy-100/80 transition hover:bg-white/5 hover:text-gold-200 lg:min-h-0 lg:px-0"
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (item.href === window.location.pathname) {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+                className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-navy-100/80 transition  hover:text-gold-200 lg:min-h-0 lg:px-0"
               >
                 {item.label}
               </Link>
@@ -82,7 +87,7 @@ export default function Header() {
             <Link
               href="/register"
               onClick={() => setMenuOpen(false)}
-              className="mt-1 inline-flex min-h-11 items-center justify-center rounded-xl bg-gold-400 px-4 py-2 text-sm font-semibold text-navy-950 transition  lg:mt-0 lg:min-h-0 lg:rounded-full"
+              className="mt-1 inline-flex min-h-11 items-center justify-center rounded-xl bg-gold-400 px-4 py-2 text-sm font-semibold text-navy-950 transition  lg:mt-0 lg:min-h-0 lg:rounded-full hover:scale-105"
             >
               Register for an event
             </Link>

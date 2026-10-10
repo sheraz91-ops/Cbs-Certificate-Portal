@@ -310,7 +310,7 @@ export default function CertificatePreview() {
           </a>
           <span className="text-navy-200">•</span>
           <Link
-            href="/#download"
+            href="/download"
             className="text-navy-400 hover:text-gold-600 underline underline-offset-2 transition-colors"
           >
             Search another ID

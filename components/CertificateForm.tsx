@@ -228,8 +228,7 @@ export default function CertificateForm() {
             Find Your Certificate
           </h2>
           <p className="text-sm text-navy-500 mt-1">
-            Enter your certificate ID and participation. Organizers can use
-            their CBSO ID and full name to see their assigned events.
+            Enter your certificate ID and participation. Organizers can use their CBSO ID and full name to see their assigned events.
           </p>
         </div>
 
@@ -345,19 +344,7 @@ export default function CertificateForm() {
               {isOrganizer && !assignedWorkshops.length
                 ? "Find Assigned Events"
                 : "Generate Certificate"}
-              <svg
-                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
+            
             </span>
             {isLoading && (
               <span className="absolute inset-0 flex items-center justify-center">
@@ -367,11 +354,7 @@ export default function CertificateForm() {
           </button>
         </form>
 
-        {alert && (
-          <div className="mt-4">
-            <AlertMessage alert={alert} />
-          </div>
-        )}
+       
 
         {candidates.length > 0 && (
           <div className="mt-5">

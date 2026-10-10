@@ -287,9 +287,9 @@ export default function VerifyPanel() {
 
           <a
             href={`/certificate?id=${encodeURIComponent(result.formattedId)}&workshop=${encodeURIComponent(result.workshop.key)}`}
-            className="mt-5 inline-block text-xs font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-900"
+            className="mt-5 inline-block text-xs font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-900 text-center w-full"
           >
-            View / download this certificate →
+            View / Download this certificate →
           </a>
         </div>
       )}
