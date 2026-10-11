@@ -76,6 +76,7 @@ export default function EventRegistrationForm({
 }) {
   const [savedUserId, setSavedUserId] = useState<string | null>(null);
   const [localStorageChecked, setLocalStorageChecked] = useState(false);
+  const [showReturningUserForm, setShowReturningUserForm] = useState(false);
   const [returningUserId, setReturningUserId] = useState("");
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationPhone, setVerificationPhone] = useState("");
@@ -450,7 +451,7 @@ export default function EventRegistrationForm({
     );
   }
 
-  if (savedUserId && !existingAccount && !result) {
+  if ((savedUserId || showReturningUserForm) && !existingAccount && !result) {
     return (
       <form
         onSubmit={continueWithExistingUser}
@@ -481,7 +482,7 @@ export default function EventRegistrationForm({
             onChange={(event) =>
               setReturningUserId(event.target.value.replace(/\D/g, ""))
             }
-            placeholder="2"
+            placeholder="E.g 20"
             className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 font-mono text-sm text-navy-900 outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
           />
         </label>
@@ -495,6 +496,7 @@ export default function EventRegistrationForm({
             type="email"
             autoComplete="email"
             value={verificationEmail}
+            placeholder="abc@example.com"
             onChange={(event) => setVerificationEmail(event.target.value)}
             className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 text-sm font-normal text-navy-900 outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
           />
@@ -509,6 +511,8 @@ export default function EventRegistrationForm({
             type="tel"
             autoComplete="tel"
             value={verificationPhone}
+            placeholder="+921234567890"
+
             onChange={(event) => setVerificationPhone(event.target.value)}
             className="mt-2 h-12 w-full rounded-xl border border-navy-200 bg-navy-50 px-4 text-sm font-normal text-navy-900 outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-100"
           />
@@ -572,6 +576,7 @@ export default function EventRegistrationForm({
             onClick={() => {
               window.localStorage.removeItem("cbs_user_id");
               setSavedUserId(null);
+              setShowReturningUserForm(false);
               setReturningUserId("");
               setVerificationEmail("");
               setVerificationPhone("");
@@ -713,6 +718,29 @@ export default function EventRegistrationForm({
       className="rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-6 sm:p-9"
       noValidate
     >
+      {!existingAccount && (
+        <div className="mb-6 rounded-2xl border-2 border-gold-300 bg-gold-50 p-4 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5">
+          <div>
+            <p className="text-base font-bold text-navy-900">
+              Already have a CBS ID?
+            </p>
+            <p className="mt-1 text-sm leading-5 text-navy-700">
+              Verify your account and register without entering your profile
+              details again.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowReturningUserForm(true);
+              setFormError("");
+            }}
+            className="mt-3 inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-xl bg-gold-500 px-5 py-2 text-sm font-bold text-navy-950 transition hover:bg-gold-400 focus:outline-none focus:ring-4 focus:ring-gold-200 sm:mt-0 sm:w-auto"
+          >
+            Continue with CBS ID
+          </button>
+        </div>
+      )}
       <div className="mb-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
           {existingAccount ? "Existing CBS account" : "Event registration"}
