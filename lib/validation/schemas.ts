@@ -208,6 +208,15 @@ export const eventRegistrationSchema = z.object({
   confirmExistingAccountId: userIdSchema.optional(),
 }).strict();
 export const adminUpdateUserSchema = adminCampusUserProfileSchema.extend({ userId: userIdSchema });
+const optionalUserIdSuffix = z.preprocess(
+  (value) => typeof value === "string" && !value.trim() ? undefined : value,
+  z.string().trim().regex(/^\d{1,12}$/, "Enter a numeric ID suffix").optional(),
+).refine((value) => value === undefined || Number(value) > 0, {
+  message: "ID suffix must be greater than zero",
+});
+export const createAdminUserSchema = adminCampusUserProfileSchema.extend({
+  userIdSuffix: optionalUserIdSuffix,
+}).strict();
 export const assignUserEventSchema = z.object({ userId: userIdSchema, workshop: workshopKeySchema }).strict();
 export const organizerIdSchema = z.string({ error: "Required" }).trim().min(1, "Required").toUpperCase().regex(/^CBSO-\d{6,}$/, "Invalid format");
 export const organizerCertificateIdentitySchema = z.object({
