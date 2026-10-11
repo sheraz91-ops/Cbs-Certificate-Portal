@@ -354,7 +354,11 @@ export default function CertificateForm() {
           </button>
         </form>
 
-       
+        {alert && (
+          <div className="mt-4">
+            <AlertMessage alert={alert} />
+          </div>
+        )}
 
         {candidates.length > 0 && (
           <div className="mt-5">
