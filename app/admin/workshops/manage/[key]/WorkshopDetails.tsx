@@ -59,6 +59,20 @@ function formatCustomAnswer(
   return value;
 }
 
+function parseCheckboxAnswer(value: string | undefined): string[] | boolean | null {
+  if (value === undefined) return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+      return parsed;
+    }
+  } catch {
+    if (value === "true") return true;
+    if (value === "false") return false;
+  }
+  return null;
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -939,6 +953,176 @@ export default function WorkshopDetails({
                     className="max-h-80 w-auto bg-slate-950 object-contain"
                   />
                 </a>
+              </div>
+            )}
+          </section>
+
+          <section
+            id="collected-event-data"
+            className="scroll-mt-6 rounded-2xl border border-indigo-500/20 bg-slate-950 p-4 shadow-xl shadow-slate-950/10 sm:p-6"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Collected Event Data
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  Registration answers to this event’s additional questions,
+                  grouped by question. Counts exclude participants who did not
+                  submit an answer.
+                </p>
+              </div>
+              <span className="rounded-full bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-200">
+                {workshop.participants.length} participants
+              </span>
+            </div>
+            {!workshop.registrationFields?.length ? (
+              <p className="mt-5 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-sm text-slate-400">
+                This event has no additional registration questions configured.
+              </p>
+            ) : (
+              <div className="mt-5 space-y-4">
+                {workshop.registrationFields.map((field) => {
+                  const responses = workshop.participants.flatMap((participant) => {
+                    const value = participant.customFields?.[field.key];
+                    return value === undefined || value === ""
+                      ? []
+                      : [{ participant, value }];
+                  });
+                  const answeredCount = responses.length;
+                  const yesCount = responses.filter(({ value }) => value === "yes").length;
+                  const noCount = responses.filter(({ value }) => value === "no").length;
+                  const checkboxSelections = responses.map(({ value }) => ({
+                    value,
+                    selected: parseCheckboxAnswer(value),
+                  }));
+                  const choiceCounts = (field.choices ?? []).map((choice) => ({
+                    choice,
+                    count: checkboxSelections.filter(({ selected }) =>
+                      Array.isArray(selected) && selected.includes(choice),
+                    ).length,
+                  }));
+                  const checkedCount = checkboxSelections.filter(({ selected }) => selected === true).length;
+                  const uncheckedCount = checkboxSelections.filter(({ selected }) => selected === false).length;
+                  const noneSelectedCount = checkboxSelections.filter(({ selected }) =>
+                    Array.isArray(selected) && selected.length === 0,
+                  ).length;
+                  const isYesNo = field.type === "yes_no";
+                  const isCheckbox = field.type === "checkbox";
+                  const isMatrix = field.type === "matrix";
+
+                  return (
+                    <article
+                      key={field.key}
+                      className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h4 className="font-semibold text-slate-100">{field.label}</h4>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {field.type ?? "text"} · {answeredCount} answer
+                            {answeredCount === 1 ? "" : "s"} · {workshop.participants.length - answeredCount} unanswered
+                          </p>
+                        </div>
+                        {isMatrix && (
+                          <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-200">
+                            Individual answers only · no aggregate stats
+                          </span>
+                        )}
+                      </div>
+
+                      {(isYesNo || isCheckbox) && answeredCount > 0 && (
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {isYesNo ? (
+                            [
+                              { label: "Yes", count: yesCount, color: "bg-emerald-400" },
+                              { label: "No", count: noCount, color: "bg-rose-400" },
+                            ].map(({ label, count, color }) => (
+                              <div key={label} className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+                                <div className="flex justify-between gap-3 text-sm">
+                                  <span className="text-slate-300">{label}</span>
+                                  <span className="font-semibold tabular-nums text-white">
+                                    {count} ({Math.round((count / answeredCount) * 100)}%)
+                                  </span>
+                                </div>
+                                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+                                  <div className={`h-full ${color}`} style={{ width: `${(count / answeredCount) * 100}%` }} />
+                                </div>
+                              </div>
+                            ))
+                          ) : field.choices?.length ? (
+                            <>
+                              {choiceCounts.map(({ choice, count }) => (
+                                <div key={choice} className="rounded-lg border border-slate-800 bg-slate-950/70 p-3">
+                                  <div className="flex justify-between gap-3 text-sm">
+                                    <span className="text-slate-300">{choice}</span>
+                                    <span className="font-semibold tabular-nums text-white">
+                                      {count} ({Math.round((count / answeredCount) * 100)}%)
+                                    </span>
+                                  </div>
+                                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800">
+                                    <div className="h-full bg-indigo-400" style={{ width: `${(count / answeredCount) * 100}%` }} />
+                                  </div>
+                                </div>
+                              ))}
+                              {noneSelectedCount > 0 && (
+                                <p className="text-xs text-slate-400">
+                                  No selection: {noneSelectedCount}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            [
+                              { label: "Checked", count: checkedCount },
+                              { label: "Not checked", count: uncheckedCount },
+                            ].map(({ label, count }) => (
+                              <div key={label} className="rounded-lg border border-slate-800 bg-slate-950/70 p-3 text-sm text-slate-300">
+                                {label}: <span className="font-semibold text-white">{count} ({Math.round((count / answeredCount) * 100)}%)</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {answeredCount === 0 ? (
+                        <p className="mt-4 text-sm text-slate-500">
+                          No answers have been collected for this question yet.
+                        </p>
+                      ) : (
+                        <details className="mt-4">
+                          <summary className="cursor-pointer text-sm font-medium text-indigo-200 hover:text-indigo-100">
+                            View individual responses ({answeredCount})
+                          </summary>
+                          <div className="mt-3 overflow-x-auto rounded-lg border border-slate-800">
+                            <table className="w-full min-w-[420px] text-left text-sm">
+                              <thead className="bg-slate-950 text-xs uppercase text-slate-500">
+                                <tr>
+                                  <th className="px-3 py-2.5">Participant</th>
+                                  <th className="px-3 py-2.5">Answer</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-800">
+                                {responses.map(({ participant, value }) => (
+                                  <tr key={`${participant.id}-${field.key}`}>
+                                    <td className="px-3 py-2.5 text-slate-300">
+                                      <span className="block">{participant.name}</span>
+                                      <span className="mt-0.5 block font-mono text-xs text-slate-500">
+                                        {participant.userId ?? participant.id}
+                                      </span>
+                                    </td>
+                                    <td className="whitespace-pre-wrap px-3 py-2.5 text-slate-200">
+                                      {formatCustomAnswer(field, value) || "—"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </details>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>

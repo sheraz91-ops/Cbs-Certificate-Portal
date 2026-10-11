@@ -49,6 +49,7 @@ const navigation: NavigationItem[] = [
     children: [
       { href: "/admin/workshops", label: "Create Event" },
       { href: "/admin/workshops/manage", label: "Manage Events" },
+      { href: "/admin/workshops/collected-data", label: "Collected Events Data" },
     ],
   },
   {
@@ -394,7 +395,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                       {isOpen && (
                         <div
                           id={`admin-${item.key}-submenu`}
-                          className="mt-1 flex flex-col gap-1 pl-9"
+                          className="mt-1 flex flex-col gap-1 pl-4"
                         >
                           {item.children.map((child) => {
                             const childActive =
