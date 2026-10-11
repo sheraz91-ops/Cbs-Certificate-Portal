@@ -3,8 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import type { WorkshopDefinition } from "@/types/workshop";
-import type { CertificateCandidate, DatabaseLookupResult, Participant, VerifyStatus } from "@/types";
+import type { CertificateWorkshopData, WorkshopDefinition } from "@/types/workshop";
+import type { CertificateLookupResponse, PublicCertificateCandidate, VerifyStatus } from "@/types";
 import { lookupCertificate } from "@/features/certificates/api";
 import { getOrganizerAssignedEvents } from "@/features/certificates/organizer-api";
 import LoadingSpinner from "./LoadingSpinner";
@@ -23,11 +23,11 @@ export default function VerifyPanel() {
   const [organizerMessage, setOrganizerMessage] = useState("");
   const [status, setStatus] = useState<VerifyStatus>("idle");
   const [result, setResult] = useState<{
-    participant: Participant;
+    participant: { name: string };
     formattedId: string;
-    workshop: WorkshopDefinition;
+    workshop: CertificateWorkshopData;
   } | null>(null);
-  const [candidates, setCandidates] = useState<CertificateCandidate[]>([]);
+  const [candidates, setCandidates] = useState<PublicCertificateCandidate[]>([]);
   const lookupMutation = useMutation({ mutationFn: ({ id, workshop }: { id: string; workshop?: string }) => lookupCertificate(id, workshop) });
   const assignedEventsMutation = useMutation({ mutationFn: getOrganizerAssignedEvents });
 
@@ -43,7 +43,7 @@ export default function VerifyPanel() {
     setStatus("checking");
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    let lookup: DatabaseLookupResult;
+    let lookup: CertificateLookupResponse;
     try {
       lookup = await lookupMutation.mutateAsync({ id: trimmed, workshop });
     } catch {
@@ -70,7 +70,7 @@ export default function VerifyPanel() {
       return;
     }
 
-    if (lookup.status === "ambiguous") {
+    if (lookup.status === "ambiguous" || lookup.status === "user-certificates") {
       setCandidates(lookup.candidates);
       setResult(null);
       setStatus("ambiguous");

@@ -91,6 +91,17 @@ export default function CertificatePreview() {
         return;
       }
 
+      if (result.status === "user-certificates") {
+        setCandidates(
+          result.candidates.map((candidate) => ({
+            formattedId: candidate.formattedId,
+            name: candidate.participant.name,
+          })),
+        );
+        setStatus("ambiguous");
+        return;
+      }
+
       try {
         const resolvedPlan = {
           fullName: result.participant.name,

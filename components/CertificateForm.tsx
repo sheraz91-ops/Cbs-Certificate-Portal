@@ -14,8 +14,8 @@ import { generateCertificatePdf, downloadPdf } from "@/lib/generateCertificate";
 import { buildVerifyUrl } from "@/lib/qrcode";
 import type {
   AlertState,
-  CertificateCandidate,
-  DatabaseLookupResult,
+  CertificateLookupResponse,
+  PublicCertificateCandidate,
   GenerationStatus,
 } from "@/types";
 import AlertMessage from "./AlertMessage";
@@ -39,7 +39,7 @@ export default function CertificateForm() {
   const [selectedWorkshop, setSelectedWorkshop] = useState("");
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [alert, setAlert] = useState<AlertState | null>(null);
-  const [candidates, setCandidates] = useState<CertificateCandidate[]>([]);
+  const [candidates, setCandidates] = useState<PublicCertificateCandidate[]>([]);
   const [showUserCertificates, setShowUserCertificates] = useState(false);
   const workshopsQuery = useQuery({
     queryKey: ["workshops", "public"],
@@ -176,7 +176,7 @@ export default function CertificateForm() {
     // devices — avoids an abrupt flash before navigating away.
     await new Promise((resolve) => setTimeout(resolve, 350));
 
-    let result: DatabaseLookupResult;
+    let result: CertificateLookupResponse;
     try {
       result = await lookupMutation.mutateAsync(parsedInput.data);
     } catch {
@@ -213,11 +213,20 @@ export default function CertificateForm() {
     if (result.status === "ambiguous") {
       setStatus("idle");
       setCandidates(result.candidates);
-      setShowUserCertificates(result.candidates.some((candidate) => Boolean(candidate.participant.userId)));
+      setShowUserCertificates(false);
       return;
     }
 
-    router.push(`/certificate?id=${encodeURIComponent(result.formattedId)}`);
+    if (result.status === "user-certificates") {
+      setStatus("idle");
+      setCandidates(result.candidates);
+      setShowUserCertificates(true);
+      return;
+    }
+
+    if (result.status === "found") {
+      router.push(`/certificate?id=${encodeURIComponent(result.formattedId)}`);
+    }
   }
 
   return (

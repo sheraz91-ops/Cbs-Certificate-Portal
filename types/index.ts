@@ -1,4 +1,4 @@
-import type { WorkshopDefinition } from "@/types/workshop";
+import type { CertificateWorkshopData, WorkshopDefinition } from "@/types/workshop";
 
 /**
  * Shared type definitions for the CBS Certificate Portal.
@@ -26,6 +26,12 @@ export interface CertificateCandidate {
   formattedId: string;
 }
 
+export interface PublicCertificateCandidate {
+  participant: Pick<Participant, "name">;
+  workshop: Pick<WorkshopDefinition, "key" | "workshopName">;
+  formattedId: string;
+}
+
 /** Result of a certificate lookup against the participant list */
 export type LookupResult =
   | { status: "found"; participant: Participant; formattedId: string }
@@ -40,6 +46,16 @@ export type LookupResult =
 export type DatabaseLookupResult =
   | { status: "found"; participant: Participant; formattedId: string; workshop: WorkshopDefinition }
   | { status: "ambiguous"; candidates: CertificateCandidate[] }
+  | { status: "user-certificates"; candidates: CertificateCandidate[] }
+  | { status: "attendance-required" }
+  | { status: "event-not-completed" }
+  | { status: "not-found" };
+
+/** Minimal public API result for certificate lookup and rendering. */
+export type CertificateLookupResponse =
+  | { status: "found"; participant: Pick<Participant, "name">; formattedId: string; workshop: CertificateWorkshopData }
+  | { status: "ambiguous"; candidates: PublicCertificateCandidate[] }
+  | { status: "user-certificates"; candidates: PublicCertificateCandidate[] }
   | { status: "attendance-required" }
   | { status: "event-not-completed" }
   | { status: "not-found" };
@@ -49,7 +65,7 @@ export interface CertificatePlan {
   fullName: string;
   formattedId: string;
   verifyUrl: string;
-  workshop: WorkshopDefinition;
+  workshop: CertificateWorkshopData;
 }
 
 /** UI state machine for the certificate generation flow */

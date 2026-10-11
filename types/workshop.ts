@@ -51,6 +51,11 @@ export interface WorkshopDefinition {
   layout: LayoutConfig;
 }
 
+export type CertificateWorkshopData = Pick<
+  WorkshopDefinition,
+  "key" | "workshopName" | "eventDate" | "organizedBy" | "templatePath" | "layout"
+>;
+
 export interface RegistrationField {
   key: string;
   label: string;

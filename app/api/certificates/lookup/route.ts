@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { formatCertificateId } from "@/lib/formatId";
-import { normalizeParticipantId } from "@/lib/participantId";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import ParticipantModel from "@/models/Participant";
 import OrganizerModel from "@/models/Organizer";
 import WorkshopModel from "@/models/Workshop";
-import type { CertificateCandidate, DatabaseLookupResult, Participant } from "@/types";
+import type { CertificateCandidate, CertificateLookupResponse, DatabaseLookupResult, Participant } from "@/types";
 import type { WorkshopDefinition } from "@/types/workshop";
 import { certificateLookupSchema, validationMessage } from "@/lib/validation/schemas";
 
@@ -27,7 +26,9 @@ export async function POST(request: NextRequest) {
     const { id, workshop: selectedKey } = parsed.data;
     const accountUserId = getAccountUserId(id);
     const accountParticipants = accountUserId
-      ? await ParticipantModel.find({ userId: accountUserId }).lean()
+      ? await ParticipantModel.find({ userId: accountUserId })
+        .select("id name workshop attendance")
+        .lean()
       : [];
     if (accountUserId && (/^CBSU-/i.test(id.trim()) || accountParticipants.length > 0)) {
       const participantsForLookup = selectedKey
@@ -35,16 +36,17 @@ export async function POST(request: NextRequest) {
         : accountParticipants;
       const workshopsForLookup = await WorkshopModel.find(
         selectedKey ? { key: selectedKey } : {},
-      ).select("-templateData").lean() as unknown as WorkshopDefinition[];
+      ).select("-_id key workshopName workshopCode eventYear eventDate isCompleted organizedBy templatePath layout").lean() as unknown as WorkshopDefinition[];
       const result = lookupUserCertificates(accountUserId, participantsForLookup, workshopsForLookup);
-      const message = result.status === "ambiguous"
+      const message = result.status === "user-certificates"
         ? "Certificates found for user"
         : result.status === "attendance-required"
           ? "Certificate is unavailable until attendance is marked present"
           : result.status === "event-not-completed"
             ? "This event has not been marked completed yet"
             : "No certificates found for this user";
-      return successResponse(result, message, result.status === "ambiguous" ? result.candidates.length : 0);
+      const response = toPublicLookupResult(result);
+      return successResponse(response, message, result.status === "user-certificates" ? result.candidates.length : 0);
     }
     const parts = id.trim().toUpperCase().split(/[\s\-_/]+/).filter(Boolean);
     const workshopCode = parts.find((part) => /^[A-Z0-9]+$/.test(part) && part !== "CBS" && !/^\d+$/.test(part));
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
         ? { workshopCode, ...(year ? { eventYear: year } : {}) }
         : {};
     const workshops = await WorkshopModel.find(workshopFilter)
-      .select("-templateData")
+      .select("-_id key workshopName workshopCode eventYear eventDate isCompleted organizedBy templatePath layout")
       .lean() as unknown as WorkshopDefinition[];
     const result = await lookup(id, selectedKey, workshops);
     const message = result.status === "found"
@@ -68,11 +70,40 @@ export async function POST(request: NextRequest) {
             ? "This event has not been marked completed yet"
         : "Certificate not found";
     const count = result.status === "ambiguous" ? result.candidates.length : result.status === "found" ? 1 : 0;
-    return successResponse(result, message, count);
+    return successResponse(toPublicLookupResult(result), message, count);
   } catch (error) {
     console.error("Certificate lookup error:", error);
     return errorResponse("Unable to look up certificate");
   }
+}
+
+function toPublicLookupResult(result: DatabaseLookupResult): CertificateLookupResponse {
+  if (result.status === "found") {
+    return {
+      status: "found",
+      participant: { name: result.participant.name },
+      formattedId: result.formattedId,
+      workshop: {
+        key: result.workshop.key,
+        workshopName: result.workshop.workshopName,
+        eventDate: result.workshop.eventDate,
+        organizedBy: result.workshop.organizedBy,
+        templatePath: result.workshop.templatePath,
+        layout: result.workshop.layout,
+      },
+    };
+  }
+  if (result.status === "ambiguous" || result.status === "user-certificates") {
+    return {
+      status: result.status,
+      candidates: result.candidates.map(({ participant, workshop, formattedId }) => ({
+        participant: { name: participant.name },
+        workshop: { key: workshop.key, workshopName: workshop.workshopName },
+        formattedId,
+      })),
+    };
+  }
+  return result;
 }
 
 function getAccountUserId(rawId: string): string | undefined {
@@ -116,7 +147,7 @@ function lookupUserCertificates(
     }];
   });
   return candidates.length
-    ? { status: "ambiguous", candidates }
+    ? { status: "user-certificates", candidates }
     : { status: "not-found" };
 }
 
@@ -155,7 +186,7 @@ async function lookup(rawId: string, selectedKey: string | undefined, workshops:
       { normalizedId: number },
       { id: { $regex: `^0*${number}$` } },
     ],
-  }).lean();
+  }).select("id name workshop attendance").lean();
   const completedMatches = matches.filter((record) => workshops.find((event) => event.key === record.workshop)?.isCompleted === true);
   if (completedMatches.length === 0 && matches.length > 0) return { status: "event-not-completed" };
   const attendedMatches = completedMatches.filter((record) => record.attendance === true);
