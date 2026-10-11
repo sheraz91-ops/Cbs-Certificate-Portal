@@ -406,6 +406,50 @@ export default function EventRegistrationForm({
     );
   }
 
+  if (!eventCode && eventsQuery.isPending) {
+    return (
+      <section
+        role="status"
+        aria-live="polite"
+        className="flex min-h-20 w-full items-center justify-center rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
+      >
+        <LoadingSpinner label="Checking for active events..." />
+      </section>
+    );
+  }
+
+  if (!eventCode && eventsQuery.isSuccess && events.length === 0) {
+    return (
+      <section
+        role="status"
+        className="rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
+      >
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
+          Registration status
+        </p>
+        <h2 className="mt-3 font-display text-2xl font-semibold text-navy-900">
+          No active event found
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-navy-600">
+          There are no events open for registration right now. Please check back
+          soon. New events will appear here when registration opens.
+        </p>
+        <div className="mt-6 rounded-2xl bg-navy-50 p-4">
+          <p className="text-sm font-semibold text-navy-800">What you can do</p>
+          <p className="mt-1 text-sm leading-6 text-navy-600">
+            Return later to enroll in upcoming events.
+          </p>
+        </div>
+        <Link
+          href="/"
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-navy-800 px-5 text-sm font-semibold text-white transition hover:bg-navy-700"
+        >
+          Go to home page
+        </Link>
+      </section>
+    );
+  }
+
   if (savedUserId && !existingAccount && !result) {
     return (
       <form
@@ -658,50 +702,6 @@ export default function EventRegistrationForm({
           className="mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-navy-800 px-5 py-2 text-sm font-semibold text-white hover:bg-navy-700"
         >
           Browse open events
-        </Link>
-      </section>
-    );
-  }
-
-  if (!eventCode && eventsQuery.isPending) {
-    return (
-      <section
-        role="status"
-        aria-live="polite"
-        className="flex min-h-20 items-center justify-center rounded-3xl border border-white/60 bg-white w-full p-5 shadow-card min-[380px]:p-7 sm:p-9"
-      >
-        <LoadingSpinner label="Checking for active events..." />
-      </section>
-    );
-  }
-
-  if (!eventCode && eventsQuery.isSuccess && events.length === 0) {
-    return (
-      <section
-        role="status"
-        className="rounded-3xl border border-white/60 bg-white p-5 shadow-card min-[380px]:p-7 sm:p-9"
-      >
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-700">
-          Registration status
-        </p>
-        <h2 className="mt-3 font-display text-2xl font-semibold text-navy-900">
-          No active event found
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-navy-600">
-          There are no events open for registration right now. Please check back
-          soon. New events will appear here when registration opens.
-        </p>
-        <div className="mt-6 rounded-2xl bg-navy-50 p-4">
-          <p className="text-sm font-semibold text-navy-800">What you can do</p>
-          <p className="mt-1 text-sm leading-6 text-navy-600">
-            Return later to enroll in upcoming events.
-          </p>
-        </div>
-        <Link
-          href="/"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-navy-800 px-5 text-sm font-semibold text-white transition hover:bg-navy-700"
-        >
-          Go to home page
         </Link>
       </section>
     );
