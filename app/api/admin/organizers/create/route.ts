@@ -26,7 +26,7 @@ export const POST = adminPost(async (body: AdminBody) => {
     if (!sequence) return errorResponse("Unable to assign an organizer ID", 500);
     const organizerId = `CBSO-${String(sequence.sequence).padStart(6, "0")}`;
     const organizer = await OrganizerModel.create({ organizerId, emailAddress, fullName, ...profile, passwordHash: hashOrganizerPassword(password), workshops, isActive: true });
-    return successResponse({ organizerId: organizer.organizerId, emailAddress: organizer.emailAddress ?? "", fullName: organizer.fullName, registrationNumber: organizer.registrationNumber, department: organizer.department ?? "", semester: organizer.semester, section: organizer.section ?? "", institute: organizer.institute ?? "", whatsappNumber: organizer.whatsappNumber, workshops, isActive: organizer.isActive, createdAt: organizer.createdAt.toISOString() }, "Successfully created organizer", 1, 201);
+    return successResponse({ organizerId: organizer.organizerId, emailAddress: organizer.emailAddress ?? "", fullName: organizer.fullName, registrationNumber: organizer.registrationNumber, department: organizer.department ?? "", semester: organizer.semester, section: organizer.section ?? "", institute: organizer.institute ?? "", whatsappNumber: organizer.whatsappNumber, workshops, isActive: organizer.isActive, allowLocalAttendance: organizer.allowLocalAttendance === true, createdAt: organizer.createdAt.toISOString() }, "Successfully created organizer", 1, 201);
   } catch (error) {
     if (error && typeof error === "object" && "code" in error && error.code === 11000) return errorResponse("An organizer with this email already exists", 409);
     throw error;

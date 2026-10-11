@@ -39,7 +39,7 @@ export async function findOrganizerForSession(token: string | undefined) {
   if (!token || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
   const session = await OrganizerSessionModel.findOne({ tokenHash: hashSession(token), expiresAt: { $gt: new Date() } }).select("organizerId").lean();
   if (!session) return null;
-  return OrganizerModel.findOne({ _id: session.organizerId, isActive: true }).select("email fullName workshops isActive").lean();
+  return OrganizerModel.findOne({ _id: session.organizerId, isActive: true }).select("email fullName workshops isActive allowLocalAttendance").lean();
 }
 
 export async function revokeOrganizerSession(token: string | undefined): Promise<void> {

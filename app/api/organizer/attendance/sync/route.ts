@@ -11,6 +11,7 @@ export const POST = organizerPost(async (body: OrganizerBody, organizer) => {
   if (!parsed.success) return errorResponse(validationMessage(parsed.error), 400);
   const { workshop, attendance } = parsed.data;
   if (!organizer.workshops.includes(workshop)) return errorResponse("You are not assigned to this event", 403);
+  if (organizer.allowLocalAttendance !== true) return errorResponse("Your administrator has not allowed you to save attendance locally", 403);
   const event = await WorkshopModel.findOne({ key: workshop }).select("isCompleted allowLocalAttendance").lean();
   if (!event || event.isCompleted === true) return errorResponse("This event is completed and attendance can no longer be changed", 403);
   if (event.allowLocalAttendance !== true) return errorResponse("Local attendance saving is not allowed for this event", 403);

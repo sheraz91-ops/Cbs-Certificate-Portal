@@ -13,12 +13,15 @@ const organizerSchema = new Schema({
   passwordHash: { type: String, required: true, select: false },
   workshops: { type: [String], required: true, default: [] },
   isActive: { type: Boolean, required: true, default: true },
+  allowLocalAttendance: { type: Boolean, required: true, default: false },
 }, { timestamps: true, versionKey: false });
 
 organizerSchema.index({ organizerId: 1 }, { unique: true });
 organizerSchema.index({ emailAddress: 1 }, { unique: true, sparse: true, name: "organizer_email_unique_sparse" });
 
-if (models.Organizer && models.Organizer.schema.path("cnic")) delete models.Organizer;
+if (models.Organizer && (models.Organizer.schema.path("cnic") || !models.Organizer.schema.path("allowLocalAttendance"))) {
+  delete models.Organizer;
+}
 
 const OrganizerModel = models.Organizer || model("Organizer", organizerSchema);
 export default OrganizerModel;

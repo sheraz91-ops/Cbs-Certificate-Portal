@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
     const organizer = await findOrganizerForSession(request.cookies.get(ORGANIZER_SESSION_COOKIE)?.value);
     if (!organizer) return errorResponse("Organizer session expired or missing", 401);
-    const response = successResponse({ authenticated: true, fullName: organizer.fullName }, "Organizer session is active", 1);
+    const response = successResponse({ authenticated: true, fullName: organizer.fullName, allowLocalAttendance: organizer.allowLocalAttendance === true }, "Organizer session is active", 1);
     response.headers.set("Cache-Control", "no-store");
     return response;
   } catch (error) {

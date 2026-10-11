@@ -30,7 +30,11 @@ const fields = [
 
 const requiredFields = new Set(["fullName", "registrationNumber", "semester", "whatsappNumber"]);
 
-type OrganizerProfile = UserProfileInput & { workshops: string[]; password: string };
+type OrganizerProfile = UserProfileInput & {
+  workshops: string[];
+  allowLocalAttendance: boolean;
+  password: string;
+};
 
 function toProfile(organizer: OrganizerRecord): OrganizerProfile {
   return {
@@ -43,6 +47,7 @@ function toProfile(organizer: OrganizerRecord): OrganizerProfile {
     institute: organizer.institute,
     whatsappNumber: organizer.whatsappNumber,
     workshops: organizer.workshops,
+    allowLocalAttendance: organizer.allowLocalAttendance,
     password: "",
   };
 }
@@ -150,7 +155,7 @@ export default function OrganizerDetails({ organizerId }: { organizerId: string 
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Assigned Organizer ID</p>
               <p className="mt-2 font-mono text-xl font-semibold text-indigo-200">{organizer.organizerId}</p>
-              <p className="mt-2 text-sm text-slate-400">Created {new Date(organizer.createdAt).toLocaleString()} · {organizer.isActive ? "Active" : "Inactive"}</p>
+              <p className="mt-2 text-sm text-slate-400">Created {new Date(organizer.createdAt).toLocaleString()} · {organizer.isActive ? "Active" : "Inactive"} · Local attendance {organizer.allowLocalAttendance ? "allowed" : "not allowed"}</p>
             </div>
             {!editing && <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${organizer.isActive ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-800 text-slate-400"}`}>{organizer.isActive ? "Active" : "Inactive"}</span>
@@ -179,6 +184,29 @@ export default function OrganizerDetails({ organizerId }: { organizerId: string 
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">{eventsQuery.data?.map((item) => <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-200"><InputField type="checkbox" checked={profile.workshops.includes(item.key)} onChange={() => toggleWorkshop(item.key)} className="mt-0.5 accent-indigo-500" /><span><span className="block font-medium">{item.workshopName}</span><span className="mt-0.5 block text-xs text-slate-500">{item.eventDate} · {item.eventYear}</span></span></label>)}</div>
                 )}
               </fieldset>
+              <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4 text-sm text-slate-200">
+                <InputField
+                  type="checkbox"
+                  checked={profile.allowLocalAttendance}
+                  onChange={(event) =>
+                    setProfile((current) =>
+                      current
+                        ? { ...current, allowLocalAttendance: event.target.checked }
+                        : current,
+                    )
+                  }
+                  className="mt-0.5 accent-indigo-500"
+                />
+                <span>
+                  <span className="block font-medium">
+                    Allow this organizer to save attendance locally
+                  </span>
+                  <span className="mt-1 block text-xs text-slate-400">
+                    Local saving is available only when this permission and the
+                    event-level permission are both enabled.
+                  </span>
+                </span>
+              </label>
               {(formError || mutation.isError) && <p role="alert" className="mt-4 text-sm text-red-300">{formError || (mutation.isError ? mutation.error.message : "")}</p>}
               <div className="mt-5 flex gap-3">
                 <button type="submit" disabled={mutation.isPending || eventsQuery.isPending} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">{mutation.isPending ? "Saving…" : "Save details"}</button>
@@ -189,6 +217,7 @@ export default function OrganizerDetails({ organizerId }: { organizerId: string 
             <>
               <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
                 {fields.map(([key, label]) => <div key={key}><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 break-words text-sm font-medium text-slate-100">{organizer[key]}</dd></div>)}
+                <div><dt className="text-xs font-medium uppercase tracking-wide text-slate-500">Local attendance permission</dt><dd className="mt-1 break-words text-sm font-medium text-slate-100">{organizer.allowLocalAttendance ? "Allowed" : "Not allowed"}</dd></div>
               </dl>
               <div className="mt-8"><h3 className="text-lg font-semibold text-white">Assigned Events</h3>{organizer.workshops.length === 0 ? <p className="mt-3 text-sm text-slate-400">No events are assigned.</p> : <ul className="mt-3 grid gap-2 sm:grid-cols-2">{organizer.workshops.map((key) => { const item = eventsQuery.data?.find((event) => event.key === key); return <li key={key} className="rounded-xl border border-slate-800 bg-slate-900/60 p-3"><span className="block text-sm font-medium text-slate-100">{item?.workshopName ?? key}</span>{item && <span className="mt-1 block text-xs text-slate-500">{item.eventDate} · {item.eventYear}</span>}</li>; })}</ul>}</div>
             </>

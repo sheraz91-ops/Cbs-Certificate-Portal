@@ -236,6 +236,7 @@ export const organizerDetailsSchema = z.object({ organizerId: organizerIdSchema 
 export const updateOrganizerSchema = adminCampusUserProfileSchema.extend({
   organizerId: organizerIdSchema,
   workshops: z.array(workshopKeySchema, { error: "Required" }).max(100),
+  allowLocalAttendance: z.boolean({ error: "Required" }),
   password: z.string().max(128).refine((value) => value.length === 0 || value.length >= 16, "New password must contain at least 16 characters").optional(),
 }).strict().transform((value) => ({ ...value, workshops: [...new Set(value.workshops)], password: value.password || undefined }));
 export const organizerLoginSchema = z.object({

@@ -11,6 +11,7 @@ export type OrganizerSummary = {
   department: string;
   workshops: string[];
   isActive: boolean;
+  allowLocalAttendance: boolean;
   createdAt: string;
 };
 
@@ -21,7 +22,7 @@ export type CreateOrganizerInput = Omit<AdminUserProfileInput, "emailAddress"> &
 };
 
 export type OrganizerDetails = OrganizerSummary & UserProfileInput;
-export type UpdateOrganizerInput = AdminUserProfileInput & { organizerId: string; workshops: string[]; password?: string };
+export type UpdateOrganizerInput = AdminUserProfileInput & { organizerId: string; workshops: string[]; allowLocalAttendance: boolean; password?: string };
 
 export type OrganizerSessionSummary = { id: string; organizerId: string; fullName: string; emailAddress: string; createdAt: string; expiresAt: string };
 export function getOrganizerSessions(): Promise<OrganizerSessionSummary[]> {
@@ -83,7 +84,7 @@ export function loginOrganizer(input: OrganizerLoginInput): Promise<{ authentica
   return postData("/api/organizer/session/login", organizerLoginSchema.parse(input));
 }
 
-export function getOrganizerSession(): Promise<{ authenticated: true; fullName: string }> {
+export function getOrganizerSession(): Promise<{ authenticated: true; fullName: string; allowLocalAttendance: boolean }> {
   return getData("/api/organizer/session/status", { cache: "no-store" });
 }
 

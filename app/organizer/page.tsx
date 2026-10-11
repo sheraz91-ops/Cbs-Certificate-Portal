@@ -27,6 +27,7 @@ export default function OrganizerDashboardPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [fullName, setFullName] = useState("");
+  const [organizerAllowsLocalAttendance, setOrganizerAllowsLocalAttendance] = useState(false);
   const [workshop, setWorkshop] = useState("");
   const [participantSearch, setParticipantSearch] = useState("");
   const [attendanceError, setAttendanceError] = useState("");
@@ -85,6 +86,7 @@ export default function OrganizerDashboardPage() {
     getOrganizerSession()
       .then((session) => {
         setFullName(session.fullName);
+        setOrganizerAllowsLocalAttendance(session.allowLocalAttendance);
         setAuthenticated(true);
       })
       .catch(() => {
@@ -261,7 +263,7 @@ export default function OrganizerDashboardPage() {
               </select>
             </label>
           </div>
-          {selectedEvent?.allowLocalAttendance && (
+          {selectedEvent?.allowLocalAttendance && organizerAllowsLocalAttendance && (
             <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
               <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-800">
                 <input
@@ -289,7 +291,7 @@ export default function OrganizerDashboardPage() {
                   <button
                     type="button"
                     onClick={pushLocalAttendance}
-                    disabled={syncAttendanceMutation.isPending || !selectedEvent.allowLocalAttendance}
+                    disabled={syncAttendanceMutation.isPending}
                     className="min-h-10 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {syncAttendanceMutation.isPending
@@ -306,11 +308,13 @@ export default function OrganizerDashboardPage() {
               )}
             </div>
           )}
-          {!selectedEvent?.allowLocalAttendance && pendingAttendance.length > 0 && (
+          {pendingAttendance.length > 0 &&
+            (!selectedEvent?.allowLocalAttendance || !organizerAllowsLocalAttendance) && (
             <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               {pendingAttendance.length} local attendance change(s) are waiting.
-              An administrator must allow local attendance for this event before
-              you can push them.
+              {!organizerAllowsLocalAttendance
+                ? " An administrator must allow local attendance for your organizer account before you can push them."
+                : " An administrator must allow local attendance for this event before you can push them."}
             </p>
           )}
           {eventsQuery.isError && (
