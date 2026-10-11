@@ -75,6 +75,17 @@ Client components use TanStack Query. Feature API modules call the shared
 `successResponse` / `errorResponse` from `lib/api-response.ts`. The template
 image route returns image bytes on success because it serves a binary asset.
 
+## Developer and AI documentation
+
+- [AI_CONTEXT.md](./AI_CONTEXT.md) is the starting point for AI coding assistants.
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) describes the application layers and major feature areas.
+- [docs/DATA_FLOW.md](./docs/DATA_FLOW.md) traces data from browser/page through API and persistence, including local attendance sync.
+- [docs/BUSINESS_RULES.md](./docs/BUSINESS_RULES.md) records validation and eligibility conditions enforced by the code.
+- [docs/DATA_MODEL.md](./docs/DATA_MODEL.md) maps MongoDB records and browser storage.
+- [Documentation.html](./Documentation.html) is the styled, full route-to-caller API reference.
+
+These documents summarize implementation behavior. When a summary conflicts with code, route handlers, validation schemas, model definitions, and feature clients are authoritative.
+
 Participant IDs are unique within each workshop. Bare numeric IDs search all workshops and return a choice if more than one participant matches. Full IDs such as `CBS-LSW-2026-005` identify a workshop directly.
 
 ## Certificate templates

@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="API reference for the CBS Certificate Portal, including endpoints, request data, responses, and app call sites.">
+    <title>CBS Certificate Portal API Documentation</title>
+    <link rel="stylesheet" href="Documentation.css">
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">CBS CERTIFICATE PORTAL · DEVELOPER REFERENCE</p>
+        <h1>API Documentation</h1>
+        <p class="hero-copy">A map of the application’s API routes, what each route does, the data it accepts, and where the app calls it.</p>
+        <div class="hero-meta">
+          <span>Next.js App Router</span>
+          <span>46 route handlers</span>
+          <span>JSON + template image responses</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <nav class="contents" aria-label="Documentation sections">
+        <strong>On this page</strong>
+        <a href="#overview">Overview</a>
+        <a href="#public">Public &amp; registration</a>
+        <a href="#certificates">Certificates</a>
+        <a href="#admin">Admin</a>
+        <a href="#organizer">Organizer</a>
+        <a href="#shared-clients">Shared clients</a>
+      </nav>
+
+      <section id="overview" class="intro-section">
+        <div class="section-heading">
+          <p class="eyebrow">START HERE</p>
+          <h2>How API calls work</h2>
+        </div>
+        <div class="info-grid">
+          <article class="info-card">
+            <h3>JSON response envelope</h3>
+            <p>Most routes return the standard envelope. Client helpers return the value inside <code>Content</code>.</p>
+            <pre><code>{
+  "Code": 200,
+  "Content": {},
+  "Count": 1,
+  "Message": "Successfully completed",
+  "Status": "Success"
+}</code></pre>
+          </article>
+          <article class="info-card">
+            <h3>Error responses</h3>
+            <p>JSON errors use the same envelope with <code>Status: "Error"</code> and <code>Content: { "error": "..." }</code>. Check both the HTTP status and envelope status.</p>
+            <pre><code>{
+  "Code": 400,
+  "Content": { "error": "Validation message" },
+  "Count": 0,
+  "Message": "Validation message",
+  "Status": "Error"
+}</code></pre>
+          </article>
+          <article class="info-card">
+            <h3>Methods and credentials</h3>
+            <p>Unless marked <span class="method get">GET</span>, a route uses <span class="method post">POST</span> with a JSON request body. Same-origin credentials are sent by the shared API client. Admin and organizer protected routes use their respective session cookies.</p>
+          </article>
+          <article class="info-card">
+            <h3>Reading the call-site column</h3>
+            <p>Paths identify the page, component, or server helper where the request originates. A page may call a feature API wrapper rather than invoking <code>fetch</code> directly.</p>
+          </article>
+        </div>
+        <p class="notice"><strong>Implementation note:</strong> Payloads and returned data below are concise summaries. The route validation schemas and TypeScript types in the listed source files are authoritative if a field changes.</p>
+      </section>
+
+      <section id="public" class="api-section">
+        <div class="section-heading">
+          <p class="eyebrow">OPEN FLOWS</p>
+          <h2>Public &amp; registration APIs</h2>
+          <p>Event discovery, account verification, participant registration, and public form configuration.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Endpoint</th><th>Called from</th><th>Purpose and request</th><th>Successful content</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="method get">GET</span><code>/api/events</code></td>
+                <td><code>components/EventRegistrationForm.tsx</code><br><code>app/admin/organizers/create/page.tsx</code><br><code>app/admin/organizers/[id]/OrganizerDetails.tsx</code></td>
+                <td>Lists events open for registration. No body.</td>
+                <td><code>EventOption[]</code></td>
+              </tr>
+              <tr>
+                <td><span class="method get">GET</span><code>/api/events/[eventCode]</code></td>
+                <td><code>app/register/RegisterPageContent.tsx</code></td>
+                <td>Loads one event by its route key or workshop code. The event code is a URL path segment.</td>
+                <td><code>EventOption</code></td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/events/account</code></td>
+                <td><code>components/EventRegistrationForm.tsx</code></td>
+                <td>Checks a returning participant. JSON contains the CBS <code>userId</code> and an email or phone value for account verification.</td>
+                <td>Matching account profile, including user ID, name, registration and contact details.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/events/register</code></td>
+                <td><code>components/EventRegistrationForm.tsx</code></td>
+                <td>Creates an event registration. Sends <code>EventRegistrationInput</code>: selected event, participant/profile values, and configured custom answers.</td>
+                <td>Registration result with user ID, certificate ID, and event name, or an <code>existingUser</code> result when the account already exists.</td>
+              </tr>
+              <tr>
+                <td><span class="method get">GET</span><code>/api/user-registration-form</code></td>
+                <td><code>components/EventRegistrationForm.tsx</code></td>
+                <td>Loads the public user-profile registration form configuration. No body.</td>
+                <td>Public registration form configuration and field definitions.</td>
+              </tr>
+              <tr>
+                <td><span class="method get">GET</span><code>/api/workshops</code></td>
+                <td><code>components/CertificateForm.tsx</code></td>
+                <td>Lists workshops that can be selected for certificate lookup. No body.</td>
+                <td><code>WorkshopSummary[]</code> with workshop key/name and completion state.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="certificates" class="api-section">
+        <div class="section-heading">
+          <p class="eyebrow">LOOKUP · VERIFY · RENDER</p>
+          <h2>Certificate APIs</h2>
+          <p>Public lookup and organizer-certificate flows. The template endpoint is an image asset rather than a JSON API response.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Endpoint</th><th>Called from</th><th>Purpose and request</th><th>Successful content</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/certificates/lookup</code></td>
+                <td><code>components/CertificateForm.tsx</code><br><code>components/CertificatePreview.tsx</code><br><code>components/VerifyPanel.tsx</code></td>
+                <td>Looks up a certificate by ID or participant/account ID, optionally scoped by workshop. JSON: <code>{ "id": "...", "workshop": "optional-key" }</code>.</td>
+                <td><code>CertificateLookupResponse</code>: minimal found certificate data, candidate list, or a status such as <code>not-found</code>, <code>attendance-required</code>, or <code>event-not-completed</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/certificates/organizer/assigned-events</code></td>
+                <td><code>components/CertificateForm.tsx</code><br><code>components/VerifyPanel.tsx</code></td>
+                <td>Finds completed events assigned to an organizer. JSON: <code>{ "organizerId": "...", "fullName": "..." }</code>.</td>
+                <td>Matching <code>WorkshopDefinition[]</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/certificates/organizer/generate</code></td>
+                <td><code>components/CertificateForm.tsx</code></td>
+                <td>Prepares an organizer certificate. Sends organizer identity and selected <code>workshop</code> key.</td>
+                <td>Certificate data containing <code>fullName</code>, <code>organizerId</code>, and workshop rendering information.</td>
+              </tr>
+              <tr>
+                <td><span class="method get">GET</span><code>/api/templates/[key]</code></td>
+                <td><code>lib/renderCertificatePng.ts</code><br><code>lib/generateCertificate.ts</code> (indirect template URL)</td>
+                <td>Loads the certificate background for a workshop. The key is a URL path segment; no JSON body.</td>
+                <td>Raw image bytes with an image content type, not the standard JSON envelope.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="admin" class="api-section">
+        <div class="section-heading">
+          <p class="eyebrow">ADMIN CONSOLE</p>
+          <h2>Admin APIs</h2>
+          <p>Admin data-management routes require a valid admin session, except the session login/status/logout operations.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Endpoint</th><th>Called from</th><th>Purpose and request</th><th>Successful content</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/attendance/update</code></td>
+                <td><code>app/admin/users/[id]/UserDetails.tsx</code></td>
+                <td>Updates a participant attendance record. <code>{ userId, workshop, participantId, present }</code>.</td>
+                <td>Updated user, workshop, participant ID, and attendance state.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizer-sessions/list</code></td>
+                <td><code>app/admin/organizers/sessions/page.tsx</code></td>
+                <td>Lists active/revocable organizer sessions. Empty JSON body.</td>
+                <td>Session summaries with session ID, organizer identity, and created/expiry times.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizer-sessions/revoke</code></td>
+                <td><code>app/admin/organizers/sessions/page.tsx</code></td>
+                <td>Revokes an organizer session. <code>{ id }</code>.</td>
+                <td><code>null</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizers/assign</code></td>
+                <td><code>app/admin/organizers/[id]/OrganizerDetails.tsx</code></td>
+                <td>Assigns event/workshop keys to an organizer. <code>{ organizerId, workshops }</code>.</td>
+                <td>Updated organizer ID and workshop assignments.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizers/create</code></td>
+                <td><code>app/admin/organizers/create/page.tsx</code></td>
+                <td>Creates an organizer. Sends organizer profile, password, and assigned workshops.</td>
+                <td>Created organizer summary.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizers/delete</code></td>
+                <td><code>app/admin/organizers/[id]/OrganizerDetails.tsx</code></td>
+                <td>Deletes an organizer after password confirmation. <code>{ organizerId, password }</code>.</td>
+                <td><code>null</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizers/details</code></td>
+                <td><code>app/admin/organizers/[id]/OrganizerDetails.tsx</code></td>
+                <td>Loads an organizer record. <code>{ organizerId }</code>.</td>
+                <td>Organizer profile, status, and assignment details.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizers/list</code></td>
+                <td><code>app/admin/organizers/page.tsx</code></td>
+                <td>Lists organizer summaries. Empty JSON body.</td>
+                <td>Organizer summary array.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizers/status</code></td>
+                <td><code>app/admin/organizers/[id]/OrganizerDetails.tsx</code></td>
+                <td>Activates or deactivates an organizer. <code>{ organizerId, isActive }</code>.</td>
+                <td>Updated organizer ID and active state.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/organizers/update</code></td>
+                <td><code>app/admin/organizers/[id]/OrganizerDetails.tsx</code></td>
+                <td>Updates organizer profile and assignments. Sends organizer ID and changed profile/assignment values.</td>
+                <td>Updated organizer details.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/overview/stats</code></td>
+                <td><code>app/admin/page.tsx</code></td>
+                <td>Loads admin dashboard totals and recent records. Empty JSON body.</td>
+                <td><code>AdminOverviewStats</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/participants/add</code></td>
+                <td><code>components/AdminForms.tsx</code></td>
+                <td>Adds registered users as participants in a workshop. <code>{ workshop, userIds }</code>.</td>
+                <td>Counts of added and skipped users, plus assigned certificate IDs.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/participants/delete</code></td>
+                <td><code>app/admin/workshops/manage/[key]/WorkshopDetails.tsx</code></td>
+                <td>Removes a participant from a workshop. <code>{ workshop, id, name }</code>.</td>
+                <td><code>null</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/session/login</code></td>
+                <td><code>app/admin/AdminShell.tsx</code></td>
+                <td>Authenticates an admin. <code>{ password }</code>. On success, sets the admin session cookie.</td>
+                <td><code>{ authenticated: true }</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/session/logout</code></td>
+                <td><code>app/admin/AdminShell.tsx</code></td>
+                <td>Ends the current admin session. Empty JSON body; clears the session cookie.</td>
+                <td><code>null</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method get">GET</span><code>/api/admin/session/status</code></td>
+                <td><code>app/admin/AdminShell.tsx</code></td>
+                <td>Checks whether the current browser has a valid admin session. No body.</td>
+                <td>Authentication status, including <code>authenticated</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/create</code></td>
+                <td><code>app/admin/users/page.tsx</code></td>
+                <td>Creates a registered user. Sends profile fields and optional <code>userIdSuffix</code>.</td>
+                <td>Created user record.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/delete</code></td>
+                <td><code>app/admin/users/[id]/UserDetails.tsx</code></td>
+                <td>Deletes a user after password confirmation. <code>{ userId, password }</code>.</td>
+                <td>Number of deleted enrollments.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/details</code></td>
+                <td><code>app/admin/users/[id]/UserDetails.tsx</code></td>
+                <td>Loads user and enrollment details. <code>{ userId }</code>.</td>
+                <td>User details and event enrollments.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/enroll</code></td>
+                <td><code>app/admin/users/[id]/UserDetails.tsx</code></td>
+                <td>Enrolls an existing user in a workshop. <code>{ userId, workshop }</code>.</td>
+                <td>Workshop key/name, assigned certificate ID, and initial <code>attendance: false</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/list</code></td>
+                <td><code>app/admin/users/all/page.tsx</code></td>
+                <td>Lists user summaries. Empty JSON body.</td>
+                <td>User summary array.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/registration-form</code></td>
+                <td><code>app/admin/users/registration-form/page.tsx</code></td>
+                <td>Reads or saves admin registration form configuration. Empty object loads it; a configuration payload saves it.</td>
+                <td>Registration form configuration.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/status</code></td>
+                <td><code>app/admin/users/[id]/UserDetails.tsx</code></td>
+                <td>Activates or deactivates a user. <code>{ userId, isActive }</code>.</td>
+                <td>Updated user ID and active state.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/users/update</code></td>
+                <td><code>app/admin/users/[id]/UserDetails.tsx</code></td>
+                <td>Updates a user profile. Sends <code>userId</code> with profile fields to update.</td>
+                <td>Updated user record.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/workshops/create</code></td>
+                <td><code>components/AdminForms.tsx</code></td>
+                <td>Creates an event/workshop. Request follows <code>AddWorkshopInput</code>, including event settings and certificate configuration.</td>
+                <td>Created workshop and an optional note.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/workshops/delete</code></td>
+                <td><code>app/admin/workshops/manage/[key]/WorkshopDetails.tsx</code></td>
+                <td>Deletes a workshop. <code>{ workshop }</code>.</td>
+                <td>Number of deleted participant records.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/workshops/details</code></td>
+                <td><code>app/admin/workshops/manage/page.tsx</code><br><code>app/admin/workshops/collected-data/page.tsx</code><br><code>app/admin/workshops/manage/[key]/WorkshopDetails.tsx</code></td>
+                <td>Loads detailed workshops and associated participant/organizer data. Empty JSON body.</td>
+                <td>Workshop details array.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/workshops/list</code></td>
+                <td><code>app/admin/participants/page.tsx</code><br><code>app/admin/users/[id]/UserDetails.tsx</code></td>
+                <td>Lists workshop summaries for admin selection. Empty JSON body.</td>
+                <td>Workshop summary array.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/admin/workshops/update</code></td>
+                <td><code>app/admin/workshops/manage/[key]/WorkshopDetails.tsx</code></td>
+                <td>Updates a workshop. Request follows <code>UpdateWorkshopInput</code>.</td>
+                <td>Updated workshop definition.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="organizer" class="api-section">
+        <div class="section-heading">
+          <p class="eyebrow">ATTENDANCE CONSOLE</p>
+          <h2>Organizer APIs</h2>
+          <p>Organizer session routes establish/check/end a session. Attendance and event data routes require an authenticated organizer and enforce event assignments and local-attendance permissions.</p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Endpoint</th><th>Called from</th><th>Purpose and request</th><th>Successful content</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/organizer/session/login</code></td>
+                <td><code>app/organizer/login/page.tsx</code></td>
+                <td>Authenticates an organizer. <code>{ email, password }</code>. On success, sets the organizer session cookie.</td>
+                <td>Authentication status and organizer full name.</td>
+              </tr>
+              <tr>
+                <td><span class="method get">GET</span><code>/api/organizer/session/status</code></td>
+                <td><code>app/organizer/login/page.tsx</code><br><code>app/organizer/page.tsx</code></td>
+                <td>Checks the current organizer session and local attendance permission. No body.</td>
+                <td>Authentication status, organizer name, and <code>allowLocalAttendance</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/organizer/session/logout</code></td>
+                <td><code>app/organizer/page.tsx</code></td>
+                <td>Ends the organizer session. Empty JSON body; clears the cookie.</td>
+                <td><code>null</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/organizer/events/list</code></td>
+                <td><code>app/organizer/page.tsx</code></td>
+                <td>Lists events assigned to the authenticated organizer. Empty JSON body.</td>
+                <td><code>OrganizerEvent[]</code>.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/organizer/participants/list</code></td>
+                <td><code>app/organizer/page.tsx</code></td>
+                <td>Loads participants and attendance for an assigned event. <code>{ workshop }</code>.</td>
+                <td>Participant details and current attendance values.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/organizer/attendance/update</code></td>
+                <td><code>app/organizer/page.tsx</code></td>
+                <td>Saves one attendance change. <code>{ workshop, participantId, present }</code>.</td>
+                <td>Updated participant ID and attendance value.</td>
+              </tr>
+              <tr>
+                <td><span class="method post">POST</span><code>/api/organizer/attendance/sync</code></td>
+                <td><code>app/organizer/page.tsx</code></td>
+                <td>Pushes queued local attendance updates in a batch. <code>{ workshop, attendance: [{ participantId, present }] }</code>.</td>
+                <td>Number of synchronized attendance entries in <code>updated</code>.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="shared-clients" class="api-section final-section">
+        <div class="section-heading">
+          <p class="eyebrow">SOURCE OF TRUTH</p>
+          <h2>Shared API clients and types</h2>
+          <p>Client wrappers and shared helpers used by the route callers.</p>
+        </div>
+        <div class="client-grid">
+          <article><code>lib/api-client.ts</code><p>Shared <code>getData</code> and <code>postData</code> helpers, same-origin credentials, envelope parsing, and API errors.</p></article>
+          <article><code>lib/api-response.ts</code><p>Server-side <code>successResponse</code> and <code>errorResponse</code> JSON envelope helpers.</p></article>
+          <article><code>features/events/api.ts</code><p>Event listing, existing-account verification, registration, and event-detail requests.</p></article>
+          <article><code>features/certificates/api.ts</code> <code>features/certificates/organizer-api.ts</code><p>Public lookup and organizer certificate requests.</p></article>
+          <article><code>features/admin/api.ts</code> <code>features/organizers/api.ts</code><p>Admin console and organizer session/data requests.</p></article>
+          <article><code>features/users/api.ts</code> <code>features/users/registrationFormApi.ts</code><p>User management and public/admin registration-form requests.</p></article>
+          <article><code>features/workshops/api.ts</code> <code>features/participants/api.ts</code><p>Workshop and participant administration requests.</p></article>
+          <article><code>types/api.ts</code><p>Shared API envelope types. Route-specific request/response types are defined near their feature clients and validation schemas.</p></article>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>CBS Certificate Portal</span>
+        <a href="#overview">Back to top ↑</a>
+      </footer>
+    </main>
+  </body>
+</html>
