@@ -49,6 +49,7 @@ export type UpdateWorkshopInput = {
   isActive: boolean;
   isCompleted: boolean;
   allowOutsiders: boolean;
+  allowLocalAttendance: boolean;
   confirmationMessage: string;
   registrationFields: { key: string; label: string; type?: "text" | "yes_no" | "checkbox" | "matrix"; choices?: string[]; rows?: string[]; selectionMode?: "multiple" | "single"; required: boolean }[];
   imageBase64?: string;

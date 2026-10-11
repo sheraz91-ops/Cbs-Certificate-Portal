@@ -122,6 +122,12 @@ export default function ManageWorkshopsPage() {
                       </dd>
                     </div>
                     <div>
+                      <dt className="text-slate-500">Local attendance</dt>
+                      <dd className="mt-1 text-slate-200">
+                        {workshop.allowLocalAttendance ? "Allowed" : "Not allowed"}
+                      </dd>
+                    </div>
+                    <div>
                       <dt className="text-slate-500">Participants</dt>
                       <dd className="mt-1 tabular-nums text-slate-200">
                         {workshop.participants.length}

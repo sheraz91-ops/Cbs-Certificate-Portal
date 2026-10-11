@@ -277,6 +277,7 @@ export default function WorkshopDetails({
       isActive: workshop.isActive !== false,
       isCompleted: workshop.isCompleted === true,
       allowOutsiders: workshop.allowOutsiders ?? false,
+      allowLocalAttendance: workshop.allowLocalAttendance ?? false,
       confirmationMessage: workshop.confirmationMessage ?? "",
       registrationFields: (workshop.registrationFields ?? []).map((field) => ({
         ...field,
@@ -535,6 +536,30 @@ export default function WorkshopDetails({
                     <span className="mt-1 block text-xs text-slate-400">
                       Outside participants can register with any registration
                       number format.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-4 text-sm text-slate-200">
+                  <InputField
+                    type="checkbox"
+                    checked={draft.allowLocalAttendance}
+                    validationSchema={updateWorkshopSchema.shape.allowLocalAttendance}
+                    onChange={(event) =>
+                      setDraft((current) =>
+                        current
+                          ? { ...current, allowLocalAttendance: event.target.checked }
+                          : current,
+                      )
+                    }
+                    className="mt-0.5 accent-indigo-500"
+                  />
+                  <span>
+                    <span className="block font-medium">
+                      Allow organizers to save attendance locally
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-400">
+                      Organizers can queue attendance in this browser and push
+                      it to the database later.
                     </span>
                   </span>
                 </label>
@@ -879,6 +904,10 @@ export default function WorkshopDetails({
                 <Info
                   label="Outside Participants"
                   value={workshop.allowOutsiders ? "Allowed" : "Not allowed"}
+                />
+                <Info
+                  label="Organizer Local Attendance"
+                  value={workshop.allowLocalAttendance ? "Allowed" : "Not allowed"}
                 />
                 <Info label="Organized By" value={workshop.organizedBy} />
                 <Info

@@ -1,5 +1,5 @@
 import { getData, postData } from "@/lib/api-client";
-import { createOrganizerSchema, organizerDeleteSchema, organizerDetailsSchema, organizerLoginSchema, organizerStatusSchema, organizerAssignmentSchema, updateOrganizerSchema } from "@/lib/validation/schemas";
+import { createOrganizerSchema, organizerAttendanceBatchSchema, organizerDeleteSchema, organizerDetailsSchema, organizerLoginSchema, organizerStatusSchema, organizerAssignmentSchema, updateOrganizerSchema } from "@/lib/validation/schemas";
 import type { EventOption } from "@/features/events/api";
 import type { AdminUserProfileInput, UserProfileInput } from "@/types/user";
 
@@ -48,6 +48,8 @@ export type OrganizerParticipant = {
   } | null;
 };
 
+export type OrganizerEvent = EventOption & { allowLocalAttendance: boolean };
+
 export function createOrganizer(input: CreateOrganizerInput): Promise<OrganizerSummary> {
   return postData("/api/admin/organizers/create", createOrganizerSchema.parse(input));
 }
@@ -89,8 +91,8 @@ export function logoutOrganizer(): Promise<null> {
   return postData("/api/organizer/session/logout", {});
 }
 
-export function getOrganizerEvents(): Promise<EventOption[]> {
-  return postData("/api/organizer/events/list", {});
+export function getOrganizerEvents(): Promise<OrganizerEvent[]> {
+  return postData<OrganizerEvent[], Record<string, never>>("/api/organizer/events/list", {});
 }
 
 export function getEventParticipants(workshop: string): Promise<OrganizerParticipant[]> {
@@ -99,4 +101,15 @@ export function getEventParticipants(workshop: string): Promise<OrganizerPartici
 
 export function updateAttendance(workshop: string, participantId: string, present: boolean): Promise<{ participantId: string; attendance: boolean }> {
   return postData("/api/organizer/attendance/update", { workshop, participantId, present });
+}
+
+export async function syncAttendance(workshop: string, attendance: { participantId: string; present: boolean }[]): Promise<{ updated: number }> {
+  let updated = 0;
+  for (let offset = 0; offset < attendance.length; offset += 5000) {
+    const batch = attendance.slice(offset, offset + 5000);
+    const parsed = organizerAttendanceBatchSchema.parse({ workshop, attendance: batch });
+    const result = await postData<{ updated: number }, typeof parsed>("/api/organizer/attendance/sync", parsed);
+    updated += result.updated;
+  }
+  return { updated };
 }

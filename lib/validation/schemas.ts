@@ -149,6 +149,7 @@ export const createWorkshopSchema = z.object({
   isActive: z.boolean({ error: "Required" }).default(true),
   isCompleted: z.boolean().default(false),
   allowOutsiders: z.boolean().default(false),
+  allowLocalAttendance: z.boolean().default(false),
   confirmationMessage: z.string().trim().max(5000).default(""),
   registrationFields: z.array(registrationFieldSchema).max(30).default([]),
   imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
@@ -187,6 +188,7 @@ export const updateWorkshopSchema = z.object({
   isActive: z.boolean({ error: "Required" }),
   isCompleted: z.boolean({ error: "Required" }),
   allowOutsiders: z.boolean({ error: "Required" }),
+  allowLocalAttendance: z.boolean({ error: "Required" }),
   confirmationMessage: z.string().trim().max(5000).default(""),
   registrationFields: z.array(registrationFieldSchema).max(30).default([]),
   imageBase64: z.string().max(20 * 1024 * 1024, "Template image is too large").regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/, "Template image must be valid base64").optional(),
@@ -249,6 +251,17 @@ export const organizerAttendanceSchema = z.object({
   participantId: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
   present: z.boolean({ error: "Required" }),
 }).strict();
+export const organizerAttendanceBatchSchema = z.object({
+  workshop: workshopKeySchema,
+  attendance: z.array(z.object({
+    participantId: z.string({ error: "Required" }).trim().min(1, "Required").max(32),
+    present: z.boolean({ error: "Required" }),
+  }).strict()).min(1).max(5000),
+}).strict().superRefine(({ attendance }, context) => {
+  if (new Set(attendance.map(({ participantId }) => participantId)).size !== attendance.length) {
+    context.addIssue({ code: "custom", message: "Participant IDs must be unique", path: ["attendance"] });
+  }
+});
 export const adminAttendanceSchema = z.object({
   userId: userIdSchema,
   workshop: workshopKeySchema,

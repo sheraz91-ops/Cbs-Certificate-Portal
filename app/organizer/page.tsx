@@ -8,8 +8,18 @@ import {
   getOrganizerEvents,
   getOrganizerSession,
   logoutOrganizer,
+  syncAttendance,
   updateAttendance,
 } from "@/features/organizers/api";
+
+function isAttendanceDraft(value: unknown): value is Record<string, boolean> {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      Object.values(value).every((attendance) => typeof attendance === "boolean"),
+  );
+}
 
 export default function OrganizerDashboardPage() {
   const router = useRouter();
@@ -20,6 +30,9 @@ export default function OrganizerDashboardPage() {
   const [workshop, setWorkshop] = useState("");
   const [participantSearch, setParticipantSearch] = useState("");
   const [attendanceError, setAttendanceError] = useState("");
+  const [localMode, setLocalMode] = useState(false);
+  const [localDraftWorkshop, setLocalDraftWorkshop] = useState("");
+  const [localAttendanceDraft, setLocalAttendanceDraft] = useState<Record<string, boolean>>({});
   const eventsQuery = useQuery({
     queryKey: ["organizer", "events"],
     queryFn: getOrganizerEvents,
@@ -37,6 +50,28 @@ export default function OrganizerDashboardPage() {
       setAttendanceError("");
       await queryClient.invalidateQueries({
         queryKey: ["organizer", "participants", workshop],
+      });
+    },
+    onError: (error) => setAttendanceError(error.message),
+  });
+  const syncAttendanceMutation = useMutation({
+    mutationFn: (input: { workshop: string; attendance: { participantId: string; present: boolean }[] }) =>
+      syncAttendance(input.workshop, input.attendance),
+    onSuccess: async (_result, input) => {
+      let clearError = "";
+      try {
+        localStorage.removeItem(`organizer-attendance:${input.workshop}`);
+      } catch (error) {
+        clearError =
+          error instanceof Error
+            ? `Attendance synced, but the local queue could not be cleared: ${error.message}`
+            : "Attendance synced, but the local queue could not be cleared.";
+      }
+      if (localDraftWorkshop === input.workshop) setLocalAttendanceDraft({});
+      setLocalMode(false);
+      setAttendanceError(clearError);
+      await queryClient.invalidateQueries({
+        queryKey: ["organizer", "participants", input.workshop],
       });
     },
     onError: (error) => setAttendanceError(error.message),
@@ -65,6 +100,28 @@ export default function OrganizerDashboardPage() {
       setWorkshop(availableEvents[0]?.key ?? "");
   }, [eventsQuery.data, workshop]);
 
+  useEffect(() => {
+    if (!workshop) return;
+    setLocalMode(false);
+    setLocalDraftWorkshop(workshop);
+    try {
+      const saved = localStorage.getItem(`organizer-attendance:${workshop}`);
+      const parsed: unknown = saved ? JSON.parse(saved) : {};
+      if (!isAttendanceDraft(parsed)) {
+        throw new Error("The saved local attendance data is invalid.");
+      }
+      setLocalAttendanceDraft(parsed);
+      setAttendanceError("");
+    } catch (error) {
+      setLocalAttendanceDraft({});
+      setAttendanceError(
+        error instanceof Error
+          ? `Could not load local attendance: ${error.message}`
+          : "Could not load local attendance.",
+      );
+    }
+  }, [workshop]);
+
   async function signOut() {
     try {
       await logoutOrganizer();
@@ -83,7 +140,20 @@ export default function OrganizerDashboardPage() {
       </main>
     );
   const events = eventsQuery.data ?? [];
-  const participants = participantsQuery.data ?? [];
+  const selectedEvent = events.find((event) => event.key === workshop);
+  const activeLocalDraft =
+    localDraftWorkshop === workshop ? localAttendanceDraft : {};
+  const participants = (participantsQuery.data ?? []).map((participant) => ({
+    ...participant,
+    serverAttendance: participant.attendance,
+    attendance: Object.prototype.hasOwnProperty.call(activeLocalDraft, participant.participantId)
+      ? activeLocalDraft[participant.participantId]
+      : participant.attendance,
+  }));
+  const pendingAttendance = Object.entries(activeLocalDraft).map(([participantId, present]) => ({
+    participantId,
+    present,
+  }));
   const normalizedSearch = participantSearch.trim().toLocaleLowerCase();
   const filteredParticipants = normalizedSearch
     ? participants.filter((participant) => {
@@ -110,6 +180,33 @@ export default function OrganizerDashboardPage() {
   const presentCount = participants.filter(
     (participant) => participant.attendance,
   ).length;
+
+  function changeAttendance(participantId: string, serverAttendance: boolean, present: boolean) {
+    if (!localMode) {
+      attendanceMutation.mutate({ participantId, present });
+      return;
+    }
+    const nextDraft = { ...activeLocalDraft };
+    if (present === serverAttendance) delete nextDraft[participantId];
+    else nextDraft[participantId] = present;
+    try {
+      localStorage.setItem(`organizer-attendance:${workshop}`, JSON.stringify(nextDraft));
+    } catch (error) {
+      setAttendanceError(
+        error instanceof Error
+          ? `Could not save attendance locally: ${error.message}`
+          : "Could not save attendance locally.",
+      );
+      return;
+    }
+    setLocalAttendanceDraft(nextDraft);
+    setAttendanceError("");
+  }
+
+  function pushLocalAttendance() {
+    if (!workshop || pendingAttendance.length === 0) return;
+    syncAttendanceMutation.mutate({ workshop, attendance: pendingAttendance });
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
@@ -150,7 +247,7 @@ export default function OrganizerDashboardPage() {
                   setWorkshop(event.target.value);
                   setParticipantSearch("");
                 }}
-                disabled={eventsQuery.isPending || events.length === 0}
+                disabled={eventsQuery.isPending || events.length === 0 || attendanceMutation.isPending || syncAttendanceMutation.isPending}
                 className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-medium normal-case tracking-normal text-slate-900 outline-none focus:border-indigo-500"
               >
                 {events.length === 0 && (
@@ -164,6 +261,58 @@ export default function OrganizerDashboardPage() {
               </select>
             </label>
           </div>
+          {selectedEvent?.allowLocalAttendance && (
+            <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
+              <label className="flex cursor-pointer items-start gap-3 text-sm text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={localMode}
+                  onChange={(event) => setLocalMode(event.target.checked)}
+                  disabled={syncAttendanceMutation.isPending}
+                  className="mt-0.5 accent-indigo-600"
+                />
+                <span>
+                  <span className="block font-semibold">
+                    Save attendance locally on this device
+                  </span>
+                  <span className="mt-1 block text-xs text-slate-600">
+                    Changes are saved in this browser and will not reach the
+                    database until you push them.
+                  </span>
+                </span>
+              </label>
+              <div className="mt-3 flex flex-wrap items-center gap-3 w-full justify-between">
+                <span className="text-sm text-slate-700">
+                  {pendingAttendance.length} unsynced attendance change(s)
+                </span>
+                {pendingAttendance.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={pushLocalAttendance}
+                    disabled={syncAttendanceMutation.isPending || !selectedEvent.allowLocalAttendance}
+                    className="min-h-10 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {syncAttendanceMutation.isPending
+                      ? "Pushing attendance…"
+                      : "Push attendance to database"}
+                  </button>
+                )}
+              </div>
+              {pendingAttendance.length > 0 && !localMode && (
+                <p className="mt-2 text-xs text-amber-800">
+                  Turn local saving back on or push these changes before making
+                  direct database updates.
+                </p>
+              )}
+            </div>
+          )}
+          {!selectedEvent?.allowLocalAttendance && pendingAttendance.length > 0 && (
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {pendingAttendance.length} local attendance change(s) are waiting.
+              An administrator must allow local attendance for this event before
+              you can push them.
+            </p>
+          )}
           {eventsQuery.isError && (
             <p role="alert" className="mt-5 text-sm text-red-600">
               {eventsQuery.error.message}
@@ -309,14 +458,12 @@ export default function OrganizerDashboardPage() {
                         type="button"
                         aria-label={`Mark ${participant.name} present`}
                         disabled={
-                          attendanceMutation.isPending || participant.attendance
+                          attendanceMutation.isPending ||
+                          syncAttendanceMutation.isPending ||
+                          (pendingAttendance.length > 0 && !localMode) ||
+                          participant.attendance
                         }
-                        onClick={() =>
-                          attendanceMutation.mutate({
-                            participantId: participant.participantId,
-                            present: true,
-                          })
-                        }
+                        onClick={() => changeAttendance(participant.participantId, participant.serverAttendance, true)}
                         className={`rounded-lg border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40 ${hasSingleSearchResult ? "min-h-12" : "min-h-11"}`}
                       >
                         Present
@@ -326,14 +473,11 @@ export default function OrganizerDashboardPage() {
                         aria-label={`Mark ${participant.name} absent`}
                         disabled={
                           attendanceMutation.isPending ||
+                          syncAttendanceMutation.isPending ||
+                          (pendingAttendance.length > 0 && !localMode) ||
                           !participant.attendance
                         }
-                        onClick={() =>
-                          attendanceMutation.mutate({
-                            participantId: participant.participantId,
-                            present: false,
-                          })
-                        }
+                        onClick={() => changeAttendance(participant.participantId, participant.serverAttendance, false)}
                         className={`rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 ${hasSingleSearchResult ? "min-h-12" : "min-h-11"}`}
                       >
                         Absent
@@ -409,14 +553,11 @@ export default function OrganizerDashboardPage() {
                               aria-label={`Mark ${participant.name} present`}
                               disabled={
                                 attendanceMutation.isPending ||
+                                syncAttendanceMutation.isPending ||
+                                (pendingAttendance.length > 0 && !localMode) ||
                                 participant.attendance
                               }
-                              onClick={() =>
-                                attendanceMutation.mutate({
-                                  participantId: participant.participantId,
-                                  present: true,
-                                })
-                              }
+                              onClick={() => changeAttendance(participant.participantId, participant.serverAttendance, true)}
                               className="rounded-lg border border-emerald-200 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-40"
                             >
                               Present
@@ -426,14 +567,11 @@ export default function OrganizerDashboardPage() {
                               aria-label={`Mark ${participant.name} absent`}
                               disabled={
                                 attendanceMutation.isPending ||
+                                syncAttendanceMutation.isPending ||
+                                (pendingAttendance.length > 0 && !localMode) ||
                                 !participant.attendance
                               }
-                              onClick={() =>
-                                attendanceMutation.mutate({
-                                  participantId: participant.participantId,
-                                  present: false,
-                                })
-                              }
+                              onClick={() => changeAttendance(participant.participantId, participant.serverAttendance, false)}
                               className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
                             >
                               Absent
