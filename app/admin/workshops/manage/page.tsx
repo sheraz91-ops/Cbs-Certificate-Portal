@@ -143,6 +143,7 @@ export default function ManageWorkshopsPage() {
                       "Status",
                       "Outside Participants",
                       "Participants",
+                      "Completed",
                     ].map((label) => (
                       <th key={label} scope="col" className="px-4 py-3">
                         {label}
@@ -186,6 +187,9 @@ export default function ManageWorkshopsPage() {
                       </td>
                       <td className="px-4 py-3 tabular-nums text-slate-300">
                         {workshop.participants.length}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-slate-300">
+                        {workshop.isCompleted ? "Yes" : "No"}
                       </td>
                     </tr>
                   ))}
