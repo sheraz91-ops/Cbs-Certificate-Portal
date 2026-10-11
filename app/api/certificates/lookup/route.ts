@@ -25,6 +25,27 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const { id, workshop: selectedKey } = parsed.data;
+    const accountUserId = getAccountUserId(id);
+    const accountParticipants = accountUserId
+      ? await ParticipantModel.find({ userId: accountUserId }).lean()
+      : [];
+    if (accountUserId && (/^CBSU-/i.test(id.trim()) || accountParticipants.length > 0)) {
+      const participantsForLookup = selectedKey
+        ? accountParticipants.filter((participant) => participant.workshop === selectedKey)
+        : accountParticipants;
+      const workshopsForLookup = await WorkshopModel.find(
+        selectedKey ? { key: selectedKey } : {},
+      ).select("-templateData").lean() as unknown as WorkshopDefinition[];
+      const result = lookupUserCertificates(accountUserId, participantsForLookup, workshopsForLookup);
+      const message = result.status === "ambiguous"
+        ? "Certificates found for user"
+        : result.status === "attendance-required"
+          ? "Certificate is unavailable until attendance is marked present"
+          : result.status === "event-not-completed"
+            ? "This event has not been marked completed yet"
+            : "No certificates found for this user";
+      return successResponse(result, message, result.status === "ambiguous" ? result.candidates.length : 0);
+    }
     const parts = id.trim().toUpperCase().split(/[\s\-_/]+/).filter(Boolean);
     const workshopCode = parts.find((part) => /^[A-Z0-9]+$/.test(part) && part !== "CBS" && !/^\d+$/.test(part));
     const year = parts.find((part) => /^\d{4}$/.test(part));
@@ -52,6 +73,51 @@ export async function POST(request: NextRequest) {
     console.error("Certificate lookup error:", error);
     return errorResponse("Unable to look up certificate");
   }
+}
+
+function getAccountUserId(rawId: string): string | undefined {
+  const value = rawId.trim().toUpperCase();
+  const explicitId = value.match(/^CBSU-(\d{6,})$/);
+  if (explicitId) return `CBSU-${explicitId[1]}`;
+  if (/^\d+$/.test(value)) return `CBSU-${value.padStart(6, "0")}`;
+  return undefined;
+}
+
+function lookupUserCertificates(
+  userId: string,
+  participants: Array<{
+    id: string;
+    name: string;
+    workshop: string;
+    userId: string;
+    attendance: boolean;
+  }>,
+  workshops: WorkshopDefinition[],
+): DatabaseLookupResult {
+  if (participants.length === 0) return { status: "not-found" };
+  const workshopsByKey = new Map(workshops.map((workshop) => [workshop.key, workshop]));
+  const completed = participants.filter((participant) => workshopsByKey.get(participant.workshop)?.isCompleted === true);
+  if (completed.length === 0) return { status: "event-not-completed" };
+  const attended = completed.filter((participant) => participant.attendance === true);
+  if (attended.length === 0) return { status: "attendance-required" };
+  const candidates: CertificateCandidate[] = attended.flatMap((participant) => {
+    const workshop = workshopsByKey.get(participant.workshop);
+    if (!workshop) return [];
+    const certificateParticipant: Participant = {
+      id: participant.id,
+      name: participant.name,
+      workshop: participant.workshop,
+      userId,
+    };
+    return [{
+      participant: certificateParticipant,
+      workshop,
+      formattedId: formatCertificateId(participant.id, workshop),
+    }];
+  });
+  return candidates.length
+    ? { status: "ambiguous", candidates }
+    : { status: "not-found" };
 }
 
 async function lookup(rawId: string, selectedKey: string | undefined, workshops: WorkshopDefinition[]): Promise<DatabaseLookupResult> {
@@ -105,4 +171,3 @@ async function lookup(rawId: string, selectedKey: string | undefined, workshops:
   const first = found[0];
   return { status: "found", participant: first.participant, formattedId: first.formattedId, workshop: first.workshop };
 }
-

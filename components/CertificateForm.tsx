@@ -40,6 +40,7 @@ export default function CertificateForm() {
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [alert, setAlert] = useState<AlertState | null>(null);
   const [candidates, setCandidates] = useState<CertificateCandidate[]>([]);
+  const [showUserCertificates, setShowUserCertificates] = useState(false);
   const workshopsQuery = useQuery({
     queryKey: ["workshops", "public"],
     queryFn: getWorkshops,
@@ -56,6 +57,9 @@ export default function CertificateForm() {
   });
   const workshops: WorkshopOption[] = workshopsQuery.data ?? [];
   const isOrganizer = certificateId.trim().toUpperCase().startsWith("CBSO-");
+  const displayedCandidates = showUserCertificates && selectedWorkshop
+    ? candidates.filter((candidate) => candidate.workshop.key === selectedWorkshop)
+    : candidates;
 
   const isLoading =
     status === "loading" ||
@@ -66,6 +70,7 @@ export default function CertificateForm() {
     e.preventDefault();
     setAlert(null);
     setCandidates([]);
+    setShowUserCertificates(false);
 
     if (isOrganizer) {
       const identity = organizerCertificateIdentitySchema.safeParse({
@@ -208,6 +213,7 @@ export default function CertificateForm() {
     if (result.status === "ambiguous") {
       setStatus("idle");
       setCandidates(result.candidates);
+      setShowUserCertificates(result.candidates.some((candidate) => Boolean(candidate.participant.userId)));
       return;
     }
 
@@ -238,7 +244,7 @@ export default function CertificateForm() {
               htmlFor="certificateWorkshop"
               className="text-xs font-semibold uppercase tracking-wide text-navy-600"
             >
-              {isOrganizer ? "Assigned event" : "Participation"}
+              {isOrganizer ? "Assigned event" : "Select Participation"}
             </label>
             <select
               id="certificateWorkshop"
@@ -302,7 +308,7 @@ export default function CertificateForm() {
               htmlFor="certificateId"
               className="text-xs font-semibold uppercase tracking-wide text-navy-600"
             >
-              Certificate ID
+             Enter Certificate ID or CBS User ID
             </label>
             <InputField
               id="certificateId"
@@ -323,10 +329,15 @@ export default function CertificateForm() {
                 if (status !== "idle") setStatus("idle");
                 if (alert) setAlert(null);
                 if (candidates.length > 0) setCandidates([]);
+                setShowUserCertificates(false);
               }}
               disabled={isLoading}
               className="w-full rounded-xl border border-navy-100 bg-navy-50/40 px-4 py-3 text-base text-navy-900 placeholder:text-navy-300 outline-none transition focus:border-gold-400 focus:ring-4 focus:ring-gold-100 disabled:opacity-60"
             />
+            {/* <p className="text-xs text-navy-500">
+              Enter a CBS User ID (for example, CBSU-000001) to find all eligible certificates, or enter a certificate ID.
+              A number such as 1 is checked as a user ID suffix first.
+            </p> */}
           </div>
 
           <button
@@ -360,16 +371,20 @@ export default function CertificateForm() {
           </div>
         )}
 
-        {candidates.length > 0 && (
+        {displayedCandidates.length > 0 && (
           <div className="mt-5">
             <p className="mb-2 text-sm font-semibold text-navy-800">
-              Certificates matching ID {certificateId.trim()}
+              {showUserCertificates
+                ? `Certificates for user ${certificateId.trim()}${selectedWorkshop ? ` · ${workshops.find((workshop) => workshop.key === selectedWorkshop)?.workshopName ?? "selected event"}` : ""}`
+                : `Certificates matching ID ${certificateId.trim()}`}
             </p>
             <p className="mb-3 text-xs text-navy-500">
-              Choose the event where you received your certificate.
+              {showUserCertificates
+                ? "Your eligible certificates from completed events are listed below."
+                : "Choose the event where you received your certificate."}
             </p>
             <div className="flex flex-col gap-2">
-              {candidates.map((c) => (
+              {displayedCandidates.map((c) => (
                 <a
                   key={c.formattedId}
                   href={`/certificate?id=${encodeURIComponent(c.formattedId)}`}
@@ -391,6 +406,11 @@ export default function CertificateForm() {
               ))}
             </div>
           </div>
+        )}
+        {showUserCertificates && candidates.length > 0 && displayedCandidates.length === 0 && (
+          <p className="mt-5 rounded-xl border border-navy-100 bg-navy-50/50 px-4 py-3 text-sm text-navy-600">
+            This user has no eligible certificates for the selected event.
+          </p>
         )}
 
         <div className="mt-5 text-center">
