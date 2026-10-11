@@ -47,7 +47,7 @@ export default function OrganizerLoginPage() {
   }
 
   return (
-    <main className="hero-bg flex min-h-screen items-center justify-center px-4 py-10">
+    <main className="hero-bg flex min-h-svh items-center justify-center px-4 py-10">
       <form
         onSubmit={submit}
         className="w-full max-w-md rounded-3xl border border-white/10 bg-navy-950/80 p-5 text-white shadow-2xl backdrop-blur min-[380px]:p-7 sm:p-9"
@@ -56,15 +56,16 @@ export default function OrganizerLoginPage() {
           href="/"
           className="text-xs font-medium text-gold-200 hover:text-gold-100"
         >
-          CBS home
+         <span className="mr-1 text-base font-bold text-gold-300">←</span>
+          Back to CBS home
         </Link>
         <p className="mt-8 text-xs font-bold uppercase tracking-[0.22em] text-gold-300">
           CBS events
         </p>
-        <h1 className="mt-2 font-display text-3xl font-semibold">
+        <h1 className="mt-2 font-display text-2xl sm:text-3xl font-semibold">
           Organizer sign in
         </h1>
-        <p className="mt-3 text-sm leading-6 text-navy-100/65">
+        <p className="mt-3 text-xs sm:text-sm sm:leading-6 text-navy-100/65">
           Sign in to view attendees and record attendance for the events
           assigned to you.
         </p>
@@ -78,7 +79,7 @@ export default function OrganizerLoginPage() {
             value={email}
             validationSchema={organizerLoginSchema.shape.email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-gold-300"
+            className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-xs sm:text-sm text-white outline-none focus:border-gold-300"
           />
         </label>
         <label className="mt-4 block text-sm font-medium text-navy-100">
@@ -89,7 +90,7 @@ export default function OrganizerLoginPage() {
             value={password}
             validationSchema={organizerLoginSchema.shape.password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-white outline-none focus:border-gold-300"
+            className="mt-1.5 h-11 w-full rounded-xl border border-white/15 bg-white/5 px-3 text-xs sm:text-sm text-white outline-none focus:border-gold-300"
           />
         </label>
         {error && (
@@ -103,7 +104,7 @@ export default function OrganizerLoginPage() {
         <button
           type="submit"
           disabled={busy}
-          className="mt-6 h-12 w-full rounded-xl bg-gold-400 font-semibold text-navy-950 transition hover:bg-gold-300 disabled:opacity-50"
+          className="mt-6 h-12 w-full rounded-xl bg-gold-400 font-semibold text-navy-950 transition hover:bg-gold-300 disabled:opacity-50 text-sm sm:text-base"
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>

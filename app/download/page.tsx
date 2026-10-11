@@ -9,7 +9,7 @@ const Download = () => {
       <section
         id="download"
         aria-labelledby="download-heading"
-        className="scroll-mt-8 border-t border-white/10 py-12 sm:py-16 lg:py-20"
+        className="scroll-mt-8 border-t border-white/10 py-12 sm:py-16 lg:py-14"
       >
         <div className="mx-auto grid min-w-0 max-w-6xl px-10 gap-6 sm:gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div className="text-white">

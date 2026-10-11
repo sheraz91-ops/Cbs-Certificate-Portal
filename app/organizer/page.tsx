@@ -126,7 +126,7 @@ export default function OrganizerDashboardPage() {
           <button
             type="button"
             onClick={() => void signOut()}
-            className="min-h-10 shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:px-4"
+            className="min-h-10 shrink-0 rounded-xl border border-gold-500 hover:bg-gold-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50s sm:px-4 w-full sm:w-auto self-end"
           >
             Sign out
           </button>

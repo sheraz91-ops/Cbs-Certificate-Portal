@@ -14,6 +14,8 @@ export interface Participant {
   workshop: string;
   /** Assigned user ID, if this is a registered user enrollment. */
   userId?: string;
+  /** Event-specific registration answers, when available. */
+  customFields?: Record<string, string>;
 }
 
 /** A resolved candidate certificate, used when a lookup matches more

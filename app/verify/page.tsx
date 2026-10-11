@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function VerifyPage() {
   return (
     <PageShell>
-      <section className="mx-auto w-full min-w-0 max-w-4xl px-3 py-8 min-[380px]:px-4 sm:px-6 sm:py-12 lg:py-16">
+      <section className="mx-auto w-full min-w-0 max-w-4xl px-3 py-8 min-[380px]:px-4 sm:px-6 sm:py-12 lg:py-14">
         <div className="mb-8 text-center text-white">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-gold-300">
             Certificate services

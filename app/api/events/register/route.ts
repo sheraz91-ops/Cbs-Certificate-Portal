@@ -10,7 +10,10 @@ import UserModel from "@/models/User";
 import UserSequenceModel from "@/models/UserSequence";
 import WorkshopModel from "@/models/Workshop";
 import UserRegistrationFormModel from "@/models/UserRegistrationForm";
-import { DEFAULT_USER_REGISTRATION_FORM } from "@/types/registrationForm";
+import {
+  DEFAULT_USER_REGISTRATION_FORM,
+  type UserRegistrationFormConfig,
+} from "@/types/registrationForm";
 import { validateUserRegistrationValues } from "@/lib/userRegistrationValidation";
 import { validateMatrixSelection, parseMatrixSelection } from "@/lib/matrixRegistration";
 import type { WorkshopDefinition } from "@/types/workshop";
@@ -42,7 +45,9 @@ export async function POST(request: NextRequest) {
     ]);
     if (!workshop) return errorResponse("The selected event was not found", 404);
     if (workshop.isActive === false || workshop.isCompleted === true) return errorResponse("Registration for this event is closed", 403);
-    const savedConfig = savedForm?.fields?.length ? { fields: savedForm.fields } : DEFAULT_USER_REGISTRATION_FORM;
+    const savedConfig: UserRegistrationFormConfig = savedForm?.fields?.length
+      ? { fields: savedForm.fields }
+      : DEFAULT_USER_REGISTRATION_FORM;
     const formConfig = workshop.allowOutsiders !== true && !savedConfig.fields.some((field) => field.key === "registrationNumber")
       ? { fields: [...savedConfig.fields, DEFAULT_USER_REGISTRATION_FORM.fields.find((field) => field.key === "registrationNumber")!] }
       : savedConfig;

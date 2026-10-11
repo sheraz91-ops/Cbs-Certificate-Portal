@@ -51,7 +51,8 @@ function validateCustomField(field: UserRegistrationFormConfig["fields"][number]
     return undefined;
   }
   if (field.type === "checkbox") {
-    if (!field.choices?.length) {
+    const choices = field.choices;
+    if (!choices?.length) {
       if (value && value !== "true" && value !== "false") return `${field.label} has an invalid value`;
       if (field.required && value !== "true") return `${field.label} is required`;
       return undefined;
@@ -62,7 +63,7 @@ function validateCustomField(field: UserRegistrationFormConfig["fields"][number]
     } catch {
       return `${field.label} has an invalid selection`;
     }
-    if (!Array.isArray(selected) || selected.some((choice) => typeof choice !== "string" || !field.choices.includes(choice)) || new Set(selected).size !== selected.length) return `${field.label} has an invalid selection`;
+    if (!Array.isArray(selected) || selected.some((choice) => typeof choice !== "string" || !choices.includes(choice)) || new Set(selected).size !== selected.length) return `${field.label} has an invalid selection`;
     if (field.selectionMode === "single" && selected.length > 1) return `${field.label} allows only one selection`;
     if (field.required && selected.length === 0) return `${field.label} is required`;
     return undefined;
@@ -77,7 +78,16 @@ export function validateUserRegistrationValues(
   values: UserRegistrationValues,
   allowOutsiders: boolean,
 ): ValidatedUserRegistration {
-  const profile = Object.fromEntries(profileKeys.map((key) => [key, ""])) as UserProfileInput;
+  const profile: UserProfileInput = {
+    emailAddress: "",
+    fullName: "",
+    registrationNumber: "",
+    department: "",
+    semester: "",
+    section: "",
+    institute: "",
+    whatsappNumber: "",
+  };
   const customFields: Record<string, string> = {};
   const errors: Record<string, string> = {};
 

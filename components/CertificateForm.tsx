@@ -215,7 +215,7 @@ export default function CertificateForm() {
   }
 
   return (
-    <div className="w-full min-w-0 max-w-md animate-scale-in">
+    <div className="w-full min-w-0 max-w-md animate-scale-in mx-auto">
       <div className="relative rounded-3xl bg-white/95 p-5 shadow-card ring-1 ring-black/5 backdrop-blur min-[380px]:p-6 sm:p-8">
         {/* Gold corner accents for a premium, certificate-like feel */}
         <span className="pointer-events-none absolute top-3 left-3 h-6 w-6 border-t-2 border-l-2 border-gold-400 rounded-tl-lg" />
@@ -228,7 +228,7 @@ export default function CertificateForm() {
             Find Your Certificate
           </h2>
           <p className="text-sm text-navy-500 mt-1">
-            Enter your certificate ID and participation. Organizers can use their CBSO ID and full name to see their assigned events.
+            Enter your Participation ID
           </p>
         </div>
 

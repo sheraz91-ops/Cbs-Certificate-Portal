@@ -304,7 +304,7 @@ export default function VerifyPanel() {
       {status === "event-not-completed" && (
         <div role="status" className="animate-scale-in rounded-3xl border border-amber-200 bg-amber-50 p-4 shadow-card min-[380px]:p-6">
           <p className="font-display text-lg font-semibold text-amber-900">This event is not completed yet.</p>
-          <p className="mt-2 text-sm leading-6 text-amber-800">CBS will make certificates available after an admin marks the event completed.</p>
+          <p className="mt-2 text-sm leading-6 text-amber-800">CBS will make certificates available after the event will be completed.</p>
         </div>
       )}
 
